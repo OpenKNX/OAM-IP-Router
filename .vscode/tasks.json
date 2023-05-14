@@ -1,0 +1,107 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "build_RP2040"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build & Upload USB",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "build_upload_USB_RP2040",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build & Upload JLINK",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "build_upload_JLINK_RP2040",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "OpenKNXproducer",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
+            "command": "${env:USERPROFILE}/bin/OpenKNXproducer.exe",
+            "args": [
+                "create",
+                "--Debug",
+                "SEN-UP1-8xTH.xml"
+            ],
+            "problemMatcher": [],
+            "group": "test",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Gen. Dependencies.txt",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/setup/reusable/Build-Dependencies.ps1",
+            "args": [
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Pull",
+            "type": "shell",
+            "command": "git pull --ff-only",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/"
+            },
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Pull & Restore",
+            "type": "shell",
+            "command": "${workspaceFolder}/restore/Restore-Checkout-Branch.ps1",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/restore/"
+            },
+            "problemMatcher": [],
+            "group": "test",
+            "dependsOn": ["Pull"]
+        },
+        // Build a release package for distribution
+        {
+            "label": "Build-Release",
+            "type": "shell",
+            "command": "scripts/Build-Release.ps1",
+            "args": [
+            //    "Release"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}

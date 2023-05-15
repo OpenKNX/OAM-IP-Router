@@ -2,7 +2,7 @@
 #include <knx.h>
 
 
-// Definition for PiPico
+// Definition for PiPico / UP1
 #define PIN_SPI0_MISO (16)
 #define PIN_SPI0_MOSI (19)
 #define PIN_SPI0_SCK (18)
@@ -41,13 +41,13 @@ volatile uint32_t Inited __attribute__((section(".noinit")));
 
 static SerialUART serialTpuart(uart0, PIN_TPUART_TX, PIN_TPUART_RX);
 
-/*
+
 EthernetUDP udp;
 uint8_t test[24] = "\0";
 IPAddress mcastaddr = IPAddress(htonl((uint32_t)0xE000170C));
 int port = 3671;
 uint8_t result;
-*/
+
 
 void setup()
 {
@@ -107,16 +107,17 @@ void setup()
         Serial.println(Ethernet.linkReport());
     }
 
-    /*result = udp.beginMulticast(mcastaddr, port);
+    result = udp.beginMulticast(mcastaddr, port);
     KNX_DEBUG_SERIAL.printf("Setup Mcast addr: ");
     mcastaddr.printTo(KNX_DEBUG_SERIAL);
     KNX_DEBUG_SERIAL.printf(" on port: %d result %d\n", port, result);
     result = udp.beginPacket(mcastaddr, port);
-    // KNX_DEBUG_SERIAL.printf("begin:%d ", result);
+    KNX_DEBUG_SERIAL.printf("begin:%d ", result);
     udp.write(test, 24);
     result = udp.endPacket();
-    // KNX_DEBUG_SERIAL.printf("end:%d \n", result);
-*/
+    KNX_DEBUG_SERIAL.printf("end:%d \n", result);
+
+
     // read adress table, association table, groupobject table and parameters from eeprom
     knx.readMemory();
 
@@ -150,12 +151,24 @@ void setup()
     Serial.println(p_ipadr);
     Serial.println(p_gw);
     Serial.println(p_mask);
+
+    //knx.platform().setupMultiCast(3758102284, 3671);
 }
+
+uint32_t last_millis = millis();
 
 void loop()
 {
     // don't delay here to much. Otherwise you might lose packages or mess up the timing with ETS
     knx.loop();
+
+    if (millis() - last_millis > 5000)
+    {
+        last_millis = millis();
+        byte dat[4] = {0xDE, 0xEA, 0xBE, 0xEF};
+        knx.platform().sendBytesUniCast(3232281288, 12345, dat, 4);
+        //knx.platform().sendBytesMultiCast(dat, 4);
+    }
 
     // only run the application code if the device was configured with ETS
     if (!knx.configured())
@@ -171,4 +184,5 @@ void loop()
         // KNX_DEBUG_SERIAL.printf("end:%d \n", result);
     }
     */
+
 }

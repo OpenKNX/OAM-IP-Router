@@ -155,7 +155,7 @@ void setup()
 
     //knx.platform().setupMultiCast(3758102284, 3671);
 
-    udp.begin(12345);
+    //udp.begin(12345);
 }
 
 uint32_t last_millis = millis();
@@ -169,10 +169,10 @@ void loop()
     {
         last_millis = millis();
         byte dat[4] = {0xDE, 0xEA, 0xBE, 0xEF};
-        udp.beginPacket(etsaddr, 54321);
-        udp.write(dat, 4);
-        udp.endPacket();
-        //knx.platform().sendBytesUniCast(3232281288, 12345, dat, 4);
+        //udp.beginPacket(etsaddr, 54321);
+        //udp.write(dat, 4);
+        //udp.endPacket();
+        knx.platform().sendBytesUniCast(3232281288, 12345, dat, 4);
         //knx.platform().sendBytesMultiCast(dat, 4);
     }
 

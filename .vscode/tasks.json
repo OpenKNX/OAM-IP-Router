@@ -31,15 +31,16 @@
         {
             "label": "Build & Upload JLINK",
             "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "command": "${env:USERPROFILE}\\.platformio\\penv\\Scripts\\pio.exe",
             "args": [
+                "run",
+                "-e",
                 "build_upload_JLINK_RP2040",
+                "--target",
                 "upload"
             ],
             "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
+            "problemMatcher": []
         },
         {
             "label": "OpenKNXproducer",

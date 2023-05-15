@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
+  <ManufacturerData>
+    <Manufacturer RefId="M-00FA">
+      <Catalog>
+        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
+          <CatalogItem Id="%CatalogItemId%" Name="OpenKNX: IP-Router" Number="1" ProductRefId="%ProductId%" Hardware2ProgramRefId="%Hardware2ProgramId%" DefaultLanguage="de" />
+        </CatalogSection>
+      </Catalog>
+      <ApplicationPrograms>
+        <!-- Each increase of AppliationVersion FORCES the Enduser to update according firmware, too -->
+        <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
+        <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
+        <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="1" ReplacesVersions="0" ApplicationRevision="0" />
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="ProductProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0">
+          <Static>
+            <Code>
+              <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
+            </Code>
+            <ParameterTypes>
+              <ParameterType Id="%AID%_PT-t.5FIPAddress.5FHost"
+                Name="t_IPAddress_Host">
+                <TypeIPAddress AddressType="HostAddress" SizeInBit="32" />
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-t.5FIPAdress.5FGateway"
+                Name="t_IPAdress_Gateway">
+                <TypeIPAddress AddressType="GatewayAddress" SizeInBit="32" />
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-t.5FIPAddress.5FNetmask"
+                Name="t_IPAddress_Netmask">
+                <TypeIPAddress AddressType="SubnetMask" SizeInBit="32" />
+              </ParameterType>
+            </ParameterTypes>
+            <Parameters>
+              <Parameter Id="%AID%_P-4" Name="IP"
+                ParameterType="%AID%_PT-t.5FIPAddress.5FHost" Text="IP Address"
+                Value="192.168.0.130">
+                <Memory CodeSegment="%AID%_AS-0100" Offset="0" BitOffset="0" />
+              </Parameter>
+              <Parameter Id="%AID%_P-5" Name="Gateway"
+                ParameterType="%AID%_PT-t.5FIPAdress.5FGateway" Text="Gateway"
+                Value="1">
+                <Memory CodeSegment="%AID%_AS-0100" Offset="32" BitOffset="0" />
+              </Parameter>
+              <Parameter Id="%AID%_P-6" Name="SubnetMask"
+                ParameterType="%AID%_PT-t.5FIPAddress.5FNetmask" Text="Netmask"
+                Value="1">
+                <Memory CodeSegment="%AID%_AS-0100" Offset="64" BitOffset="0" />
+              </Parameter>
+            </Parameters>
+            <ParameterRefs>
+              <ParameterRef Id="%AID%_P-4_R-1" RefId="%AID%_P-4" />
+              <ParameterRef Id="%AID%_P-5_R-2" RefId="%AID%_P-5" />
+              <ParameterRef Id="%AID%_P-6_R-3" RefId="%AID%_P-6" />
+            </ParameterRefs>
+            <LoadProcedures>
+              <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
+                <LdCtrlConnect />
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+                <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
+                <LdCtrlLoad ObjType="6" />
+                <LdCtrlLoadCompleted ObjType="6" />
+                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
+                <LdCtrlLoad ObjType="3" />
+                <LdCtrlLoadCompleted ObjType="3" />
+                <LdCtrlRestart />
+              </LoadProcedure>
+            </LoadProcedures>
+            <Options LegacyNoPartialDownload="true" LineCoupler0912NewProgrammingStyle="true"
+              DownloadInvisibleParameters="Background" />
+          </Static>
+          <Dynamic>
+            <ChannelIndependentBlock>
+              <ParameterBlock Id="%AID%_PB-1" Name="Main">
+                <ParameterRefRef RefId="%AID%_P-4_R-1" />
+                <ParameterRefRef RefId="%AID%_P-6_R-3" />
+                <ParameterRefRef RefId="%AID%_P-5_R-2" />
+              </ParameterBlock>
+            </ChannelIndependentBlock>
+          </Dynamic>
+        </ApplicationProgram>
+      </ApplicationPrograms>
+      <Hardware>
+        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="50000" VersionNumber="1" BusCurrent="20" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
+          <Products>
+            <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IPR" IsRailMounted="true" DefaultLanguage="de">
+              <RegistrationInfo RegistrationStatus="Registered" />
+            </Product>
+          </Products>
+          <Hardware2Programs>
+            <Hardware2Program Id="%Hardware2ProgramId%" MediumTypes="MT-0">
+              <ApplicationProgramRef RefId="%AID%" />
+              <RegistrationInfo RegistrationStatus="Registered"
+                RegistrationNumber="0001/%HardwareVersionEncoded%1" />
+            </Hardware2Program>
+          </Hardware2Programs>
+        </Hardware>
+      </Hardware>
+    </Manufacturer>
+  </ManufacturerData>
+</KNX>

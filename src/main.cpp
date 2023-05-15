@@ -41,13 +41,14 @@ volatile uint32_t Inited __attribute__((section(".noinit")));
 
 static SerialUART serialTpuart(uart0, PIN_TPUART_TX, PIN_TPUART_RX);
 
-
+/*
 EthernetUDP udp;
 uint8_t test[24] = "\0";
 IPAddress mcastaddr = IPAddress(htonl((uint32_t)0xE000170C));
 IPAddress etsaddr = IPAddress(htonl((uint32_t)3232281288));
 int port = 3671;
 uint8_t result;
+*/
 
 
 void setup()
@@ -163,16 +164,16 @@ uint32_t last_millis = millis();
 void loop()
 {
     // don't delay here to much. Otherwise you might lose packages or mess up the timing with ETS
-    //knx.loop();
+    knx.loop();
 
-    if (millis() - last_millis > 5000)
+    if (millis() - last_millis > 50000)
     {
         last_millis = millis();
         byte dat[4] = {0xDE, 0xEA, 0xBE, 0xEF};
         //udp.beginPacket(etsaddr, 54321);
         //udp.write(dat, 4);
         //udp.endPacket();
-        knx.platform().sendBytesUniCast(3232281288, 12345, dat, 4);
+        //knx.platform().sendBytesUniCast(3232281288, 12345, dat, 4);
         //knx.platform().sendBytesMultiCast(dat, 4);
     }
 

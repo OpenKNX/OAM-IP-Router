@@ -16,7 +16,7 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "Build & Upload USB",
+            "label": "OpenKNX Build & Upload USB",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
@@ -27,6 +27,20 @@
             "problemMatcher": [],
             "dependsOrder": "sequence",
             "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build & Upload USB",
+            "type": "shell",
+            "command": "${env:USERPROFILE}\\.platformio\\penv\\Scripts\\pio.exe",
+            "args": [
+                "run",
+                "-e",
+                "build_upload_USB_RP2040",
+                "--target",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": []
         },
         {
             "label": "Build & Upload JLINK",

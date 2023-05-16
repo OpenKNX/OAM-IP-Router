@@ -24,16 +24,14 @@
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x01};
 
 #define PIN_PROG_SWITCH 5
-#define PIN_PROG_LED 11
+#define PIN_PROG_LED LED_BUILTIN
 
 // ITSY BITSY
 #define PIN_TPUART_RX 1
 #define PIN_TPUART_TX 0
 
 
-// EC-KNX-2040
-// #define PIN_TPUART_RX 13              // stm32 knx uses Serial2 (pins 16,17)
-// #define PIN_TPUART_TX 12
+
 
 // Restore ram after reset (brownout)
 #define INIT_MASK 0x12345678

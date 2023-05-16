@@ -8,11 +8,21 @@
 #define PIN_SPI0_SCK (18)
 #define PIN_SPI0_SS (17)
 
+#define PIN_PROG_SWITCH 5
+#define PIN_PROG_LED LED_BUILTIN
+
 // Definition for UP1 / REG1 Controller
 //#define PIN_SPI0_MISO (28)
 //#define PIN_SPI0_MOSI (27)
 //#define PIN_SPI0_SCK (26)
 //#define PIN_SPI0_SS (29)
+//
+//#define PIN_PROG_SWITCH 7
+//#define PIN_PROG_LED 2
+//
+//#define PIN_SD_SS (16)
+//#define PIN_ETH_INT (17)
+//#define PIN_ETH_RES (18)
 
 
 
@@ -26,27 +36,7 @@ byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x01};
 #define PIN_PROG_SWITCH 5
 #define PIN_PROG_LED LED_BUILTIN
 
-// ITSY BITSY
-#define PIN_TPUART_RX 1
-#define PIN_TPUART_TX 0
 
-
-
-
-// Restore ram after reset (brownout)
-#define INIT_MASK 0x12345678
-volatile uint32_t Inited __attribute__((section(".noinit")));
-
-static SerialUART serialTpuart(uart0, PIN_TPUART_TX, PIN_TPUART_RX);
-
-/*
-EthernetUDP udp;
-uint8_t test[24] = "\0";
-IPAddress mcastaddr = IPAddress(htonl((uint32_t)0xE000170C));
-IPAddress etsaddr = IPAddress(htonl((uint32_t)3232281288));
-int port = 3671;
-uint8_t result;
-*/
 
 
 void setup()

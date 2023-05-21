@@ -1,24 +1,10 @@
 #include <Arduino.h>
 
-//#include "OpenKNX.h"
+#include "OpenKNX.h"
 
-#define OKNXHW_REG1_CONTROLLER2040
-//#include <OpenKNXHardware.h>
-#ifdef OKNXHW_REG1_CONTROLLER2040
-#define PROG_LED_PIN 2
-#define PROG_LED_PIN_ACTIVE_ON HIGH
-#define PROG_BUTTON_PIN 7
-#define PROG_BUTTON_PIN_INTERRUPT_ON FALLING
-#define SAVE_INTERRUPT_PIN 6
-#define INFO_LED_PIN 3
-#define INFO_LED_PIN_ACTIVE_ON HIGH
-#define KNX_UART_RX_PIN 1
-#define KNX_UART_TX_PIN 0
+#ifdef ARDUINO_ARCH_RP2040
+#pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
 #endif
-
-
-
-
 
 // Definition for PiPico / SPI0
 //#define PIN_MISO_ (16)
@@ -80,6 +66,8 @@ byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0x01};
 
 void setup()
 {
+    const uint8_t firmwareRevision = 0;
+
     Serial.begin(115200);
     ArduinoPlatform::SerialDebug = &Serial;
     while (!Serial)

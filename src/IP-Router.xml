@@ -19,42 +19,7 @@
             <Code>
               <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
             </Code>
-            <ParameterTypes>
-              <ParameterType Id="%AID%_PT-t.5FIPAddress.5FHost"
-                Name="t_IPAddress_Host">
-                <TypeIPAddress AddressType="HostAddress" SizeInBit="32" />
-              </ParameterType>
-              <ParameterType Id="%AID%_PT-t.5FIPAdress.5FGateway"
-                Name="t_IPAdress_Gateway">
-                <TypeIPAddress AddressType="GatewayAddress" SizeInBit="32" />
-              </ParameterType>
-              <ParameterType Id="%AID%_PT-t.5FIPAddress.5FNetmask"
-                Name="t_IPAddress_Netmask">
-                <TypeIPAddress AddressType="SubnetMask" SizeInBit="32" />
-              </ParameterType>
-            </ParameterTypes>
-            <Parameters>
-              <Parameter Id="%AID%_P-4" Name="IP"
-                ParameterType="%AID%_PT-t.5FIPAddress.5FHost" Text="IP Address"
-                Value="192.168.0.130">
-                <Memory CodeSegment="%AID%_AS-0100" Offset="0" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-5" Name="Gateway"
-                ParameterType="%AID%_PT-t.5FIPAdress.5FGateway" Text="Gateway"
-                Value="1">
-                <Memory CodeSegment="%AID%_AS-0100" Offset="32" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-6" Name="SubnetMask"
-                ParameterType="%AID%_PT-t.5FIPAddress.5FNetmask" Text="Netmask"
-                Value="1">
-                <Memory CodeSegment="%AID%_AS-0100" Offset="64" BitOffset="0" />
-              </Parameter>
-            </Parameters>
-            <ParameterRefs>
-              <ParameterRef Id="%AID%_P-4_R-1" RefId="%AID%_P-4" />
-              <ParameterRef Id="%AID%_P-5_R-2" RefId="%AID%_P-5" />
-              <ParameterRef Id="%AID%_P-6_R-3" RefId="%AID%_P-6" />
-            </ParameterRefs>
+            
             <LoadProcedures>
               <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
                 <LdCtrlConnect />
@@ -73,19 +38,14 @@
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="%AID%_PB-1" Name="Main">
-                <ParameterRefRef RefId="%AID%_P-4_R-1" />
-                <ParameterRefRef RefId="%AID%_P-6_R-3" />
-                <ParameterRefRef RefId="%AID%_P-5_R-2" />
-              </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>
       </ApplicationPrograms>
       <Hardware>
-        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="50000" VersionNumber="1" BusCurrent="20" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
+        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="50000" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
           <Products>
-            <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IPR" IsRailMounted="true" DefaultLanguage="de">
+            <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />
             </Product>
           </Products>

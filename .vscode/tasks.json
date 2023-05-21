@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build",
+            "label": "OpenKNX Build",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
@@ -21,6 +21,19 @@
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
                 "build_upload_USB_RP2040",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "OpenKNX Build & Upload JLINK",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "build_upload_JLINK_RP2040",
                 "upload"
             ],
             "group": "build",
@@ -66,7 +79,7 @@
             "args": [
                 "create",
                 "--Debug",
-                "SEN-UP1-8xTH.xml"
+                "IP-Router.xml"
             ],
             "problemMatcher": [],
             "group": "test",

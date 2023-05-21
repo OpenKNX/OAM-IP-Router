@@ -6,6 +6,7 @@
     "cmake.configureOnOpen": false,
     "files.associations": {
         "new": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "bitset": "cpp"
     }
 }

@@ -1,0 +1,283 @@
+#,Zeit,Dienst,Flags,Prio,Quelladresse,Quellname,Zieladresse,Zielname,Hop Count,Typ,DPT,Info,Iack
+1,"17.05.2023 00:00:34,982",,,,,,,,,,,"Aufzeichnung wurde gestartet, Host=Laptop, Verbindung=KNX IP Interface 731, Modus=LinkLayer",
+2,"17.05.2023 00:00:44,359",vom Bus,,Niedrig,1.1.30,"6131/21 Busch-Präsenzmelder Mini Premium",6/1/49,"Flur-PM Decke-BR: Helligkeit",6,GroupValue_Write,  9.004 Lux (Lux),"00 00 | 0 Lux",LL_ACK
+3,"17.05.2023 00:01:14,356",vom Bus,,Niedrig,1.1.30,"6131/21 Busch-Präsenzmelder Mini Premium",6/1/49,"Flur-PM Decke-BR: Helligkeit",6,GroupValue_Write,  9.004 Lux (Lux),"00 00 | 0 Lux",LL_ACK
+4,"17.05.2023 00:01:15,785",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_Connect,,"",LL_ACK
+5,"17.05.2023 00:01:15,792",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,DeviceDescriptor_Read (S=0),,"DescriptorType=0",LL_ACK
+6,"17.05.2023 00:01:15,795",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+7,"17.05.2023 00:01:15,797",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,DeviceDescriptor_Response (S=0),,"DescriptorType=0, DescriptorData=07 01",LL_ACK
+8,"17.05.2023 00:01:15,802",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=0),,"",LL_ACK
+9,"17.05.2023 00:01:15,810",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Read (S=1),,"ObjectIndex=0, PropertyId=56, Count=1, StartIndex=1",LL_ACK
+10,"17.05.2023 00:01:15,817",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+11,"17.05.2023 00:01:15,819",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=1),,"ObjectIndex=0, PropertyId=56, Count=1, StartIndex=1, Data=00 37",LL_ACK
+12,"17.05.2023 00:01:15,825",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=1),,"",LL_ACK
+13,"17.05.2023 00:01:15,847",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Authorize_Request (S=2),,"00 FF FF FF FF",LL_ACK
+14,"17.05.2023 00:01:15,849",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+15,"17.05.2023 00:01:15,852",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Authorize_Response (S=2),,"$00",LL_ACK
+16,"17.05.2023 00:01:15,859",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=2),,"",LL_ACK
+17,"17.05.2023 00:01:15,875",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Read (S=3),,"ObjectIndex=0, PropertyId=11, Count=1, StartIndex=1",LL_ACK
+18,"17.05.2023 00:01:15,877",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+19,"17.05.2023 00:01:15,879",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=3),,"ObjectIndex=0, PropertyId=11, Count=1, StartIndex=1, Data=00 C5 01 01 73 08",LL_ACK
+20,"17.05.2023 00:01:15,886",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=3),,"",LL_ACK
+21,"17.05.2023 00:01:16,086",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=4),,"Count=11, Address=$0104, Data=14 00 00 00 00 00 00 00 00 00 00",LL_ACK
+22,"17.05.2023 00:01:16,088",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=4),,"",LL_ACK
+23,"17.05.2023 00:01:16,198",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=5),,"Count=1, Address=$B6EA",LL_ACK
+24,"17.05.2023 00:01:16,200",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=5),,"",LL_ACK
+25,"17.05.2023 00:01:16,202",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=4),,"Count=1, Address=$B6EA, Data=$00",LL_ACK
+26,"17.05.2023 00:01:16,208",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=4),,"",LL_ACK
+27,"17.05.2023 00:01:16,223",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=6),,"Count=11, Address=$0104, Data=24 00 00 00 00 00 00 00 00 00 00",LL_ACK
+28,"17.05.2023 00:01:16,225",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=6),,"",LL_ACK
+29,"17.05.2023 00:01:16,339",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=7),,"Count=1, Address=$B6EB",LL_ACK
+30,"17.05.2023 00:01:16,341",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=7),,"",LL_ACK
+31,"17.05.2023 00:01:16,343",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=5),,"Count=1, Address=$B6EB, Data=$00",LL_ACK
+32,"17.05.2023 00:01:16,352",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=5),,"",LL_ACK
+33,"17.05.2023 00:01:16,361",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=8),,"Count=11, Address=$0104, Data=34 00 00 00 00 00 00 00 00 00 00",LL_ACK
+34,"17.05.2023 00:01:16,364",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=8),,"",LL_ACK
+35,"17.05.2023 00:01:16,485",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=9),,"Count=1, Address=$B6EC",LL_ACK
+36,"17.05.2023 00:01:16,488",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=9),,"",LL_ACK
+37,"17.05.2023 00:01:16,490",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=6),,"Count=1, Address=$B6EC, Data=$00",LL_ACK
+38,"17.05.2023 00:01:16,495",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=6),,"",LL_ACK
+39,"17.05.2023 00:01:16,502",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=10),,"Count=11, Address=$0104, Data=11 00 00 00 00 00 00 00 00 00 00",LL_ACK
+40,"17.05.2023 00:01:16,504",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=10),,"",LL_ACK
+41,"17.05.2023 00:01:16,623",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=11),,"Count=1, Address=$B6EA",LL_ACK
+42,"17.05.2023 00:01:16,625",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=11),,"",LL_ACK
+43,"17.05.2023 00:01:16,628",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=7),,"Count=1, Address=$B6EA, Data=$02",LL_ACK
+44,"17.05.2023 00:01:16,635",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=7),,"",LL_ACK
+45,"17.05.2023 00:01:16,654",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=12),,"Count=11, Address=$0104, Data=13 00 00 40 00 00 03 F2 03 80 00",LL_ACK
+46,"17.05.2023 00:01:16,657",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=12),,"",LL_ACK
+47,"17.05.2023 00:01:16,777",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=13),,"Count=1, Address=$B6EA",LL_ACK
+48,"17.05.2023 00:01:16,780",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=13),,"",LL_ACK
+49,"17.05.2023 00:01:16,792",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=8),,"Count=1, Address=$B6EA, Data=$02",LL_ACK
+50,"17.05.2023 00:01:16,800",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=8),,"",LL_ACK
+51,"17.05.2023 00:01:16,808",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=14),,"Count=1, Address=$4000",LL_ACK
+52,"17.05.2023 00:01:16,811",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=14),,"",LL_ACK
+53,"17.05.2023 00:01:16,813",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=9),,"Count=1, Address=$4000, Data=$01",LL_ACK
+54,"17.05.2023 00:01:16,817",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=9),,"",LL_ACK
+55,"17.05.2023 00:01:16,827",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=15),,"Count=11, Address=$0104, Data=13 02 00 40 00 00 00 C5 07 0E 11",LL_ACK
+56,"17.05.2023 00:01:16,829",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=15),,"",LL_ACK
+57,"17.05.2023 00:01:16,951",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=0),,"Count=1, Address=$B6EA",LL_ACK
+58,"17.05.2023 00:01:16,953",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+59,"17.05.2023 00:01:16,955",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=10),,"Count=1, Address=$B6EA, Data=$02",LL_ACK
+60,"17.05.2023 00:01:16,960",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=10),,"",LL_ACK
+61,"17.05.2023 00:01:16,968",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=1),,"Count=11, Address=$0104, Data=12 00 00 00 00 00 00 00 00 00 00",LL_ACK
+62,"17.05.2023 00:01:16,970",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+63,"17.05.2023 00:01:17,093",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=2),,"Count=1, Address=$B6EA",LL_ACK
+64,"17.05.2023 00:01:17,095",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+65,"17.05.2023 00:01:17,097",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=11),,"Count=1, Address=$B6EA, Data=$01",LL_ACK
+66,"17.05.2023 00:01:17,106",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=11),,"",LL_ACK
+67,"17.05.2023 00:01:17,114",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=3),,"Count=11, Address=$0104, Data=21 00 00 00 00 00 00 00 00 00 00",LL_ACK
+68,"17.05.2023 00:01:17,117",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+69,"17.05.2023 00:01:17,229",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=4),,"Count=1, Address=$B6EB",LL_ACK
+70,"17.05.2023 00:01:17,231",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=4),,"",LL_ACK
+71,"17.05.2023 00:01:17,233",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=12),,"Count=1, Address=$B6EB, Data=$02",LL_ACK
+72,"17.05.2023 00:01:17,241",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=12),,"",LL_ACK
+73,"17.05.2023 00:01:17,249",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=5),,"Count=11, Address=$0104, Data=23 00 00 40 03 00 29 F2 03 80 00",LL_ACK
+74,"17.05.2023 00:01:17,251",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=5),,"",LL_ACK
+75,"17.05.2023 00:01:17,370",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=6),,"Count=1, Address=$B6EB",LL_ACK
+76,"17.05.2023 00:01:17,372",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=6),,"",LL_ACK
+77,"17.05.2023 00:01:17,375",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=13),,"Count=1, Address=$B6EB, Data=$02",LL_ACK
+78,"17.05.2023 00:01:17,383",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=13),,"",LL_ACK
+79,"17.05.2023 00:01:17,391",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=7),,"Count=1, Address=$4003",LL_ACK
+80,"17.05.2023 00:01:17,393",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=7),,"",LL_ACK
+81,"17.05.2023 00:01:17,395",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=14),,"Count=1, Address=$4003, Data=$00",LL_ACK
+82,"17.05.2023 00:01:17,403",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=14),,"",LL_ACK
+83,"17.05.2023 00:01:17,409",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=8),,"Count=11, Address=$0104, Data=23 02 00 40 03 00 00 C5 07 0E 11",LL_ACK
+84,"17.05.2023 00:01:17,411",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=8),,"",LL_ACK
+85,"17.05.2023 00:01:17,527",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=9),,"Count=1, Address=$B6EB",LL_ACK
+86,"17.05.2023 00:01:17,529",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=9),,"",LL_ACK
+87,"17.05.2023 00:01:17,531",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=15),,"Count=1, Address=$B6EB, Data=$02",LL_ACK
+88,"17.05.2023 00:01:17,537",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=15),,"",LL_ACK
+89,"17.05.2023 00:01:17,546",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=10),,"Count=11, Address=$0104, Data=22 00 00 00 00 00 00 00 00 00 00",LL_ACK
+90,"17.05.2023 00:01:17,548",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=10),,"",LL_ACK
+91,"17.05.2023 00:01:17,668",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=11),,"Count=1, Address=$B6EB",LL_ACK
+92,"17.05.2023 00:01:17,670",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=11),,"",LL_ACK
+93,"17.05.2023 00:01:17,672",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=0),,"Count=1, Address=$B6EB, Data=$01",LL_ACK
+94,"17.05.2023 00:01:17,684",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=0),,"",LL_ACK
+95,"17.05.2023 00:01:17,694",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=12),,"Count=11, Address=$0104, Data=31 00 00 00 00 00 00 00 00 00 00",LL_ACK
+96,"17.05.2023 00:01:17,697",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=12),,"",LL_ACK
+97,"17.05.2023 00:01:17,823",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=13),,"Count=1, Address=$B6EC",LL_ACK
+98,"17.05.2023 00:01:17,826",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=13),,"",LL_ACK
+99,"17.05.2023 00:01:17,828",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=1),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+100,"17.05.2023 00:01:17,835",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=1),,"",LL_ACK
+101,"17.05.2023 00:01:17,850",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=14),,"Count=11, Address=$0104, Data=33 00 00 07 00 00 F8 F1 02 00 00",LL_ACK
+102,"17.05.2023 00:01:17,852",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=14),,"",LL_ACK
+103,"17.05.2023 00:01:17,963",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=15),,"Count=1, Address=$B6EC",LL_ACK
+104,"17.05.2023 00:01:17,966",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=15),,"",LL_ACK
+105,"17.05.2023 00:01:17,968",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=2),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+106,"17.05.2023 00:01:17,990",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=2),,"",LL_ACK
+107,"17.05.2023 00:01:18,000",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=0),,"Count=11, Address=$0104, Data=33 00 00 40 2C 00 5C F1 03 80 00",LL_ACK
+108,"17.05.2023 00:01:18,003",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+109,"17.05.2023 00:01:18,121",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=1),,"Count=1, Address=$B6EC",LL_ACK
+110,"17.05.2023 00:01:18,124",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+111,"17.05.2023 00:01:18,126",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=3),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+112,"17.05.2023 00:01:18,133",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=3),,"",LL_ACK
+113,"17.05.2023 00:01:18,143",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=2),,"Count=52, Address=$402C",LL_ACK
+114,"17.05.2023 00:01:18,146",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+115,"17.05.2023 00:01:18,149",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=4),,"Count=4, Address=$402C, Data=08 07 09 07",LL_ACK
+116,"17.05.2023 00:01:18,159",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=4),,"",LL_ACK
+117,"17.05.2023 00:01:23,396",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=3),,"Count=52, Address=$402C",LL_ACK
+118,"17.05.2023 00:01:23,399",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+119,"17.05.2023 00:01:23,401",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=5),,"Count=4, Address=$402C, Data=08 07 09 07",LL_ACK
+120,"17.05.2023 00:01:23,415",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=5),,"",LL_ACK
+121,"17.05.2023 00:01:28,429",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=4),,"Count=12, Address=$402C",LL_ACK
+122,"17.05.2023 00:01:28,432",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=4),,"",LL_ACK
+123,"17.05.2023 00:01:28,434",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=6),,"Count=12, Address=$402C, Data=08 07 09 07 00 DF 00 07 01 DF 00 07",LL_ACK
+124,"17.05.2023 00:01:28,444",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=6),,"",LL_ACK
+125,"17.05.2023 00:01:28,451",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=5),,"Count=12, Address=$4038",LL_ACK
+126,"17.05.2023 00:01:28,453",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=5),,"",LL_ACK
+127,"17.05.2023 00:01:28,456",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=7),,"Count=12, Address=$4038, Data=02 DF 00 07 03 DF 00 07 04 DF 00 07",LL_ACK
+128,"17.05.2023 00:01:28,461",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=7),,"",LL_ACK
+129,"17.05.2023 00:01:28,468",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=6),,"Count=12, Address=$4044",LL_ACK
+130,"17.05.2023 00:01:28,470",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=6),,"",LL_ACK
+131,"17.05.2023 00:01:28,472",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=8),,"Count=12, Address=$4044, Data=05 DF 00 07 06 DF 00 07 07 DF 00 40",LL_ACK
+132,"17.05.2023 00:01:28,478",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=8),,"",LL_ACK
+133,"17.05.2023 00:01:28,485",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=7),,"Count=12, Address=$4050",LL_ACK
+134,"17.05.2023 00:01:28,487",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=7),,"",LL_ACK
+135,"17.05.2023 00:01:28,489",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=9),,"Count=12, Address=$4050, Data=51 06 01 04 00 01 F0 40 7C C9 82 00",LL_ACK
+136,"17.05.2023 00:01:28,494",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=9),,"",LL_ACK
+137,"17.05.2023 00:01:28,502",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=8),,"Count=4, Address=$405C",LL_ACK
+138,"17.05.2023 00:01:28,504",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=8),,"",LL_ACK
+139,"17.05.2023 00:01:28,506",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=10),,"Count=4, Address=$405C, Data=01 FF 07 00",LL_ACK
+140,"17.05.2023 00:01:28,518",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=10),,"",LL_ACK
+141,"17.05.2023 00:01:28,528",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=9),,"Count=12, Address=$4060",LL_ACK
+142,"17.05.2023 00:01:28,530",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=9),,"",LL_ACK
+143,"17.05.2023 00:01:28,532",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=11),,"Count=12, Address=$4060, Data=CA 82 00 01 FF 07 01 CB C2 00 01 FF",LL_ACK
+144,"17.05.2023 00:01:28,539",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=11),,"",LL_ACK
+145,"17.05.2023 00:01:28,546",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=10),,"Count=12, Address=$406C",LL_ACK
+146,"17.05.2023 00:01:28,548",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=10),,"",LL_ACK
+147,"17.05.2023 00:01:28,550",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=12),,"Count=12, Address=$406C, Data=00 01 CC C2 00 01 FF 00 02 CD C0 00",LL_ACK
+148,"17.05.2023 00:01:28,560",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=12),,"",LL_ACK
+149,"17.05.2023 00:01:28,572",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=11),,"Count=12, Address=$4078",LL_ACK
+150,"17.05.2023 00:01:28,574",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=11),,"",LL_ACK
+151,"17.05.2023 00:01:28,577",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=13),,"Count=12, Address=$4078, Data=01 FF 00 03 00 00 39 00 57 7A 40 2C",LL_ACK
+152,"17.05.2023 00:01:28,586",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=13),,"",LL_ACK
+153,"17.05.2023 00:01:28,594",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=12),,"Count=4, Address=$4084",LL_ACK
+154,"17.05.2023 00:01:28,596",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=12),,"",LL_ACK
+155,"17.05.2023 00:01:28,598",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=14),,"Count=4, Address=$4084, Data=00 01 00 00",LL_ACK
+156,"17.05.2023 00:01:28,613",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=14),,"",LL_ACK
+157,"17.05.2023 00:01:28,625",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=13),,"Count=11, Address=$0104, Data=33 00 00 43 00 01 01 22 03 80 00",LL_ACK
+158,"17.05.2023 00:01:28,627",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=13),,"",LL_ACK
+159,"17.05.2023 00:01:28,750",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=14),,"Count=1, Address=$B6EC",LL_ACK
+160,"17.05.2023 00:01:28,752",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=14),,"",LL_ACK
+161,"17.05.2023 00:01:28,754",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=15),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+162,"17.05.2023 00:01:28,762",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=15),,"",LL_ACK
+163,"17.05.2023 00:01:28,776",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=15),,"Count=12, Address=$4300",LL_ACK
+164,"17.05.2023 00:01:28,778",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=15),,"",LL_ACK
+165,"17.05.2023 00:01:28,780",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=0),,"Count=12, Address=$4300, Data=00 00 FF 00 03 00 00 00 08 00 0B 07",LL_ACK
+166,"17.05.2023 00:01:28,785",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=0),,"",LL_ACK
+167,"17.05.2023 00:01:28,800",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=0),,"Count=12, Address=$430C",LL_ACK
+168,"17.05.2023 00:01:28,802",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+169,"17.05.2023 00:01:28,805",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=1),,"Count=12, Address=$430C, Data=01 00 06 00 08 00 02 00 02 03 06 03",LL_ACK
+170,"17.05.2023 00:01:28,810",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=1),,"",LL_ACK
+171,"17.05.2023 00:01:28,817",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=1),,"Count=7, Address=$4318",LL_ACK
+172,"17.05.2023 00:01:28,819",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+173,"17.05.2023 00:01:28,821",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=2),,"Count=7, Address=$4318, Data=E8 00 0B 00 00 11 F0",LL_ACK
+174,"17.05.2023 00:01:28,826",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=2),,"",LL_ACK
+175,"17.05.2023 00:01:28,835",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=2),,"Count=1, Address=$4324",LL_ACK
+176,"17.05.2023 00:01:28,837",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+177,"17.05.2023 00:01:28,839",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=3),,"Count=1, Address=$4324, Data=$00",LL_ACK
+178,"17.05.2023 00:01:28,845",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=3),,"",LL_ACK
+179,"17.05.2023 00:01:28,853",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=3),,"Count=12, Address=$4331",LL_ACK
+180,"17.05.2023 00:01:28,855",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+181,"17.05.2023 00:01:28,858",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=4),,"Count=12, Address=$4331, Data=01 02 03 04 05 09 E0 00 17 0C 00 00",LL_ACK
+182,"17.05.2023 00:01:28,865",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=4),,"",LL_ACK
+183,"17.05.2023 00:01:28,873",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=4),,"Count=2, Address=$433D",LL_ACK
+184,"17.05.2023 00:01:28,875",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=4),,"",LL_ACK
+185,"17.05.2023 00:01:28,877",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=5),,"Count=2, Address=$433D, Data=00 00",LL_ACK
+186,"17.05.2023 00:01:28,883",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=5),,"",LL_ACK
+187,"17.05.2023 00:01:28,895",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=5),,"Count=4, Address=$4340",LL_ACK
+188,"17.05.2023 00:01:28,898",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=5),,"",LL_ACK
+189,"17.05.2023 00:01:28,900",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=6),,"Count=4, Address=$4340, Data=00 03 00 00",LL_ACK
+190,"17.05.2023 00:01:28,920",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=6),,"",LL_ACK
+191,"17.05.2023 00:01:28,928",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=6),,"Count=2, Address=$4372",LL_ACK
+192,"17.05.2023 00:01:28,931",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=6),,"",LL_ACK
+193,"17.05.2023 00:01:28,932",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=7),,"Count=2, Address=$4372, Data=01 04",LL_ACK
+194,"17.05.2023 00:01:28,940",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=7),,"",LL_ACK
+195,"17.05.2023 00:01:28,950",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=7),,"Count=6, Address=$43C0",LL_ACK
+196,"17.05.2023 00:01:28,953",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=7),,"",LL_ACK
+197,"17.05.2023 00:01:28,957",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=8),,"Count=6, Address=$43C0, Data=FF FF FF FF 00 37",LL_ACK
+198,"17.05.2023 00:01:28,967",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=8),,"",LL_ACK
+199,"17.05.2023 00:01:28,978",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=8),,"Count=11, Address=$0104, Data=33 02 00 40 7E 00 00 C5 07 0E 11",LL_ACK
+200,"17.05.2023 00:01:28,981",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=8),,"",LL_ACK
+201,"17.05.2023 00:01:29,093",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=9),,"Count=1, Address=$B6EC",LL_ACK
+202,"17.05.2023 00:01:29,096",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=9),,"",LL_ACK
+203,"17.05.2023 00:01:29,098",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=9),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+204,"17.05.2023 00:01:29,111",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=9),,"",LL_ACK
+205,"17.05.2023 00:01:29,117",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=10),,"Count=11, Address=$0104, Data=33 04 00 00 00 00 00 00 00 00 00",LL_ACK
+206,"17.05.2023 00:01:29,119",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=10),,"",LL_ACK
+207,"17.05.2023 00:01:29,250",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=11),,"Count=1, Address=$B6EC",LL_ACK
+208,"17.05.2023 00:01:29,266",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=11),,"",LL_ACK
+209,"17.05.2023 00:01:29,270",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=10),,"Count=1, Address=$B6EC, Data=$02",LL_ACK
+210,"17.05.2023 00:01:29,283",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=10),,"",LL_ACK
+211,"17.05.2023 00:01:29,293",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Write (S=12),,"Count=11, Address=$0104, Data=32 00 00 00 00 00 00 00 00 00 00",LL_ACK
+212,"17.05.2023 00:01:29,296",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=12),,"",LL_ACK
+213,"17.05.2023 00:01:29,421",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,Memory_Read (S=13),,"Count=1, Address=$B6EC",LL_ACK
+214,"17.05.2023 00:01:29,423",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=13),,"",LL_ACK
+215,"17.05.2023 00:01:29,425",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,Memory_Response (S=11),,"Count=1, Address=$B6EC, Data=$01",LL_ACK
+216,"17.05.2023 00:01:29,433",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=11),,"",LL_ACK
+217,"17.05.2023 00:01:29,449",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Read (S=14),,"ObjectIndex=5, PropertyId=1, Count=1, StartIndex=1",LL_ACK
+218,"17.05.2023 00:01:29,451",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=14),,"",LL_ACK
+219,"17.05.2023 00:01:29,453",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=12),,"ObjectIndex=5, PropertyId=1, Count=1, StartIndex=1, Data=00 08",LL_ACK
+220,"17.05.2023 00:01:29,457",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=12),,"",LL_ACK
+221,"17.05.2023 00:01:29,463",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Read (S=15),,"ObjectIndex=6, PropertyId=1, Count=1, StartIndex=1",LL_ACK
+222,"17.05.2023 00:01:29,465",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=15),,"",LL_ACK
+223,"17.05.2023 00:01:29,467",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=13),,"ObjectIndex=6, PropertyId=1, Count=1, StartIndex=1, Data=00 0B",LL_ACK
+224,"17.05.2023 00:01:29,473",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=13),,"",LL_ACK
+225,"17.05.2023 00:01:29,481",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Read (S=0),,"ObjectIndex=6, PropertyId=64, Count=1, StartIndex=1",LL_ACK
+226,"17.05.2023 00:01:29,483",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+227,"17.05.2023 00:01:29,486",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=14),,"ObjectIndex=6, PropertyId=64, Count=1, StartIndex=1, Data=00 24 6D 01 30 09",LL_ACK
+228,"17.05.2023 00:01:29,492",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=14),,"",LL_ACK
+229,"17.05.2023 00:01:29,501",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=1),,"ObjectIndex=6, PropertyId=51, Count=1, StartIndex=1, Data=00 00",LL_ACK
+230,"17.05.2023 00:01:29,509",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+231,"17.05.2023 00:01:29,511",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=15),,"ObjectIndex=6, PropertyId=51, Count=1, StartIndex=1, Data=00 00",LL_ACK
+232,"17.05.2023 00:01:29,517",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=15),,"",LL_ACK
+233,"17.05.2023 00:01:29,534",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=2),,"ObjectIndex=6, PropertyId=66, Count=1, StartIndex=1, Data=E0 00 17 0C",LL_ACK
+234,"17.05.2023 00:01:29,537",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+235,"17.05.2023 00:01:29,540",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=0),,"ObjectIndex=6, PropertyId=66, Count=1, StartIndex=1, Data=E0 00 17 0C",LL_ACK
+236,"17.05.2023 00:01:29,555",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=0),,"",LL_ACK
+237,"17.05.2023 00:01:29,564",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=3),,"ObjectIndex=6, PropertyId=67, Count=1, StartIndex=1, Data=$10",LL_ACK
+238,"17.05.2023 00:01:29,566",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+239,"17.05.2023 00:01:29,568",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=1),,"ObjectIndex=6, PropertyId=67, Count=1, StartIndex=1, Data=$10",LL_ACK
+240,"17.05.2023 00:01:29,575",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=1),,"",LL_ACK
+241,"17.05.2023 00:01:29,605",zum Bus,E,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=4),,"ObjectIndex=6, PropertyId=76, Count=15, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74 65 72 66 61 63",LL_ACK
+242,"17.05.2023 00:01:32,605",zum Bus,E,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=4),,"ObjectIndex=6, PropertyId=76, Count=15, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74 65 72 66 61 63",LL_ACK
+243,"17.05.2023 00:01:35,587",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_Disconnect,,"",LL_ACK
+244,"17.05.2023 00:01:35,803",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_Connect,,"",LL_ACK
+245,"17.05.2023 00:01:35,810",zum Bus,E,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=0),,"ObjectIndex=6, PropertyId=76, Count=15, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74 65 72 66 61 63",LL_ACK
+246,"17.05.2023 00:01:38,812",zum Bus,E,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=0),,"ObjectIndex=6, PropertyId=76, Count=15, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74 65 72 66 61 63",LL_ACK
+247,"17.05.2023 00:01:41,804",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_Disconnect,,"",LL_ACK
+248,"17.05.2023 00:01:41,821",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_Connect,,"",LL_ACK
+249,"17.05.2023 00:01:41,827",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=0),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74",LL_ACK
+250,"17.05.2023 00:01:41,829",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=0),,"",LL_ACK
+251,"17.05.2023 00:01:41,832",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=0),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=1, Data=4B 4E 58 20 49 50 20 49 6E 74",LL_ACK
+252,"17.05.2023 00:01:41,837",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=0),,"",LL_ACK
+253,"17.05.2023 00:01:41,843",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=1),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=11, Data=65 72 66 61 63 65 20 37 33 31",LL_ACK
+254,"17.05.2023 00:01:41,845",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=1),,"",LL_ACK
+255,"17.05.2023 00:01:41,847",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=1),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=11, Data=65 72 66 61 63 65 20 37 33 31",LL_ACK
+256,"17.05.2023 00:01:41,856",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=1),,"",LL_ACK
+257,"17.05.2023 00:01:41,865",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=2),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=21, Data=00 00 00 00 00 00 00 00 00 00",LL_ACK
+258,"17.05.2023 00:01:41,867",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=2),,"",LL_ACK
+259,"17.05.2023 00:01:41,869",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=2),,"ObjectIndex=6, PropertyId=76, Count=10, StartIndex=21, Data=00 00 00 00 00 00 00 00 00 00",LL_ACK
+260,"17.05.2023 00:01:41,876",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=2),,"",LL_ACK
+261,"17.05.2023 00:01:41,885",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=3),,"ObjectIndex=6, PropertyId=55, Count=1, StartIndex=1, Data=$01",LL_ACK
+262,"17.05.2023 00:01:41,887",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=3),,"",LL_ACK
+263,"17.05.2023 00:01:41,889",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=3),,"ObjectIndex=6, PropertyId=55, Count=1, StartIndex=1, Data=$01",LL_ACK
+264,"17.05.2023 00:01:41,899",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=3),,"",LL_ACK
+265,"17.05.2023 00:01:41,909",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=4),,"ObjectIndex=6, PropertyId=60, Count=1, StartIndex=1, Data=0A 14 1E 02",LL_ACK
+266,"17.05.2023 00:01:41,911",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=4),,"",LL_ACK
+267,"17.05.2023 00:01:41,914",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=4),,"ObjectIndex=6, PropertyId=60, Count=1, StartIndex=1, Data=0A 14 1E 02",LL_ACK
+268,"17.05.2023 00:01:41,929",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=4),,"",LL_ACK
+269,"17.05.2023 00:01:41,939",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=5),,"ObjectIndex=6, PropertyId=61, Count=1, StartIndex=1, Data=FF FF FF 00",LL_ACK
+270,"17.05.2023 00:01:41,942",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=5),,"",LL_ACK
+271,"17.05.2023 00:01:41,944",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=5),,"ObjectIndex=6, PropertyId=61, Count=1, StartIndex=1, Data=FF FF FF 00",LL_ACK
+272,"17.05.2023 00:01:41,955",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=5),,"",LL_ACK
+273,"17.05.2023 00:01:41,970",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=6),,"ObjectIndex=6, PropertyId=62, Count=1, StartIndex=1, Data=0A 14 1E 01",LL_ACK
+274,"17.05.2023 00:01:41,973",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=6),,"",LL_ACK
+275,"17.05.2023 00:01:41,975",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=6),,"ObjectIndex=6, PropertyId=62, Count=1, StartIndex=1, Data=0A 14 1E 01",LL_ACK
+276,"17.05.2023 00:01:41,987",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=6),,"",LL_ACK
+277,"17.05.2023 00:01:42,007",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,PropertyValue_Write (S=7),,"ObjectIndex=6, PropertyId=53, Count=5, StartIndex=1, Data=11 02 11 03 11 04 11 05 11 06",LL_ACK
+278,"17.05.2023 00:01:42,009",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,T_ACK (S=7),,"",LL_ACK
+279,"17.05.2023 00:01:42,011",vom Bus,,System,1.1.1,"KNX IP Interface 731",1.1.2,"",6,PropertyValue_Response (S=7),,"ObjectIndex=6, PropertyId=53, Count=5, StartIndex=1, Data=11 02 11 03 11 04 11 05 11 06",LL_ACK
+280,"17.05.2023 00:01:42,017",zum Bus,,System,1.1.2,"",1.1.1,"KNX IP Interface 731",6,T_ACK (S=7),,"",LL_ACK
+281,"17.05.2023 00:01:47,158",,,,,,,,,,,"Verbindung verloren",
+282,"17.05.2023 00:01:50,172",,,,,,,,,,,"Verbindung verloren",

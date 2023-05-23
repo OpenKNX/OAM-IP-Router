@@ -7,6 +7,8 @@
     "files.associations": {
         "new": "cpp",
         "functional": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "*.tcc": "cpp",
+        "limits": "cpp"
     }
 }

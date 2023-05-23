@@ -10,7 +10,7 @@ void setup()
     openknx.init(firmwareRevision);
 
     openknx.addModule(1, new IPConfigModule());
-    Serial.println("FooBar2");
+    
     openknx.setup();
 }
 

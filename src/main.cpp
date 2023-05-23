@@ -70,6 +70,12 @@ void setup()
 
     openknx.setup();
 
+    uint8_t NoOfElem = 1;
+    uint8_t *data;
+    uint32_t length;
+    knx.bau().propertyValueRead(OT_IP_PARAMETER, 0, PID_IP_ADDRESS, NoOfElem, 1, &data, length);
+
+    printHex("PID_IP_ADDRESS: ", data, length);
 }
 
 void loop()

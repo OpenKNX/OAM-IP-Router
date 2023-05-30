@@ -1,8 +1,9 @@
 #include "OpenKNX.h"
 #include "IPConfig.h"
-#include <Ethernet_Generic.h>
 
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
+
+
 
 void setup()
 {

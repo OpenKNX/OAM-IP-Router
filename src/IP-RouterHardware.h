@@ -7,6 +7,7 @@
 #define OKNXHW_REG1_CONTROLLER2040
 #include "OpenKNXHardware.h"
 
+#define ETHERNET_GENERIC_USING_SPI2 true
 #define PIN_MISO_ (28)
 #define PIN_MOSI_ (27)
 #define PIN_SCK_ (26)
@@ -34,18 +35,21 @@
 #define KNX_UART_TX_PIN 0
 
 // Definition for PiPico / SPI0
+//#define ETHERNET_GENERIC_USING_SPI2 false
 //#define PIN_MISO_ (16)
 //#define PIN_MOSI_ (19)
 //#define PIN_SCK_ (18)
 //#define PIN_SS_ (17)
 
 // Definition for PiPico / SPI1 (default)
+#define ETHERNET_GENERIC_USING_SPI2 true
 #define PIN_MISO_ (12)
 #define PIN_MOSI_ (15)
 #define PIN_SCK_ (14)
 #define PIN_SS_ (13)
 
 // Definition for PiPico / SPI1
+//#define ETHERNET_GENERIC_USING_SPI2 true
 //#define PIN_MISO_ (12)
 //#define PIN_MOSI_ (11)
 //#define PIN_SCK_ (10)
@@ -75,6 +79,7 @@
 #define KNX_UART_TX_PIN 0
 
 // Definition for PiPico / SPI0
+#define ETHERNET_GENERIC_USING_SPI2 false
 #define PIN_MISO_ (16)
 #define PIN_MOSI_ (19)
 #define PIN_SCK_ (18)
@@ -120,7 +125,5 @@
 
 
 //#define PIN_SD_SS (9)
-//#define PIN_ETH_INT (10)
-//#define PIN_ETH_RES (11)
 
 #endif

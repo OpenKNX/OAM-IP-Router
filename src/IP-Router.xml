@@ -24,15 +24,20 @@
               <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
                 <LdCtrlConnect />
                 <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
+                </LdCtrlCompareProp>
                 <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
                 <LdCtrlLoad ObjType="6" />
                 <LdCtrlLoadCompleted ObjType="6" />
-                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
                 <LdCtrlLoad ObjType="3" />
                 <LdCtrlLoadCompleted ObjType="3" />
                 <LdCtrlRestart />
               </LoadProcedure>
             </LoadProcedures>
+            <Messages>
+              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+            </Messages>
             <Options LegacyNoPartialDownload="true" LineCoupler0912NewProgrammingStyle="true"
               DownloadInvisibleParameters="Background" />
           </Static>
@@ -43,7 +48,7 @@
         </ApplicationProgram>
       </ApplicationPrograms>
       <Hardware>
-        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="50000" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
+        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
             <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />

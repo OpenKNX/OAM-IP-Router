@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.3.0.0">
+  <ManufacturerData>
+    <Manufacturer RefId="M-00FA">
+      <Catalog>
+        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
+          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-01-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-01-0000" DefaultLanguage="de" />
+        </CatalogSection>
+      </Catalog>
+      <ApplicationPrograms>
+        <!-- Each increase of AppliationVersion FORCES the Enduser to update according firmware, too -->
+        <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
+        <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
+        <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
+        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="1" ReplacesVersions="0" ApplicationRevision="0" -->
+        <ApplicationProgram Id="M-00FA_A-A11E-01-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="ProductProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="1" ReplacesVersions="0">
+          <Static>
+            <Code>
+              <AbsoluteSegment Id="M-00FA_A-A11E-01-0000_AS-0100" Address="256" Size="256" />
+            </Code>
+            <LoadProcedures>
+              <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
+                <LdCtrlConnect />
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+                <LdCtrlCompareProp InlineData="0000A11E0100" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-01-0000_M-1" />
+                </LdCtrlCompareProp>
+                <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
+                <LdCtrlLoad ObjType="6" />
+                <LdCtrlLoadCompleted ObjType="6" />
+                <LdCtrlLoad ObjType="3" />
+                <LdCtrlLoadCompleted ObjType="3" />
+                <LdCtrlRestart />
+              </LoadProcedure>
+            </LoadProcedures>
+            <Messages>
+              <Message Id="M-00FA_A-A11E-01-0000_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+            </Messages>
+            <Options LegacyNoPartialDownload="true" LineCoupler0912NewProgrammingStyle="true" DownloadInvisibleParameters="Background" />
+          </Static>
+          <Dynamic>
+            <ChannelIndependentBlock>
+            </ChannelIndependentBlock>
+          </Dynamic>
+        </ApplicationProgram>
+      </ApplicationPrograms>
+      <Hardware>
+        <Hardware Id="M-00FA_H-1-1" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
+          <Products>
+            <Product Id="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" DefaultLanguage="de">
+              <RegistrationInfo RegistrationStatus="Registered" />
+            </Product>
+          </Products>
+          <Hardware2Programs>
+            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-01-0000" MediumTypes="MT-0">
+              <ApplicationProgramRef RefId="M-00FA_A-A11E-01-0000" />
+              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/11" />
+            </Hardware2Program>
+          </Hardware2Programs>
+        </Hardware>
+      </Hardware>
+    </Manufacturer>
+  </ManufacturerData>
+</KNX>

@@ -27,5 +27,7 @@ ToDos:
 - Verhalten wenn kein Ethernetchip / getrennt im Betrieb
 - HW-Reset Ethernetchip
 - Verhalten wenn kein Link - Link getrennt - Link wieder da
+- set PID_KNXNETIP_DEVICE_CAPABILITIES
+- set PID_KNXNETIP_DEVICE_STATE 
 
 */

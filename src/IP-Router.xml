@@ -13,14 +13,34 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="1" ReplacesVersions="0" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="3" ReplacesVersions="1" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="ProductProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0">
           <Static>
-            <Code>
-              <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
-            </Code>
-            
+            <ParameterTypes>
+              <ParameterType Id="%AID%_PT-ParameterTypeMultCast" Name="ParameterTypeMultCast">
+                <TypeIPAddress AddressType="MulticastAddress" SizeInBit="32"/>
+              </ParameterType>
+            </ParameterTypes>
+            <Parameters>
+              <Parameter Id="%AID%_P-0000001" Name="MultiCast" ParameterType="%AID%_PT-ParameterTypeMultCast" Text="MultiCast" Value="224.0.23.12">
+                <Property ObjectType="11" PropertyId="66" Offset="0" BitOffset="0" />
+              </Parameter>
+            </Parameters>
+            <ParameterRefs>
+              <ParameterRef Id="%AID%_P-0000001_R-000000101" RefId="%AID%_P-0000001" />
+            </ParameterRefs>
             <LoadProcedures>
+              <LoadProcedure MergeId="1">
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+              </LoadProcedure>
+              <LoadProcedure MergeId="3">
+                <LdCtrlWriteProp InternalDescription="PID_SUB_MultiCast (66)" ObjType="11" PropId="66" Verify="false" />
+              </LoadProcedure>
+              <LoadProcedure MergeId="5">
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+              </LoadProcedure>
+            </LoadProcedures>
+            <!--<LoadProcedures>
               <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
                 <LdCtrlConnect />
                 <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
@@ -32,9 +52,11 @@
                 <LdCtrlLoadCompleted ObjType="6" />
                 <LdCtrlLoad ObjType="3" />
                 <LdCtrlLoadCompleted ObjType="3" />
+                <LdCtrlWriteProp InternalDescription="PID_SUB_MultiCast (66)" ObjType="11" PropId="66" Verify="false" />
                 <LdCtrlRestart />
               </LoadProcedure>
-            </LoadProcedures>
+            </LoadProcedures>-->
+
             <Messages>
               <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
@@ -43,6 +65,10 @@
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
+              <ParameterBlock Id="%AID%_PB-1" Name="General" Text="General">
+                <ParameterSeparator Id="%AID%_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+                <ParameterRefRef RefId="%AID%_P-0000001_R-000000101" />
+              </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>

@@ -2,6 +2,7 @@
 #include "IPConfig.h"
 
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
+#pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 
 OpenKNX::Log::VirtualSerial ETG_SERIAL = OpenKNX::Log::VirtualSerial("ETG");
 

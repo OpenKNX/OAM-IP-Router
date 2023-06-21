@@ -20,7 +20,7 @@
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "build_upload_USB_RP2040",
+                "upload_USB_RP2040",
                 "upload"
             ],
             "group": "build",
@@ -33,7 +33,7 @@
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "build_upload_JLINK_RP2040",
+                "upload_JLINK_RP2040",
                 "upload"
             ],
             "group": "build",
@@ -48,7 +48,7 @@
             "args": [
                 "run",
                 "-e",
-                "build_upload_USB_RP2040",
+                "upload_USB_RP2040",
                 "--target",
                 "upload"
             ],
@@ -62,7 +62,7 @@
             "args": [
                 "run",
                 "-e",
-                "build_upload_JLINK_RP2040",
+                "upload_JLINK_RP2040",
                 "--target",
                 "upload"
             ],

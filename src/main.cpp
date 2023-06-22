@@ -25,6 +25,8 @@ void loop()
 
 /*
 ToDos:
+- ipconfig for different libs
+- console 
 - Verhalten wenn kein Ethernetchip / getrennt im Betrieb
 - HW-Reset Ethernetchip
 - Verhalten wenn kein Link - Link getrennt - Link wieder da

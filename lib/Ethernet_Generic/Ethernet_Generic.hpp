@@ -263,7 +263,7 @@ class EthernetClass
     inline const char* duplexReport(); // returns duplex mode as a string
     //////
     
-    inline EthernetLinkStatus linkStatus();
+    /*inline*/ EthernetLinkStatus linkStatus();
     inline EthernetHardwareStatus hardwareStatus();
 
     // Manual configuration

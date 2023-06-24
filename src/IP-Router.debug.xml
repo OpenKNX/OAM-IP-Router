@@ -5,7 +5,7 @@
     <Manufacturer RefId="M-00FA">
       <Catalog>
         <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-03-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-03-0000" DefaultLanguage="de" />
+          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-07-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-07-0000" DefaultLanguage="de" />
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
@@ -13,60 +13,32 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="3" ReplacesVersions="1" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11E-03-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="ProductProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="3" ReplacesVersions="1">
+        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="7" ReplacesVersions="1" ApplicationRevision="0" -->
+        <ApplicationProgram Id="M-00FA_A-A11E-07-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="7" ReplacesVersions="1">
           <Static>
-            <ParameterTypes>
-              <ParameterType Id="M-00FA_A-A11E-03-0000_PT-ParameterTypeMultCast" Name="ParameterTypeMultCast">
-                <TypeIPAddress AddressType="MulticastAddress" SizeInBit="32" />
-              </ParameterType>
-            </ParameterTypes>
-            <Parameters>
-              <Parameter Id="M-00FA_A-A11E-03-0000_P-0000001" Name="MultiCast" ParameterType="M-00FA_A-A11E-03-0000_PT-ParameterTypeMultCast" Text="MultiCast" Value="224.0.23.12">
-                <Property ObjectType="11" PropertyId="66" Offset="0" BitOffset="0" />
-              </Parameter>
-            </Parameters>
-            <ParameterRefs>
-              <ParameterRef Id="M-00FA_A-A11E-03-0000_P-0000001_R-000000101" RefId="M-00FA_A-A11E-03-0000_P-0000001" />
-            </ParameterRefs>
             <LoadProcedures>
               <LoadProcedure MergeId="1">
-                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
+                <LdCtrlCompareProp InlineData="0000A11E0700" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-07-0000_M-1" />
+                </LdCtrlCompareProp>
               </LoadProcedure>
               <LoadProcedure MergeId="3">
-                <LdCtrlWriteProp InternalDescription="PID_SUB_MultiCast (66)" ObjType="11" PropId="66" Verify="false" />
-              </LoadProcedure>
-              <LoadProcedure MergeId="5">
-                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
-              </LoadProcedure>
-            </LoadProcedures>
-            <!--<LoadProcedures>
-              <LoadProcedure ProcedureType="Load" ProcedureSubType="all">
-                <LdCtrlConnect />
-                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12" />
-                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
-                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
-                </LdCtrlCompareProp>
                 <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
-                <LdCtrlLoad ObjType="6" />
-                <LdCtrlLoadCompleted ObjType="6" />
+              </LoadProcedure>
+              <LoadProcedure MergeId="4">
                 <LdCtrlLoad ObjType="3" />
                 <LdCtrlLoadCompleted ObjType="3" />
-                <LdCtrlWriteProp InternalDescription="PID_SUB_MultiCast (66)" ObjType="11" PropId="66" Verify="false" />
-                <LdCtrlRestart />
               </LoadProcedure>
-            </LoadProcedures>-->
+            </LoadProcedures>
             <Messages>
-              <Message Id="M-00FA_A-A11E-03-0000_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <Message Id="M-00FA_A-A11E-07-0000_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
-            <Options LegacyNoPartialDownload="true" LineCoupler0912NewProgrammingStyle="true" DownloadInvisibleParameters="Background" />
+            <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="M-00FA_A-A11E-03-0000_PB-1" Name="General" Text="General">
-                <ParameterSeparator Id="M-00FA_A-A11E-03-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
-                <!-- ParameterRefRef MultiCast 'MultiCast'-->
-                <ParameterRefRef RefId="M-00FA_A-A11E-03-0000_P-0000001_R-000000101" />
+              <ParameterBlock Id="M-00FA_A-A11E-07-0000_PB-1" Name="General" Text="General">
+                <ParameterSeparator Id="M-00FA_A-A11E-07-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
               </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
@@ -75,14 +47,14 @@
       <Hardware>
         <Hardware Id="M-00FA_H-1-1" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
-            <Product Id="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" DefaultLanguage="de">
+            <Product Id="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />
             </Product>
           </Products>
           <Hardware2Programs>
-            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-03-0000" MediumTypes="MT-0">
-              <ApplicationProgramRef RefId="M-00FA_A-A11E-03-0000" />
-              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/13" />
+            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-07-0000" MediumTypes="MT-0">
+              <ApplicationProgramRef RefId="M-00FA_A-A11E-07-0000" />
+              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/17" />
             </Hardware2Program>
           </Hardware2Programs>
         </Hardware>

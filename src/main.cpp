@@ -35,14 +35,21 @@ IPConfig
 - set PID_KNXNETIP_DEVICE_CAPABILITIES
 - set PID_KNXNETIP_DEVICE_STATE 
 
+    PID_QUEUE_OVERFLOW_TO_IP = 72,
+    PID_QUEUE_OVERFLOW_TO_KNX = 73,
+    PID_MSG_TRANSMIT_TO_IP = 74,
+    PID_MSG_TRANSMIT_TO_KNX = 75,
+
 stack
 CHECK- return false for send*cast
-DONE - prog PA over TP does not work (U_STATE_IND_PE)
-DONE - default PA 15.15.0 not 15.15.255
-
-
-- returning 1.1.0 and 15.15.255 ?!
 - sending nonetheless, cemi frame valid length
+
+
+DONE
+-------
+DONE - prog PA over TP does not work (U_STATE_IND_PE) => network layer coupler
+DONE - default PA 15.15.0 not 15.15.255
+- returning 1.1.0 and 15.15.255 ?! => Home assistant
 
 
 */

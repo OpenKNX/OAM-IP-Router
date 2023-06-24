@@ -8,7 +8,7 @@ OpenKNX::Log::VirtualSerial ETG_SERIAL = OpenKNX::Log::VirtualSerial("ETG");
 
 void setup()
 {
-    const uint8_t firmwareRevision = 0;
+    const uint8_t firmwareRevision = 1;
     openknx.init(firmwareRevision);
 
     openknx.addModule(1, new IPConfigModule());
@@ -25,6 +25,10 @@ void loop()
 
 /*
 ToDos:
+knprod prop12
+
+investigate and fix FILTER_TABLE_USE (67)
+
 IPConfig
 - ipconfig for different libs
 - console 

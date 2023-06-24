@@ -13,25 +13,26 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="7" ReplacesVersions="1" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="8" ReplacesVersions="1" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0">
           <Static>
             <LoadProcedures>
               <LoadProcedure MergeId="1">
-                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
                   <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
                 </LdCtrlCompareProp>
-              </LoadProcedure>
-              <LoadProcedure MergeId="3">
-                <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
+                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
+                </LdCtrlCompareProp>
               </LoadProcedure>
               <LoadProcedure MergeId="4">
-              <LdCtrlLoad ObjType="3" />
-              <LdCtrlLoadCompleted ObjType="3" />
+                <LdCtrlLoad ObjType="3" />
+                <LdCtrlLoadCompleted ObjType="3" />
               </LoadProcedure>
             </LoadProcedures>
             <Messages>
-              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
+              <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>

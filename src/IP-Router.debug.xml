@@ -5,7 +5,7 @@
     <Manufacturer RefId="M-00FA">
       <Catalog>
         <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-07-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-07-0000" DefaultLanguage="de" />
+          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-08-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-08-0000" DefaultLanguage="de" />
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
@@ -13,17 +13,17 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="7" ReplacesVersions="1" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11E-07-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="7" ReplacesVersions="1">
+        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="8" ReplacesVersions="1" ApplicationRevision="0" -->
+        <ApplicationProgram Id="M-00FA_A-A11E-08-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="8" ReplacesVersions="1">
           <Static>
             <LoadProcedures>
               <LoadProcedure MergeId="1">
-                <LdCtrlCompareProp InlineData="0000A11E0700" ObjIdx="0" PropId="78">
-                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-07-0000_M-1" />
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
+                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-08-0000_M-1" />
                 </LdCtrlCompareProp>
-              </LoadProcedure>
-              <LoadProcedure MergeId="3">
-                <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="FF" />
+                <LdCtrlCompareProp InlineData="0000A11E0800" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-08-0000_M-2" />
+                </LdCtrlCompareProp>
               </LoadProcedure>
               <LoadProcedure MergeId="4">
                 <LdCtrlLoad ObjType="3" />
@@ -31,14 +31,15 @@
               </LoadProcedure>
             </LoadProcedures>
             <Messages>
-              <Message Id="M-00FA_A-A11E-07-0000_M-1" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <Message Id="M-00FA_A-A11E-08-0000_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
+              <Message Id="M-00FA_A-A11E-08-0000_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="M-00FA_A-A11E-07-0000_PB-1" Name="General" Text="General">
-                <ParameterSeparator Id="M-00FA_A-A11E-07-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+              <ParameterBlock Id="M-00FA_A-A11E-08-0000_PB-1" Name="General" Text="General">
+                <ParameterSeparator Id="M-00FA_A-A11E-08-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
               </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
@@ -52,9 +53,9 @@
             </Product>
           </Products>
           <Hardware2Programs>
-            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-07-0000" MediumTypes="MT-0">
-              <ApplicationProgramRef RefId="M-00FA_A-A11E-07-0000" />
-              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/17" />
+            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-08-0000" MediumTypes="MT-0">
+              <ApplicationProgramRef RefId="M-00FA_A-A11E-08-0000" />
+              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/18" />
             </Hardware2Program>
           </Hardware2Programs>
         </Hardware>

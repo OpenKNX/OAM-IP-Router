@@ -44,6 +44,9 @@ IPConfig
     PID_MSG_TRANSMIT_TO_IP = 74,
     PID_MSG_TRANSMIT_TO_KNX = 75,
 
+
+PID_MEDIUM_STATUS (wenn kein LAN...)
+
 stack
 CHECK- return false for send*cast
 - sending nonetheless, cemi frame valid length

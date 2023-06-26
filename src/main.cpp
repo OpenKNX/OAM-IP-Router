@@ -47,6 +47,7 @@ IPConfig
 stack
 CHECK- return false for send*cast
 - sending nonetheless, cemi frame valid length
+- _routerObj.initialize1x(DptMedium::KNX_IP, 220); model 1 or 2???
 
 
 DONE

@@ -13,9 +13,99 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="9" ReplacesVersions="1" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="10" ReplacesVersions="1" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0">
           <Static>
+            <ParameterTypes>
+              <ParameterType Id="%AID%_PT-Bool" Name="Bool">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Disabled" Value="0" Id="%AID%_PT-Bool_EN-0" />
+                  <Enumeration Text="Enabled" Value="1" Id="%AID%_PT-Bool_EN-1" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-RoutingWithFilter" Name="RoutingWithFilter">
+                <TypeRestriction Base="Value" SizeInBit="2">
+                  <Enumeration Text="Block" Value="2" Id="%AID%_PT-RoutingWithFilter_EN-2" />
+                  <Enumeration Text="Route" Value="1" Id="%AID%_PT-RoutingWithFilter_EN-1" />
+                  <Enumeration Text="Filter" Value="3" Id="%AID%_PT-RoutingWithFilter_EN-3" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-GrpAcknowledge" Name="GrpAcknowledge">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Always" Value="0" Id="%AID%_PT-GrpAcknowledge_EN-0" />
+                  <Enumeration Text="Only if routed" Value="1" Id="%AID%_PT-GrpAcknowledge_EN-1" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-BroadcastLock" Name="BroadcastLock">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Block" Value="1" Id="%AID%_PT-BroadcastLock_EN-1" />
+                  <Enumeration Text="Route" Value="0" Id="%AID%_PT-BroadcastLock_EN-0" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="%AID%_PT-PhysAcknowledge" Name="PhysAcknowledge">
+                <TypeRestriction Base="Value" SizeInBit="2">
+                  <Enumeration Text="Only if routed" Value="1" Id="%AID%_PT-PhysAcknowledge_EN-1" />
+                  <Enumeration Text="Always" Value="2" Id="%AID%_PT-PhysAcknowledge_EN-2" />
+                  <Enumeration Text="Answer with NACK" Value="3" Id="%AID%_PT-PhysAcknowledge_EN-3" />
+                </TypeRestriction>
+              </ParameterType>
+            </ParameterTypes>
+            <Parameters>
+              <Parameter Id="%AID%_P-0000002" Name="AckOfPhysTelSubMain" ParameterType="%AID%_PT-PhysAcknowledge" Text="Acknowledge (ACK) of individual addressed telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="0" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000003" Name="AckOfGrpTelSubMain" ParameterType="%AID%_PT-GrpAcknowledge" Text="Acknowledge (ACK) of group telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="2" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000004" Name="BroadcastTelSubMain" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000005" Name="PhysTelSubMain" ParameterType="%AID%_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000006" Name="GrpTelSubMain_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+                <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000007" Name="GrpTelSubMain_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+                <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000008" Name="RepetitionBroadcastTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of broadcast telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="3" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000009" Name="BroadcastTelMainSub" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000010" Name="RepetitionPhysTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of individual addressed telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="5" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000011" Name="PhysTelMainSub" ParameterType="%AID%_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000012" Name="RepetitionGrpTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of group telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="3" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000013" Name="GrpTelMainSub_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="%AID%_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
+              </Parameter>
+            </Parameters>
+            <ParameterRefs>
+              <ParameterRef Id="%AID%_P-0000002_R-000000201" RefId="%AID%_P-0000002" Tag="42" />
+			        <ParameterRef Id="%AID%_P-0000003_R-000000301" RefId="%AID%_P-0000003" Tag="27" />
+		      	  <ParameterRef Id="%AID%_P-0000004_R-000000401" RefId="%AID%_P-0000004" Tag="26" />
+              <ParameterRef Id="%AID%_P-0000005_R-000000501" RefId="%AID%_P-0000005" Tag="25" />
+              <ParameterRef Id="%AID%_P-0000006_R-000000601" RefId="%AID%_P-0000006" Tag="24" />
+              <ParameterRef Id="%AID%_P-0000007_R-000000701" RefId="%AID%_P-0000007" Tag="23" />
+              <ParameterRef Id="%AID%_P-0000008_R-000000801" RefId="%AID%_P-0000008" Tag="34" />
+              <ParameterRef Id="%AID%_P-0000009_R-000000901" RefId="%AID%_P-0000009" Tag="31" />
+              <ParameterRef Id="%AID%_P-0000010_R-000001001" RefId="%AID%_P-0000010" Tag="33" />
+              <ParameterRef Id="%AID%_P-0000011_R-000001101" RefId="%AID%_P-0000011" Tag="30" />
+              <ParameterRef Id="%AID%_P-0000012_R-000001201" RefId="%AID%_P-0000012" Tag="32" />
+			        <ParameterRef Id="%AID%_P-0000013_R-000001301" RefId="%AID%_P-0000013" Tag="29" />
+              <ParameterRef Id="%AID%_P-0000014_R-000001401" RefId="%AID%_P-0000014" Tag="28" />
+            </ParameterRefs>
             <LoadProcedures>
               <LoadProcedure MergeId="1">
                 <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
@@ -40,6 +130,28 @@
             <ChannelIndependentBlock>
               <ParameterBlock Id="%AID%_PB-1" Name="General" Text="General">
                 <ParameterSeparator Id="%AID%_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+              </ParameterBlock>
+              <ParameterBlock Id="%AID%_PB-2" Name="RoutingBusIp" Text="Routing (KNX -&gt; IP)">
+                <ParameterRefRef RefId="%AID%_P-0000007_R-000000701" />
+                <ParameterRefRef RefId="%AID%_P-0000006_R-000000601" />
+                <ParameterRefRef RefId="%AID%_P-0000005_R-000000501" />
+                <ParameterRefRef RefId="%AID%_P-0000004_R-000000401" />
+                <ParameterRefRef RefId="%AID%_P-0000003_R-000000301" />
+                <ParameterRefRef RefId="%AID%_P-0000002_R-000000201" />
+                <choose ParamRefId="%AID%_P-0000002_R-000000201">
+                  <when test="3">
+                    <ParameterSeparator Id="%AID%_PS-2" Text="Attention: If &quot;Answer with NACK&quot;, parameterisation must be done by IP" />
+                  </when>
+                </choose>
+              </ParameterBlock>
+              <ParameterBlock Id="%AID%_PB-3" Name="RoutingIpBus" Text="Routing (IP -&gt; KNX)">
+                <ParameterRefRef RefId="%AID%_P-0000014_R-000001401" />
+                <ParameterRefRef RefId="%AID%_P-0000013_R-000001301" />
+                <ParameterRefRef RefId="%AID%_P-0000011_R-000001101" />
+                <ParameterRefRef RefId="%AID%_P-0000009_R-000000901" />
+                <ParameterRefRef RefId="%AID%_P-0000012_R-000001201" />
+                <ParameterRefRef RefId="%AID%_P-0000010_R-000001001" />
+                <ParameterRefRef RefId="%AID%_P-0000008_R-000000801" />
               </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>

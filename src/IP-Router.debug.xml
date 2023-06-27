@@ -5,7 +5,7 @@
     <Manufacturer RefId="M-00FA">
       <Catalog>
         <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-09-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-09-0000" DefaultLanguage="de" />
+          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-0A-0000_CI-SYS.2DREG1.2DIP.2DRouter-1" Name="OpenKNX: IP-Router" Number="1" ProductRefId="M-00FA_H-1-1_P-SYS.2DREG1.2DIP.2DRouter" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-0A-0000" DefaultLanguage="de" />
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
@@ -13,20 +13,107 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="9" ReplacesVersions="1" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11E-09-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="9" ReplacesVersions="1">
+        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="10" ReplacesVersions="1" ApplicationRevision="0" -->
+        <ApplicationProgram Id="M-00FA_A-A11E-0A-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="41246" ApplicationVersion="10" ReplacesVersions="1">
           <Static>
+            <ParameterTypes>
+              <ParameterType Id="M-00FA_A-A11E-0A-0000_PT-Bool" Name="Bool">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Disabled" Value="0" Id="M-00FA_A-A11E-0A-0000_PT-Bool_EN-0" />
+                  <Enumeration Text="Enabled" Value="1" Id="M-00FA_A-A11E-0A-0000_PT-Bool_EN-1" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Name="RoutingWithFilter">
+                <TypeRestriction Base="Value" SizeInBit="2">
+                  <Enumeration Text="Block" Value="2" Id="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter_EN-2" />
+                  <Enumeration Text="Route" Value="1" Id="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter_EN-1" />
+                  <Enumeration Text="Filter" Value="3" Id="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter_EN-3" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="M-00FA_A-A11E-0A-0000_PT-GrpAcknowledge" Name="GrpAcknowledge">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Always" Value="0" Id="M-00FA_A-A11E-0A-0000_PT-GrpAcknowledge_EN-0" />
+                  <Enumeration Text="Only if routed" Value="1" Id="M-00FA_A-A11E-0A-0000_PT-GrpAcknowledge_EN-1" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="M-00FA_A-A11E-0A-0000_PT-BroadcastLock" Name="BroadcastLock">
+                <TypeRestriction Base="Value" SizeInBit="1">
+                  <Enumeration Text="Block" Value="1" Id="M-00FA_A-A11E-0A-0000_PT-BroadcastLock_EN-1" />
+                  <Enumeration Text="Route" Value="0" Id="M-00FA_A-A11E-0A-0000_PT-BroadcastLock_EN-0" />
+                </TypeRestriction>
+              </ParameterType>
+              <ParameterType Id="M-00FA_A-A11E-0A-0000_PT-PhysAcknowledge" Name="PhysAcknowledge">
+                <TypeRestriction Base="Value" SizeInBit="2">
+                  <Enumeration Text="Only if routed" Value="1" Id="M-00FA_A-A11E-0A-0000_PT-PhysAcknowledge_EN-1" />
+                  <Enumeration Text="Always" Value="2" Id="M-00FA_A-A11E-0A-0000_PT-PhysAcknowledge_EN-2" />
+                  <Enumeration Text="Answer with NACK" Value="3" Id="M-00FA_A-A11E-0A-0000_PT-PhysAcknowledge_EN-3" />
+                </TypeRestriction>
+              </ParameterType>
+            </ParameterTypes>
+            <Parameters>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000002" Name="AckOfPhysTelSubMain" ParameterType="M-00FA_A-A11E-0A-0000_PT-PhysAcknowledge" Text="Acknowledge (ACK) of individual addressed telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="0" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000003" Name="AckOfGrpTelSubMain" ParameterType="M-00FA_A-A11E-0A-0000_PT-GrpAcknowledge" Text="Acknowledge (ACK) of group telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="2" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000004" Name="BroadcastTelSubMain" ParameterType="M-00FA_A-A11E-0A-0000_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000005" Name="PhysTelSubMain" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+                <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000006" Name="GrpTelSubMain_14_31" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+                <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000007" Name="GrpTelSubMain_0_13" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+                <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000008" Name="RepetitionBroadcastTelMainSub" ParameterType="M-00FA_A-A11E-0A-0000_PT-Bool" Text="Repetition of broadcast telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="3" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000009" Name="BroadcastTelMainSub" ParameterType="M-00FA_A-A11E-0A-0000_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000010" Name="RepetitionPhysTelMainSub" ParameterType="M-00FA_A-A11E-0A-0000_PT-Bool" Text="Repetition of individual addressed telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="5" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000011" Name="PhysTelMainSub" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+                <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="6" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000012" Name="RepetitionGrpTelMainSub" ParameterType="M-00FA_A-A11E-0A-0000_PT-Bool" Text="Repetition of group telegrams" Value="1">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="3" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000013" Name="GrpTelMainSub_14_31" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="4" />
+              </Parameter>
+              <Parameter Id="M-00FA_A-A11E-0A-0000_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="M-00FA_A-A11E-0A-0000_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+                <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
+              </Parameter>
+            </Parameters>
+            <ParameterRefs>
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000002_R-000000201" RefId="M-00FA_A-A11E-0A-0000_P-0000002" Tag="42" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000003_R-000000301" RefId="M-00FA_A-A11E-0A-0000_P-0000003" Tag="27" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000004_R-000000401" RefId="M-00FA_A-A11E-0A-0000_P-0000004" Tag="26" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000005_R-000000501" RefId="M-00FA_A-A11E-0A-0000_P-0000005" Tag="25" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000006_R-000000601" RefId="M-00FA_A-A11E-0A-0000_P-0000006" Tag="24" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000007_R-000000701" RefId="M-00FA_A-A11E-0A-0000_P-0000007" Tag="23" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000008_R-000000801" RefId="M-00FA_A-A11E-0A-0000_P-0000008" Tag="34" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000009_R-000000901" RefId="M-00FA_A-A11E-0A-0000_P-0000009" Tag="31" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000010_R-000001001" RefId="M-00FA_A-A11E-0A-0000_P-0000010" Tag="33" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000011_R-000001101" RefId="M-00FA_A-A11E-0A-0000_P-0000011" Tag="30" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000012_R-000001201" RefId="M-00FA_A-A11E-0A-0000_P-0000012" Tag="32" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000013_R-000001301" RefId="M-00FA_A-A11E-0A-0000_P-0000013" Tag="29" />
+              <ParameterRef Id="M-00FA_A-A11E-0A-0000_P-0000014_R-000001401" RefId="M-00FA_A-A11E-0A-0000_P-0000014" Tag="28" />
+            </ParameterRefs>
             <LoadProcedures>
               <LoadProcedure MergeId="1">
                 <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
-                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-09-0000_M-1" />
+                  <OnError Cause="CompareMismatch" MessageRef="M-00FA_A-A11E-0A-0000_M-1" />
                 </LdCtrlCompareProp>
                 <!--<LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
                   <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
                 </LdCtrlCompareProp>-->
-              </LoadProcedure>
-              <LoadProcedure MergeId="3">
-                <LdCtrlWriteProp ObjType="6" PropId="67" Verify="true" InlineData="01" />
               </LoadProcedure>
               <LoadProcedure MergeId="4">
                 <LdCtrlLoad ObjType="3" />
@@ -34,15 +121,51 @@
               </LoadProcedure>
             </LoadProcedures>
             <Messages>
-              <Message Id="M-00FA_A-A11E-09-0000_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
-              <Message Id="M-00FA_A-A11E-09-0000_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <Message Id="M-00FA_A-A11E-0A-0000_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
+              <Message Id="M-00FA_A-A11E-0A-0000_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="M-00FA_A-A11E-09-0000_PB-1" Name="General" Text="General">
-                <ParameterSeparator Id="M-00FA_A-A11E-09-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+              <ParameterBlock Id="M-00FA_A-A11E-0A-0000_PB-1" Name="General" Text="General">
+                <ParameterSeparator Id="M-00FA_A-A11E-0A-0000_PS-1" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+              </ParameterBlock>
+              <ParameterBlock Id="M-00FA_A-A11E-0A-0000_PB-2" Name="RoutingBusIp" Text="Routing (KNX -&gt; IP)">
+                <!-- ParameterRefRef GrpTelSubMain_0_13 'Group telegrams (main groups 0 to 13)'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000007_R-000000701" />
+                <!-- ParameterRefRef GrpTelSubMain_14_31 'Group telegrams (main groups 14 to 31)'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000006_R-000000601" />
+                <!-- ParameterRefRef PhysTelSubMain 'Individual addressed telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000005_R-000000501" />
+                <!-- ParameterRefRef BroadcastTelSubMain 'Broadcast telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000004_R-000000401" />
+                <!-- ParameterRefRef AckOfGrpTelSubMain 'Acknowledge (ACK) of group telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000003_R-000000301" />
+                <!-- ParameterRefRef AckOfPhysTelSubMain 'Acknowledge (ACK) of individual addressed telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000002_R-000000201" />
+                <!-- choose AckOfPhysTelSubMain 'Acknowledge (ACK) of individual addressed telegrams'-->
+                <choose ParamRefId="M-00FA_A-A11E-0A-0000_P-0000002_R-000000201">
+                  <when test="3">
+                    <ParameterSeparator Id="M-00FA_A-A11E-0A-0000_PS-2" Text="Attention: If &quot;Answer with NACK&quot;, parameterisation must be done by IP" />
+                  </when>
+                </choose>
+              </ParameterBlock>
+              <ParameterBlock Id="M-00FA_A-A11E-0A-0000_PB-3" Name="RoutingIpBus" Text="Routing (IP -&gt; KNX)">
+                <!-- ParameterRefRef GrpTelMainSub_0_13 'Group telegrams (main groups 0 to 13)'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000014_R-000001401" />
+                <!-- ParameterRefRef GrpTelMainSub_14_31 'Group telegrams (main groups 14 to 31)'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000013_R-000001301" />
+                <!-- ParameterRefRef PhysTelMainSub 'Individual addressed telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000011_R-000001101" />
+                <!-- ParameterRefRef BroadcastTelMainSub 'Broadcast telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000009_R-000000901" />
+                <!-- ParameterRefRef RepetitionGrpTelMainSub 'Repetition of group telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000012_R-000001201" />
+                <!-- ParameterRefRef RepetitionPhysTelMainSub 'Repetition of individual addressed telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000010_R-000001001" />
+                <!-- ParameterRefRef RepetitionBroadcastTelMainSub 'Repetition of broadcast telegrams'-->
+                <ParameterRefRef RefId="M-00FA_A-A11E-0A-0000_P-0000008_R-000000801" />
               </ParameterBlock>
             </ChannelIndependentBlock>
           </Dynamic>
@@ -56,9 +179,9 @@
             </Product>
           </Products>
           <Hardware2Programs>
-            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-09-0000" MediumTypes="MT-0">
-              <ApplicationProgramRef RefId="M-00FA_A-A11E-09-0000" />
-              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/19" />
+            <Hardware2Program Id="M-00FA_H-1-1_HP-A11E-0A-0000" MediumTypes="MT-0">
+              <ApplicationProgramRef RefId="M-00FA_A-A11E-0A-0000" />
+              <RegistrationInfo RegistrationStatus="Registered" RegistrationNumber="0001/110" />
             </Hardware2Program>
           </Hardware2Programs>
         </Hardware>

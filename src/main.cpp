@@ -4,8 +4,6 @@
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 
-OpenKNX::Log::VirtualSerial ETG_SERIAL = OpenKNX::Log::VirtualSerial("ETG");
-
 void setup()
 {
     const uint8_t firmwareRevision = 0;
@@ -14,8 +12,6 @@ void setup()
     openknx.addModule(1, new IPConfigModule());
     
     openknx.setup();
-
-    ETG_SERIAL.print("Test");
 }
 
 void loop()
@@ -50,7 +46,6 @@ PID_MEDIUM_STATUS (wenn kein LAN...)
 stack
 CHECK- return false for send*cast
 - sending nonetheless, cemi frame valid length
-- _routerObj.initialize1x(DptMedium::KNX_IP, 220); model 1 or 2???
 
 
 DONE

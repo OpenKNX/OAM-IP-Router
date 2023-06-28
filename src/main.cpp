@@ -41,9 +41,13 @@ IPConfig
     PID_MSG_TRANSMIT_TO_KNX = 75,
 
 
-PID_MEDIUM_STATUS (wenn kein LAN...)
+PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 
 router / coupler objekte im stack nach ToDos durchsuchen.
+
+filtern 52-55
+
+entladen
 
 stack
 CHECK- return false for send*cast

@@ -43,6 +43,8 @@ IPConfig
 
 PID_MEDIUM_STATUS (wenn kein LAN...)
 
+router / coupler objekte im stack nach ToDos durchsuchen.
+
 stack
 CHECK- return false for send*cast
 - sending nonetheless, cemi frame valid length

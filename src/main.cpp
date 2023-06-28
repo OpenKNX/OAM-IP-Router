@@ -48,6 +48,7 @@ router / coupler objekte im stack nach ToDos durchsuchen.
 stack
 CHECK- return false for send*cast
 - sending nonetheless, cemi frame valid length
+- check max apdu length (curr: 220 in router obj, 254 in device. why? enertex: 248)
 
 
 DONE

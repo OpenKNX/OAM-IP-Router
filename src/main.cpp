@@ -1,5 +1,6 @@
 #include "OpenKNX.h"
 #include "IPConfig.h"
+#include "UpdaterModule.h"
 
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
@@ -10,6 +11,7 @@ void setup()
     openknx.init(firmwareRevision);
 
     openknx.addModule(1, new IPConfigModule());
+    openknx.addModule(9, new UpdaterModule());
     
     openknx.setup();
 }

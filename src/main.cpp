@@ -32,7 +32,11 @@ IPConfig
 
 router / coupler objekte im stack nach ToDos durchsuchen.
 
-CHECK- return false for send*cast
+CHECK- return false for send*case
+
+"cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
+
+void RouterObject::beforeStateChange(LoadState& newState): routing table control
 
 
 

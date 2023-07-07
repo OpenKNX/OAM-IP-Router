@@ -42,7 +42,7 @@ void RouterObject::beforeStateChange(LoadState& newState): routing table control
 
 BUGS
 -------
-entladen geht nicht
+
 
 routing table modify !! nicht im ram möglich
 
@@ -67,6 +67,7 @@ ip data link layer send queue
 - check max apdu length (curr: 220 in router obj, 254 in device. why? enertex: 248)
 
 
+entladen => filtertabelle löschen, props auf default ?
 
 DONE
 -------

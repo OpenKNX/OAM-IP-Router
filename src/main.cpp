@@ -30,28 +30,21 @@ IPConfig
 - HW-Reset Ethernetchip
 - Verhalten wenn kein Link - Link getrennt - Link wieder da
 
-router / coupler objekte im stack nach ToDos durchsuchen.
-
-CHECK- return false for send*case
 
 "cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
-void RouterObject::beforeStateChange(LoadState& newState): routing table control
+return false on send unicast in rp2040 plattform
 
 
 
 BUGS
 -------
-
-
-routing table modify !! nicht im ram möglich
-
-
+none atm :)
 
 
 IMPROVEMENTS
 -------
-KNXPROD English
+KNXPROD Deutsch
 
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 
@@ -62,10 +55,9 @@ PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
     PID_MSG_TRANSMIT_TO_IP = 74,
     PID_MSG_TRANSMIT_TO_KNX = 75,
 
-ip data link layer send queue
+ip data link layer send queue (priority queue?)
 
 - check max apdu length (curr: 220 in router obj, 254 in device. why? enertex: 248)
-
 
 entladen => filtertabelle löschen, props auf default ?
 

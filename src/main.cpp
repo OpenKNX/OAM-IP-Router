@@ -33,6 +33,7 @@ IPConfig
 
 "cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
+
 return false on send unicast in rp2040 plattform
 
 

@@ -267,6 +267,7 @@ void EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress g
 void EthernetClass::init(uint8_t sspin)
 {
   W5100.setSS(sspin);
+  W5100.init();
 }
 
 /////////////////////////////////////////////////////////

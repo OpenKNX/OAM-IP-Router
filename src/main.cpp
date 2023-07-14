@@ -26,16 +26,12 @@ ToDos:
 
 IPConfig
 - console 
-- Verhalten wenn kein Ethernetchip / getrennt im Betrieb
-- HW-Reset Ethernetchip
-- Verhalten wenn kein Link - Link getrennt - Link wieder da
-
 
 "cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
-
 return false on send unicast in rp2040 plattform
 
+LAN Link and LAN Act
 
 
 BUGS
@@ -45,6 +41,8 @@ none atm :)
 
 IMPROVEMENTS
 -------
+DHCP ASYNC
+
 KNXPROD Deutsch
 
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
@@ -70,6 +68,9 @@ DONE - prog PA over TP does not work (U_STATE_IND_PE) => network layer coupler
 DONE - default PA 15.15.0 not 15.15.255
 - returning 1.1.0 and 15.15.255 ?! => Home assistant
 - sending nonetheless, cemi frame valid length
+- Verhalten wenn kein Ethernetchip / getrennt im Betrieb
+- HW-Reset Ethernetchip
+- Verhalten wenn kein Link - Link getrennt - Link wieder da
 
 
 */

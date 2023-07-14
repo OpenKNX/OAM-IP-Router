@@ -4,11 +4,11 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "OpenKNX Build",
+            "label": "Build REG1",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "build_RP2040"
+                "develop_REG1_ETH"
             ],
             "group": "build",
             "problemMatcher": [],
@@ -16,24 +16,11 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "OpenKNX Build & Upload USB",
+            "label": "Build REG1 USB",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "upload_USB_RP2040",
-                "upload"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
-            "label": "OpenKNX Build & Upload JLINK",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "upload_JLINK_RP2040",
+                "develop_REG1_ETH_USB",
                 "upload"
             ],
             "group": "build",
@@ -42,32 +29,67 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "Build & Upload USB",
+            "label": "Build REG1 JLINK",
             "type": "shell",
-            "command": "${env:USERPROFILE}\\.platformio\\penv\\Scripts\\pio.exe",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "run",
-                "-e",
-                "upload_USB_RP2040",
-                "--target",
+                "develop_REG1_ETH_JLINK",
                 "upload"
             ],
             "group": "build",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "Build & Upload JLINK",
+            "label": "Build PiPico",
             "type": "shell",
-            "command": "${env:USERPROFILE}\\.platformio\\penv\\Scripts\\pio.exe",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
-                "run",
-                "-e",
-                "upload_JLINK_RP2040",
-                "--target",
+                "develop_PIPICO"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build PiPico USB",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_PIPICO_USB",
                 "upload"
             ],
             "group": "build",
-            "problemMatcher": []
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build PiPicoW",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_PIPICOW"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build PiPicoW USB",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_PIPICOW_USB",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
             "label": "OpenKNXproducer",

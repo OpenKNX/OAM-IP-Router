@@ -6,3 +6,4 @@
 .vscode/ipch
 **/*.knxprod
 release/*
+/include/versions.h

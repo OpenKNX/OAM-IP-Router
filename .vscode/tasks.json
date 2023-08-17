@@ -94,14 +94,13 @@
         {
             "label": "OpenKNXproducer",
             "type": "shell",
-            "options": {
-                "cwd": "${workspaceFolder}/src"
-            },
             "command": "${env:USERPROFILE}/bin/OpenKNXproducer.exe",
             "args": [
                 "create",
                 "--Debug",
-                "IP-Router.xml"
+                "-h",
+                "include/knxprod.h",
+                "src/IP-Router.xml"
             ],
             "problemMatcher": [],
             "group": "test",

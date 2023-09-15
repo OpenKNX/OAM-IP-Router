@@ -95,6 +95,7 @@ void DhcpClass::reset_DHCP_lease()
 //return:0 on error, 1 if request is sent and response is received
 int DhcpClass::request_DHCP_lease()
 {
+  println("DhcpClass::request_DHCP_lease");
   uint8_t messageType = 0;
 
   // Pick an initial transaction ID

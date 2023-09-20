@@ -8,6 +8,7 @@
 #include "OpenKNXHardware.h"
 
 #define USING_SPI2 true
+#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
 #define PIN_MISO_ (28)
 #define PIN_MOSI_ (27)
 #define PIN_SCK_ (26)
@@ -36,6 +37,7 @@
 
 // Definition for PiPico / SPI0
 //#define USING_SPI2 false
+//#define SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
 //#define PIN_MISO_ (16)
 //#define PIN_MOSI_ (19)
 //#define PIN_SCK_ (18)
@@ -43,6 +45,7 @@
 
 // Definition for PiPico / SPI1 (default)
 #define USING_SPI2 true
+#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
 #define PIN_MISO_ (12)
 #define PIN_MOSI_ (15)
 #define PIN_SCK_ (14)
@@ -50,6 +53,7 @@
 
 // Definition for PiPico / SPI1
 //#define USING_SPI2 true
+#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
 //#define PIN_MISO_ (12)
 //#define PIN_MOSI_ (11)
 //#define PIN_SCK_ (10)
@@ -80,6 +84,7 @@
 
 // Definition for PiPico / SPI0
 #define USING_SPI2 false
+#define SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
 #define PIN_MISO_ (16)
 #define PIN_MOSI_ (19)
 #define PIN_SCK_ (18)

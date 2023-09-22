@@ -4,20 +4,8 @@
 
 #define HARDWARE_NAME "REG1_ETH"
 
-#define OKNXHW_REG1_CONTROLLER2040
+#define OKNXHW_REG1_ETH
 #include "OpenKNXHardware.h"
-
-#define USING_SPI2 true
-#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
-#define PIN_MISO_ (28)
-#define PIN_MOSI_ (27)
-#define PIN_SCK_ (26)
-#define PIN_SS_ (29)
-
-#define PIN_SD_SS (16)
-#define PIN_ETH_INT (17)
-#define PIN_ETH_RES (18)
-
 
 #endif
 
@@ -36,28 +24,25 @@
 #define KNX_UART_TX_PIN 0
 
 // Definition for PiPico / SPI0
-//#define USING_SPI2 false
-//#define SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
-//#define PIN_MISO_ (16)
-//#define PIN_MOSI_ (19)
-//#define PIN_SCK_ (18)
-//#define PIN_SS_ (17)
+//#define ETH_SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
+//#define PIN_ETH_MISO (16)
+//#define PIN_ETH_MOSI (19)
+//#define PIN_ETH_SCK (18)
+//#define PIN_ETH_SS (17)
 
 // Definition for PiPico / SPI1 (default)
-#define USING_SPI2 true
-#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
-#define PIN_MISO_ (12)
-#define PIN_MOSI_ (15)
-#define PIN_SCK_ (14)
-#define PIN_SS_ (13)
+#define ETH_SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
+#define PIN_ETH_MISO (12)
+#define PIN_ETH_MOSI (15)
+#define PIN_ETH_SCK (14)
+#define PIN_ETH_SS (13)
 
 // Definition for PiPico / SPI1
-//#define USING_SPI2 true
-#define SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
-//#define PIN_MISO_ (12)
-//#define PIN_MOSI_ (11)
-//#define PIN_SCK_ (10)
-//#define PIN_SS_ (13)
+#define ETH_SPI_INTERFACE SPI1 // SPI or SPI1, depends on the pins
+//#define PIN_ETH_MISO (12)
+//#define PIN_ETH_MOSI (11)
+//#define PIN_ETH_SCK (10)
+//#define PIN_ETH_SS (13)
 
 
 #define PIN_SD_SS (9)
@@ -83,12 +68,12 @@
 #define KNX_UART_TX_PIN 0
 
 // Definition for PiPico / SPI0
-#define USING_SPI2 false
-#define SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
-#define PIN_MISO_ (16)
-#define PIN_MOSI_ (19)
-#define PIN_SCK_ (18)
-#define PIN_SS_ (17)
+
+#define ETH_SPI_INTERFACE SPI // SPI or SPI1, depends on the pins
+#define PIN_ETH_MISO (16)
+#define PIN_ETH_MOSI (19)
+#define PIN_ETH_SCK (18)
+#define PIN_ETH_SS (17)
 
 #define PIN_SD_SS (22)
 #define PIN_ETH_INT (21)
@@ -110,25 +95,6 @@
 #define KNX_UART_RX_PIN 1
 #define KNX_UART_TX_PIN 0
 
-// Definition for PiPico / SPI0
-//#define PIN_MISO_ (16)
-//#define PIN_MOSI_ (19)
-//#define PIN_SCK_ (18)
-//#define PIN_SS_ (17)
 
-// Definition for PiPico / SPI1 (default)
-//#define PIN_MISO_ (12)
-//#define PIN_MOSI_ (15)
-//#define PIN_SCK_ (14)
-//#define PIN_SS_ (13)
-
-// Definition for PiPico / SPI1
-//#define PIN_MISO_ (12)
-//#define PIN_MOSI_ (11)
-//#define PIN_SCK_ (10)
-//#define PIN_SS_ (13)
-
-
-//#define PIN_SD_SS (9)
 
 #endif

@@ -92,6 +92,19 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
+            "label": "Build W5500_EVB_PICO USB",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_W5500_EVB_PICO_USB",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
             "label": "OpenKNXproducer",
             "type": "shell",
             "command": "${env:USERPROFILE}/bin/OpenKNXproducer.exe",

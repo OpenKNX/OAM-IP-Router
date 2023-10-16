@@ -42,6 +42,44 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
+            "label": "Build REG1-V1",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_REG1_ETH_V1"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build REG1-V1 USB",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_REG1_ETH_V1_USB",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
+            "label": "Build REG1-V1 JLINK",
+            "type": "shell",
+            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
+            "args": [
+                "develop_REG1_ETH_V1_JLINK",
+                "upload"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
             "label": "Build PiPico",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",

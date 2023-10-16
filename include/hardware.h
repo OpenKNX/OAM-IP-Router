@@ -9,6 +9,15 @@
 
 #endif
 
+#ifdef BOARD_REG1_ETH_V1
+
+#define HARDWARE_NAME "REG1_ETH_V1"
+
+#define OKNXHW_REG1_ETH_V1
+#include "OpenKNXHardware.h"
+
+#endif
+
 #ifdef BOARD_PIPICO
 
 #define HARDWARE_NAME "PIPICO"

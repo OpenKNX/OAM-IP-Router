@@ -1,17 +1,22 @@
 #include "OpenKNX.h"
-#include "IPConfig.h"
+
 #include "FileTransferModule.h"
+#include "NetworkModule.h"
+#include "UsbExchangeModule.h"
 
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
+
+bool core1_separate_stack = true;
 
 void setup()
 {
     const uint8_t firmwareRevision = 0;
     openknx.init(firmwareRevision);
 
-    openknx.addModule(1, new IPConfigModule());
-    openknx.addModule(9, new FileTransferModule());
+    openknx.addModule(7, openknxNetwork);
+    openknx.addModule(8, openknxUsbExchangeModule);
+    openknx.addModule(9, openknxFileTransferModule);
     
     openknx.setup();
 }

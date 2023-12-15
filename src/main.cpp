@@ -35,6 +35,12 @@ return false on send unicast in rp2040 plattform
 
 LAN Link and LAN Act
 
+- name in ets schnittstellenübersicht (hostname, friendlyname, searchresponse)
+
+- prog from ETS with 1.0.10 multicast PA does not work (15.15.0 => 1.15.0)
+
+- unshandled service identifier 0 when progging with tunnel support
+
 
 BUGS
 -------

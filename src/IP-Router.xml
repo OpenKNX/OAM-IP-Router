@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
+  <op:config name="%NET_IPConfigTool%" value="1" />
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -13,8 +14,8 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="29" ReplacesVersions="1" ApplicationRevision="1" />
-        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" IPConfig="Custom" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="38" ReplacesVersions="1" ApplicationRevision="1" />
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
           <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="4" />
           <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="5" KoSingleOffset="10" />
           <Static>
@@ -96,7 +97,7 @@
         <op:include href="IP-Router.share.xml" xpath="//Baggages/*" prefix="ROUTE" />
       </Baggages>
       <Hardware>
-        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
+        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
             <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />

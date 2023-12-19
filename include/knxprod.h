@@ -10,7 +10,7 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 28
+#define MAIN_ApplicationVersion 37
 #define MAIN_ParameterSize 54
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "SYS-REG1-IP-Router"

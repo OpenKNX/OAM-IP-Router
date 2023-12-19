@@ -65,6 +65,9 @@ none atm :)
 
 IMPROVEMENTS
 -------
+
+-assign tunnels to ip-adresses
+
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 
 - set PID_KNXNETIP_DEVICE_CAPABILITIES

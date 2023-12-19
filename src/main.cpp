@@ -9,6 +9,17 @@
 
 bool core1_separate_stack = true;
 
+uint32_t _tpLedActivity = 0;
+uint32_t _ipLedActivity = 0;
+void activity(uint8_t info)
+{
+    if((info >> KNX_ACTIVITYCALLBACK_NET))
+        _ipLedActivity = millis();
+    else
+        _tpLedActivity = millis();
+}
+
+
 void setup()
 {
     const uint8_t firmwareRevision = 0;
@@ -19,6 +30,12 @@ void setup()
     openknx.addModule(9, openknxFileTransferModule);
     
     openknx.setup();
+
+#if defined(INFO2_LED_PIN) && defined(INFO3_LED_PIN)
+    openknx.info3Led.activity(_ipLedActivity, false);
+    openknx.info2Led.activity(_tpLedActivity, false);
+#endif
+    knx.setActivityCallback(activity);
 }
 
 void loop()
@@ -28,18 +45,17 @@ void loop()
 
 /*
 ToDos:
+-------
 
 "cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
 return false on send unicast in rp2040 plattform
 
-LAN Link and LAN Act
-
-- name in ets schnittstellenübersicht (hostname, friendlyname, searchresponse)
-
-- prog from ETS with 1.0.10 multicast PA does not work (15.15.0 => 1.15.0)
+reverse activity led and signal ip and tp link with "on"
 
 - unshandled service identifier 0 when progging with tunnel support
+
+- tunnel unicast fail
 
 
 BUGS
@@ -49,8 +65,6 @@ none atm :)
 
 IMPROVEMENTS
 -------
-KNXPROD Deutsch
-
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 
 - set PID_KNXNETIP_DEVICE_CAPABILITIES
@@ -66,9 +80,9 @@ ip data link layer send queue (priority queue?)
 
 entladen => filtertabelle löschen, props auf default ?
 
-DONE
--------
+- busmon tunnel support
 
-
+knxprod:
+system - multicast-adresse nutzen oder manuell einstellen
 
 */

@@ -10,75 +10,84 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 16
-#define MAIN_ParameterSize 0
+#define MAIN_ApplicationVersion 28
+#define MAIN_ParameterSize 54
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "SYS-REG1-IP-Router"
 // Parameter with single occurrence
-#define AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6
-#define     AckOfPhysTelSubMainMask 0xC0
-#define     AckOfPhysTelSubMainShift 6
-#define AckOfGrpTelSubMain                   0      // 1 Bit, Bit 5
-#define     AckOfGrpTelSubMainMask 0x20
-#define     AckOfGrpTelSubMainShift 5
-#define BroadcastTelSubMain                  0      // 1 Bit, Bit 3
-#define     BroadcastTelSubMainMask 0x08
-#define     BroadcastTelSubMainShift 3
-#define PhysTelSubMain                       0      // 2 Bits, Bit 1-0
-#define     PhysTelSubMainMask 0x03
-#define     PhysTelSubMainShift 0
-#define GrpTelSubMain_14_31                  0      // 2 Bits, Bit 3-2
-#define     GrpTelSubMain_14_31Mask 0x0C
-#define     GrpTelSubMain_14_31Shift 2
-#define GrpTelSubMain_0_13                   0      // 2 Bits, Bit 1-0
-#define     GrpTelSubMain_0_13Mask 0x03
-#define     GrpTelSubMain_0_13Shift 0
-#define RepetitionBroadcastTelMainSub        0      // 1 Bit, Bit 4
-#define     RepetitionBroadcastTelMainSubMask 0x10
-#define     RepetitionBroadcastTelMainSubShift 4
-#define BroadcastTelMainSub                  0      // 1 Bit, Bit 3
-#define     BroadcastTelMainSubMask 0x08
-#define     BroadcastTelMainSubShift 3
-#define RepetitionPhysTelMainSub             0      // 1 Bit, Bit 2
-#define     RepetitionPhysTelMainSubMask 0x04
-#define     RepetitionPhysTelMainSubShift 2
-#define PhysTelMainSub                       0      // 2 Bits, Bit 1-0
-#define     PhysTelMainSubMask 0x03
-#define     PhysTelMainSubShift 0
-#define RepetitionGrpTelMainSub              0      // 1 Bit, Bit 4
-#define     RepetitionGrpTelMainSubMask 0x10
-#define     RepetitionGrpTelMainSubShift 4
-#define GrpTelMainSub_14_31                  0      // 2 Bits, Bit 3-2
-#define     GrpTelMainSub_14_31Mask 0x0C
-#define     GrpTelMainSub_14_31Shift 2
-#define GrpTelMainSub_0_13                   0      // 2 Bits, Bit 1-0
-#define     GrpTelMainSub_0_13Mask 0x03
-#define     GrpTelMainSub_0_13Shift 0
 
-// Acknowledge (ACK) of individual addressed telegrams
-#define ParamAckOfPhysTelSubMain                 ((knx.paramByte(AckOfPhysTelSubMain) & AckOfPhysTelSubMainMask) >> AckOfPhysTelSubMainShift)
-// Acknowledge (ACK) of group telegrams
-#define ParamAckOfGrpTelSubMain                  ((bool)(knx.paramByte(AckOfGrpTelSubMain) & AckOfGrpTelSubMainMask))
-// Broadcast telegrams
-#define ParamBroadcastTelSubMain                 ((bool)(knx.paramByte(BroadcastTelSubMain) & BroadcastTelSubMainMask))
-// Individual addressed telegrams
-#define ParamPhysTelSubMain                      (knx.paramByte(PhysTelSubMain) & PhysTelSubMainMask)
-// Group telegrams (main groups 14 to 31)
-#define ParamGrpTelSubMain_14_31                 ((knx.paramByte(GrpTelSubMain_14_31) & GrpTelSubMain_14_31Mask) >> GrpTelSubMain_14_31Shift)
-// Group telegrams (main groups 0 to 13)
-#define ParamGrpTelSubMain_0_13                  (knx.paramByte(GrpTelSubMain_0_13) & GrpTelSubMain_0_13Mask)
-// Repetition of broadcast telegrams
-#define ParamRepetitionBroadcastTelMainSub       ((bool)(knx.paramByte(RepetitionBroadcastTelMainSub) & RepetitionBroadcastTelMainSubMask))
-// Broadcast telegrams
-#define ParamBroadcastTelMainSub                 ((bool)(knx.paramByte(BroadcastTelMainSub) & BroadcastTelMainSubMask))
-// Repetition of individual addressed telegrams
-#define ParamRepetitionPhysTelMainSub            ((bool)(knx.paramByte(RepetitionPhysTelMainSub) & RepetitionPhysTelMainSubMask))
-// Individual addressed telegrams
-#define ParamPhysTelMainSub                      (knx.paramByte(PhysTelMainSub) & PhysTelMainSubMask)
-// Repetition of group telegrams
-#define ParamRepetitionGrpTelMainSub             ((bool)(knx.paramByte(RepetitionGrpTelMainSub) & RepetitionGrpTelMainSubMask))
-// Group telegrams (main groups 14 to 31)
-#define ParamGrpTelMainSub_14_31                 ((knx.paramByte(GrpTelMainSub_14_31) & GrpTelMainSub_14_31Mask) >> GrpTelMainSub_14_31Shift)
-// Group telegrams (main groups 0 to 13)
-#define ParamGrpTelMainSub_0_13                  (knx.paramByte(GrpTelMainSub_0_13) & GrpTelMainSub_0_13Mask)
+
+#define BASE_StartupDelayBase                     0      // 2 Bits, Bit 7-6
+#define     BASE_StartupDelayBaseMask 0xC0
+#define     BASE_StartupDelayBaseShift 6
+#define BASE_StartupDelayTime                     0      // 14 Bits, Bit 13-0
+#define     BASE_StartupDelayTimeMask 0x3FFF
+#define     BASE_StartupDelayTimeShift 0
+#define BASE_Watchdog                             5      // 1 Bit, Bit 6
+#define     BASE_WatchdogMask 0x40
+#define     BASE_WatchdogShift 6
+
+// Zeitbasis
+#define ParamBASE_StartupDelayBase                    ((knx.paramByte(BASE_StartupDelayBase) & BASE_StartupDelayBaseMask) >> BASE_StartupDelayBaseShift)
+// Zeit
+#define ParamBASE_StartupDelayTime                    (knx.paramWord(BASE_StartupDelayTime) & BASE_StartupDelayTimeMask)
+// Zeit (in Millisekunden)
+#define ParamBASE_StartupDelayTimeMS                  (paramDelay(knx.paramWord(BASE_StartupDelayTime)))
+// Watchdog aktivieren
+#define ParamBASE_Watchdog                            ((bool)(knx.paramByte(BASE_Watchdog) & BASE_WatchdogMask))
+
+#define NET_HostAddress                          6      // IP address, 4 Byte
+#define NET_SubnetMask                          10      // IP address, 4 Byte
+#define NET_GatewayAddress                      14      // IP address, 4 Byte
+#define NET_NameserverAddress                   18      // IP address, 4 Byte
+#define NET_CustomHostname                      26      // 1 Bit, Bit 7
+#define     NET_CustomHostnameMask 0x80
+#define     NET_CustomHostnameShift 7
+#define NET_StaticIP                            26      // 1 Bit, Bit 6
+#define     NET_StaticIPMask 0x40
+#define     NET_StaticIPShift 6
+#define NET_mDNS                                26      // 1 Bit, Bit 5
+#define     NET_mDNSMask 0x20
+#define     NET_mDNSShift 5
+#define NET_HTTP                                26      // 1 Bit, Bit 4
+#define     NET_HTTPMask 0x10
+#define     NET_HTTPShift 4
+#define NET_NTP                                 26      // 1 Bit, Bit 3
+#define     NET_NTPMask 0x08
+#define     NET_NTPShift 3
+#define NET_HostName                            30      // char*, 24 Byte
+
+//   IP-Adresse
+#define ParamNET_HostAddress                         (knx.paramInt(NET_HostAddress))
+//   Subnetzsmaske
+#define ParamNET_SubnetMask                          (knx.paramInt(NET_SubnetMask))
+//   Standardgateway
+#define ParamNET_GatewayAddress                      (knx.paramInt(NET_GatewayAddress))
+//   Nameserver
+#define ParamNET_NameserverAddress                   (knx.paramInt(NET_NameserverAddress))
+//   Hostname anpassen
+#define ParamNET_CustomHostname                      ((bool)(knx.paramByte(NET_CustomHostname) & NET_CustomHostnameMask))
+//   DHCP
+#define ParamNET_StaticIP                            ((bool)(knx.paramByte(NET_StaticIP) & NET_StaticIPMask))
+//   mDNS
+#define ParamNET_mDNS                                ((bool)(knx.paramByte(NET_mDNS) & NET_mDNSMask))
+//   Weberver
+#define ParamNET_HTTP                                ((bool)(knx.paramByte(NET_HTTP) & NET_HTTPMask))
+//   Zeitgeber (NTP)
+#define ParamNET_NTP                                 ((bool)(knx.paramByte(NET_NTP) & NET_NTPMask))
+// 
+#define ParamNET_HostName                            (knx.paramData(NET_HostName))
+
+
+
+// Header generation for Module 'BASE_KommentarModule'
+
+#define BASE_KommentarModuleCount 0
+#define BASE_KommentarModuleModuleParamSize 0
+#define BASE_KommentarModuleSubmodulesParamSize 0
+#define BASE_KommentarModuleParamSize 0
+#define BASE_KommentarModuleParamOffset 54
+#define BASE_KommentarModuleCalcIndex(index, m1) (index + BASE_KommentarModuleParamOffset + _channelIndex * BASE_KommentarModuleCount * BASE_KommentarModuleParamSize + m1 * BASE_KommentarModuleParamSize)
+
+
 

@@ -7,3 +7,4 @@
 **/*.knxprod
 release/*
 /include/versions.h
+/src/IP-Router.baggages

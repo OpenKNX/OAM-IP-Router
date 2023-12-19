@@ -13,83 +13,92 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="16" ReplacesVersions="1" ApplicationRevision="0" />
-        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.7" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="29" ReplacesVersions="1" ApplicationRevision="1" />
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" IPConfig="Custom" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
+          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="4" />
+          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="5" KoSingleOffset="10" />
           <Static>
+            <Code>
+              <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
+            </Code>
             <ParameterTypes>
               <ParameterType Id="%AID%_PT-Bool" Name="Bool">
                 <TypeRestriction Base="Value" SizeInBit="1">
-                  <Enumeration Text="Disabled" Value="0" Id="%AID%_PT-Bool_EN-0" />
-                  <Enumeration Text="Enabled" Value="1" Id="%AID%_PT-Bool_EN-1" />
+                  <Enumeration Text="Deaktiviert" Value="0" Id="%AID%_PT-Bool_EN-0" />
+                  <Enumeration Text="Aktiviert" Value="1" Id="%AID%_PT-Bool_EN-1" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-RoutingWithFilter" Name="RoutingWithFilter">
                 <TypeRestriction Base="Value" SizeInBit="2">
-                  <Enumeration Text="Block" Value="2" Id="%AID%_PT-RoutingWithFilter_EN-2" />
-                  <Enumeration Text="Route" Value="1" Id="%AID%_PT-RoutingWithFilter_EN-1" />
-                  <Enumeration Text="Filter" Value="3" Id="%AID%_PT-RoutingWithFilter_EN-3" />
+                  <Enumeration Text="blockieren" Value="2" Id="%AID%_PT-RoutingWithFilter_EN-2" />
+                  <Enumeration Text="weiterleiten" Value="1" Id="%AID%_PT-RoutingWithFilter_EN-1" />
+                  <Enumeration Text="filtern" Value="3" Id="%AID%_PT-RoutingWithFilter_EN-3" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-GrpAcknowledge" Name="GrpAcknowledge">
                 <TypeRestriction Base="Value" SizeInBit="1">
-                  <Enumeration Text="Always" Value="0" Id="%AID%_PT-GrpAcknowledge_EN-0" />
-                  <Enumeration Text="Only if routed" Value="1" Id="%AID%_PT-GrpAcknowledge_EN-1" />
+                  <Enumeration Text="immer" Value="0" Id="%AID%_PT-GrpAcknowledge_EN-0" />
+                  <Enumeration Text="nur bei Weiterleitung" Value="1" Id="%AID%_PT-GrpAcknowledge_EN-1" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-BroadcastLock" Name="BroadcastLock">
                 <TypeRestriction Base="Value" SizeInBit="1">
-                  <Enumeration Text="Block" Value="1" Id="%AID%_PT-BroadcastLock_EN-1" />
-                  <Enumeration Text="Route" Value="0" Id="%AID%_PT-BroadcastLock_EN-0" />
+                  <Enumeration Text="blockieren" Value="1" Id="%AID%_PT-BroadcastLock_EN-1" />
+                  <Enumeration Text="weiterleiten" Value="0" Id="%AID%_PT-BroadcastLock_EN-0" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-PhysAcknowledge" Name="PhysAcknowledge">
                 <TypeRestriction Base="Value" SizeInBit="2">
-                  <Enumeration Text="Only if routed" Value="1" Id="%AID%_PT-PhysAcknowledge_EN-1" />
-                  <Enumeration Text="Always" Value="2" Id="%AID%_PT-PhysAcknowledge_EN-2" />
-                  <Enumeration Text="Answer with NACK" Value="3" Id="%AID%_PT-PhysAcknowledge_EN-3" />
+                  <Enumeration Text="nur bei Weiterleitung" Value="1" Id="%AID%_PT-PhysAcknowledge_EN-1" />
+                  <Enumeration Text="immer" Value="2" Id="%AID%_PT-PhysAcknowledge_EN-2" />
+                  <Enumeration Text="immer abweisen (NACK)" Value="3" Id="%AID%_PT-PhysAcknowledge_EN-3" />
                 </TypeRestriction>
               </ParameterType>
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ParameterTypes/ParameterType" prefix="NET" />
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ParameterTypes/ParameterType" prefix="BASE" />
             </ParameterTypes>
             <Parameters>
-              <Parameter Id="%AID%_P-0000002" Name="AckOfPhysTelSubMain" ParameterType="%AID%_PT-PhysAcknowledge" Text="Acknowledge (ACK) of individual addressed telegrams" Value="1">
+              <Parameter Id="%AID%_P-0000002" Name="AckOfPhysTelSubMain" ParameterType="%AID%_PT-PhysAcknowledge" Text="Bestätigung (ACK) von phys. addressierten Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="0" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000003" Name="AckOfGrpTelSubMain" ParameterType="%AID%_PT-GrpAcknowledge" Text="Acknowledge (ACK) of group telegrams" Value="1">
+              <Parameter Id="%AID%_P-0000003" Name="AckOfGrpTelSubMain" ParameterType="%AID%_PT-GrpAcknowledge" Text="Bestätigung (ACK) von Gruppentelegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="2" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000004" Name="BroadcastTelSubMain" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+              <Parameter Id="%AID%_P-0000004" Name="BroadcastTelSubMain" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000005" Name="PhysTelSubMain" ParameterType="%AID%_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+              <Parameter Id="%AID%_P-0000005" Name="PhysTelSubMain" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000006" Name="GrpTelSubMain_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+              <Parameter Id="%AID%_P-0000006" Name="GrpTelSubMain_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
                 <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000007" Name="GrpTelSubMain_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+              <Parameter Id="%AID%_P-0000007" Name="GrpTelSubMain_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000008" Name="RepetitionBroadcastTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of broadcast telegrams" Value="1">
+              <Parameter Id="%AID%_P-0000008" Name="RepetitionBroadcastTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Broadcast Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="3" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000009" Name="BroadcastTelMainSub" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast telegrams" Value="0">
+              <Parameter Id="%AID%_P-0000009" Name="BroadcastTelMainSub" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000010" Name="RepetitionPhysTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of individual addressed telegrams" Value="1">
+              <Parameter Id="%AID%_P-0000010" Name="RepetitionPhysTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von phys. addressierten Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="5" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000011" Name="PhysTelMainSub" ParameterType="%AID%_PT-RoutingWithFilter" Text="Individual addressed telegrams" Value="3">
+              <Parameter Id="%AID%_P-0000011" Name="PhysTelMainSub" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000012" Name="RepetitionGrpTelMainSub" ParameterType="%AID%_PT-Bool" Text="Repetition of group telegrams" Value="1">
+              <Parameter Id="%AID%_P-0000012" Name="RepetitionGrpTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Gruppentelegrammen"  Value="1">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="3" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000013" Name="GrpTelMainSub_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 14 to 31)" Value="3">
+              <Parameter Id="%AID%_P-0000013" Name="GrpTelMainSub_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Group telegrams (main groups 0 to 13)" Value="3">
+              <Parameter Id="%AID%_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="NET" />
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="BASE" />
             </Parameters>
             <ParameterRefs>
               <ParameterRef Id="%AID%_P-0000002_R-000000201" RefId="%AID%_P-0000002" Tag="42" />
@@ -105,15 +114,30 @@
               <ParameterRef Id="%AID%_P-0000012_R-000001201" RefId="%AID%_P-0000012" Tag="32" />
 			        <ParameterRef Id="%AID%_P-0000013_R-000001301" RefId="%AID%_P-0000013" Tag="29" />
               <ParameterRef Id="%AID%_P-0000014_R-000001401" RefId="%AID%_P-0000014" Tag="28" />
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="NET" />
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="BASE" />
             </ParameterRefs>
+            <ParameterCalculations>
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="NET" />
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="BASE" />
+          </ParameterCalculations>
+          <ParameterValidations>
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="NET" />
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="BASE" />
+          </ParameterValidations>
+
+
             <LoadProcedures>
               <LoadProcedure MergeId="1">
                 <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
                   <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
                 </LdCtrlCompareProp>
-                <!--<LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
                   <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
-                </LdCtrlCompareProp>-->
+                </LdCtrlCompareProp>
+              </LoadProcedure>
+              <LoadProcedure MergeId="4">
+                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
               </LoadProcedure>
             </LoadProcedures>
             <BusInterfaces>
@@ -126,13 +150,20 @@
               <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
               <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
             </Messages>
+            <Script>
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="%prefix%" />
+            </Script>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
+          <ModuleDefs>
+            <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="LOG" />
+          </ModuleDefs>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing">
-                <ParameterSeparator Id="%AID%_PS-" Text="General" UIHint="Headline" />
-                <ParameterSeparator Id="%AID%_PS-" Text="Note: For device name and IP settings see dialog &quot;Properties&quot;" />
+               <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
+               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Network']" prefix="NET" />
+
+              <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing" Icon="router-network" HelpContext="IPRouter-Info"> 
                 <ParameterSeparator Id="%AID%_PS-" Text="Routing KNX -&gt; IP" UIHint="Headline" />
                 <ParameterRefRef RefId="%AID%_P-0000007_R-000000701" />
                 <ParameterRefRef RefId="%AID%_P-0000006_R-000000601" />
@@ -158,8 +189,18 @@
           </Dynamic>
         </ApplicationProgram>
       </ApplicationPrograms>
+      <Baggages>
+        <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//Baggages/*" prefix="LOG" />
+        <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//Baggages/*" prefix="NET" />
+        <Baggage TargetPath="" Name="Help_de.zip" Id="%FILE-HELP-de%">
+          <FileInfo TimeInfo="%DATETIME%" />
+        </Baggage>
+        <Baggage TargetPath="" Name="Icons.zip" Id="%FILE-ICONS%">
+          <FileInfo TimeInfo="%DATETIME%" />
+        </Baggage>
+      </Baggages>
       <Hardware>
-        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
+        <Hardware Id="%HardwareId%" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true">
           <Products>
             <Product Id="%ProductId%" Text="OpenKNX: IP-Router" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />

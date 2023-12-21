@@ -340,12 +340,11 @@ function CreateSymbolicLink ($projectDir, $projectFiles) {
         New-Item -ItemType SymbolicLink -Path $projectFile.Path -Value $linkValue | Out-Null
         if($true) { Write-Host "- CreateSymbolicLink - Symbolic link created at $($projectFile.Path) with target $linkValue"([Char]0x221A) -ForegroundColor Green }
       } else { 
-        $TargetLinkDir = Split-Path -Path $projectDir -Parent
-        $LinkPath = Join-Path $projectDir "lib"
         $LinkName = $ProjectFile.BaseName
-        $LinkTarget = Join-Path $TargetLinkDir $ProjectFile.BaseName
-        New-Item -ItemType Junction -Path $LinkPath -Name $LinkName -Value $LinkTarget -OutVariable output | Out-Null
-        if($true) { Write-Host "- CreateSymbolicLink - Symbolic (Junction) link created at $($LinkPath) with Name $($LinkName) and target $($LinkTarget)"([Char]0x221A)  -ForegroundColor Green }
+        $LinkPath = Join-Path $projectDir "lib"
+        $LinkPath = Join-Path $LinkPath $ProjectFile.BaseName
+        cmd /c "mklink /D `"$LinkPath`" `"..\..\$LinkName`""
+        #if($true) { Write-Host "- CreateSymbolicLink - Symbolic (Junction) link created at $($LinkPath) with Name $($LinkName) and target $($LinkTarget)"([Char]0x221A)  -ForegroundColor Green }
         
       }
     }

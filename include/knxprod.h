@@ -78,6 +78,15 @@
 // 
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
 
+#define TUNNEL_ChannelCount 4
+
+// Parameter per channel
+#define TUNNEL_ParamBlockOffset 0
+#define TUNNEL_ParamBlockSize -1
+#define TUNNEL_ParamCalcIndex(index) (index + TUNNEL_ParamBlockOffset + _channelIndex * TUNNEL_ParamBlockSize)
+
+
+
 
 
 // Header generation for Module 'BASE_KommentarModule'

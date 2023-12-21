@@ -22,6 +22,7 @@
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
           <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="4" />
           <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="5" KoSingleOffset="10" />
+          <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
           <Static>
             <Code>
               <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
@@ -45,41 +46,38 @@
               <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="BASE" />
               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="NET" />
               <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="ROUTE" />
-          </ParameterCalculations>
-          <ParameterValidations>
-              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="BASE" />
-              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="ROUTE" />
-          </ParameterValidations>
-          <LoadProcedures>
-            <LoadProcedure MergeId="1">
-              <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
-                <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
-              </LdCtrlCompareProp>
-              <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
-                <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
-              </LdCtrlCompareProp>
-            </LoadProcedure>
-            <LoadProcedure MergeId="4">
-              <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
-            </LoadProcedure>
-          </LoadProcedures>
-          <BusInterfaces>
-            <BusInterface Id="%AID%_BI-1" AddressIndex="1" AccessType="Tunneling" Text="Tunnel 1" />
-            <BusInterface Id="%AID%_BI-2" AddressIndex="2" AccessType="Tunneling" Text="Tunnel 2" />
-            <BusInterface Id="%AID%_BI-3" AddressIndex="3" AccessType="Tunneling" Text="Tunnel 3" />
-            <BusInterface Id="%AID%_BI-4" AddressIndex="4" AccessType="Tunneling" Text="Tunnel 4" />
-          </BusInterfaces>
-          <Messages>
-            <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
-            <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
-          </Messages>
-          <Script>
-            <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="BASE" />
-            <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="NET" />
-            <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ROUTE" />
-          </Script>
-          <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
+            </ParameterCalculations>
+            <ParameterValidations>
+                <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="BASE" />
+                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="NET" />
+                <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="ROUTE" />
+            </ParameterValidations>
+            <LoadProcedures>
+              <LoadProcedure MergeId="1">
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
+                </LdCtrlCompareProp>
+                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
+                </LdCtrlCompareProp>
+              </LoadProcedure>
+              <LoadProcedure MergeId="4">
+                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
+              </LoadProcedure>
+            </LoadProcedures>
+            <BusInterfaces>
+              <op:include href="IP-Router.tunnels.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="TUNNEL" />
+            </BusInterfaces>
+            <Messages>
+              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
+              <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+            </Messages>
+            <Script>
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="BASE" />
+              <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="NET" />
+              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ROUTE" />
+            </Script>
+            <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
           <ModuleDefs>
             <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="BASE" />

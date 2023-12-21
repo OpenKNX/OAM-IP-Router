@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.1.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.2.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -552,13 +552,13 @@ function newline(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="" Name="ets.png" Id="M-00FA_BG--ets.2Epng">
-          <FileInfo TimeInfo="2023-12-21T17:16:39.9608332Z" />
+          <FileInfo TimeInfo="2023-12-21T22:28:56.4577514Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Help_de.zip" Id="M-00FA_BG--Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2023-12-21T17:16:40.0775241Z" />
+          <FileInfo TimeInfo="2023-12-21T22:28:56.5764412Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Icons.zip" Id="M-00FA_BG--Icons.2Ezip">
-          <FileInfo TimeInfo="2023-12-21T17:16:40.1555399Z" />
+          <FileInfo TimeInfo="2023-12-21T22:28:56.6549645Z" />
         </Baggage>
       </Baggages>
       <Hardware>

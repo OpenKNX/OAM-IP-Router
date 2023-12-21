@@ -312,9 +312,7 @@ function CreateSymbolicLink ($projectDir, $projectFiles) {
         # Now, lets create target link path
         if ($IsMacOS -or $IsLinux) { $linkTarget = "../../" + $ProjectFile.BaseName.ToString()  }
         else { 
-          #$linkTarget = Get-Item ($projectFile.Path).ToString()
-          $TargetLinkDir = Split-Path -Path $projectDir -Parent
-          $linkTarget = Get-Item ($TargetLinkDir.ToString() + "/" + $ProjectFile.BaseName.ToString()).ToString()
+          $linkTarget = "..\..\" + $ProjectFile.BaseName.ToString()
           if($Verbose) { Write-Host "CreateSymbolicLink - Should be Symbolic Link Target: $($linkTarget.ToString())" -ForegroundColor DarkYellow }
         }
       
@@ -338,15 +336,11 @@ function CreateSymbolicLink ($projectDir, $projectFiles) {
       if ($IsMacOS -or $IsLinux) {
         $linkValue = Join-Path -Path ".." -ChildPath ".." -AdditionalChildPath $linkTarget
         New-Item -ItemType SymbolicLink -Path $projectFile.Path -Value $linkValue | Out-Null
-        if($true) { Write-Host "- CreateSymbolicLink - Symbolic link created at $($projectFile.Path) with target $linkValue"([Char]0x221A) -ForegroundColor Green }
       } else { 
-        $LinkName = $ProjectFile.BaseName
-        $LinkPath = Join-Path $projectDir "lib"
-        $LinkPath = Join-Path $LinkPath $ProjectFile.BaseName
-        cmd /c "mklink /D `"$LinkPath`" `"..\..\$LinkName`""
-        #if($true) { Write-Host "- CreateSymbolicLink - Symbolic (Junction) link created at $($LinkPath) with Name $($LinkName) and target $($LinkTarget)"([Char]0x221A)  -ForegroundColor Green }
-        
+        $linkValue = Join-Path $(Join-Path ".." "..") $linkTarget
+        cmd /C mklink /D "$($projectFile.Path)" "$linkValue"
       }
+      if($true) { Write-Host "- CreateSymbolicLink - Symbolic link created at $($projectFile.Path) with target $linkValue"([Char]0x221A) -ForegroundColor Green }
     }
   }
 }

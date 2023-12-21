@@ -11,6 +11,7 @@ bool core1_separate_stack = true;
 
 uint32_t _tpLedActivity = 0;
 uint32_t _ipLedActivity = 0;
+#ifdef KNX_ACTIVITYCALLBACK
 void activity(uint8_t info)
 {
     if((info >> KNX_ACTIVITYCALLBACK_NET))
@@ -18,11 +19,12 @@ void activity(uint8_t info)
     else
         _tpLedActivity = millis();
 }
+#endif
 
 
 void setup()
 {
-    const uint8_t firmwareRevision = 0;
+    const uint8_t firmwareRevision = 1;
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);
@@ -31,11 +33,13 @@ void setup()
     
     openknx.setup();
 
+#ifdef KNX_ACTIVITYCALLBACK
 #if defined(INFO2_LED_PIN) && defined(INFO3_LED_PIN)
     openknx.info3Led.activity(_ipLedActivity, false);
     openknx.info2Led.activity(_tpLedActivity, false);
 #endif
     knx.setActivityCallback(activity);
+#endif
 }
 
 void loop()

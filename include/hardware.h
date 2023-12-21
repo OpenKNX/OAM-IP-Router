@@ -7,6 +7,15 @@
 #define OKNXHW_REG1_ETH
 #include "OpenKNXHardware.h"
 
+#undef INFO_LED_PIN
+#undef INFO_LED_PIN_ACTIVE_ON
+
+#define INFO2_LED_PIN 24
+#define INFO2_LED_PIN_ACTIVE_ON HIGH
+
+#define INFO3_LED_PIN 3
+#define INFO3_LED_PIN_ACTIVE_ON HIGH
+
 #endif
 
 #ifdef BOARD_REG1_ETH_V1

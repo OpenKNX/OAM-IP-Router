@@ -51,15 +51,10 @@ void loop()
 ToDos:
 -------
 
-"cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
-
-return false on send unicast in rp2040 plattform
+tunnel: sending to ip 0 => drop telegram (DescReq HPAI = 0)
 
 reverse activity led and signal ip and tp link with "on"
 
-- unshandled service identifier 0 when progging with tunnel support
-
-- tunnel unicast fail
 
 
 BUGS
@@ -69,6 +64,10 @@ none atm :)
 
 IMPROVEMENTS
 -------
+
+return false on send unicast in rp2040 plattform
+
+"cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
 -assign tunnels to ip-adresses
 

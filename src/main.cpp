@@ -38,7 +38,7 @@ void setup()
     openknx.info3Led.activity(_ipLedActivity, false);
     openknx.info2Led.activity(_tpLedActivity, false);
 #endif
-    knx.setActivityCallback(activity);
+    knx.bau().setActivityCallback(activity);
 #endif
 }
 

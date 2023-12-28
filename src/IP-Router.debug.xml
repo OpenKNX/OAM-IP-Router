@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.2.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.1.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -367,9 +367,6 @@
             </LoadProcedures>
             <BusInterfaces>
               <BusInterface Id="M-00FA_A-A11E-28-0000_BI-1" AddressIndex="1" AccessType="Tunneling" Text="Tunnel 1" />
-              <BusInterface Id="M-00FA_A-A11E-28-0000_BI-2" AddressIndex="2" AccessType="Tunneling" Text="Tunnel 2" />
-              <BusInterface Id="M-00FA_A-A11E-28-0000_BI-3" AddressIndex="3" AccessType="Tunneling" Text="Tunnel 3" />
-              <BusInterface Id="M-00FA_A-A11E-28-0000_BI-4" AddressIndex="4" AccessType="Tunneling" Text="Tunnel 4" />
             </BusInterfaces>
             <Messages>
               <Message Id="M-00FA_A-A11E-28-0000_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
@@ -552,13 +549,13 @@ function newline(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="" Name="ets.png" Id="M-00FA_BG--ets.2Epng">
-          <FileInfo TimeInfo="2023-12-21T22:28:56.4577514Z" />
+          <FileInfo TimeInfo="2023-12-28T10:19:00.9136124Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Help_de.zip" Id="M-00FA_BG--Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2023-12-21T22:28:56.5764412Z" />
+          <FileInfo TimeInfo="2023-12-28T10:19:01.0048143Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Icons.zip" Id="M-00FA_BG--Icons.2Ezip">
-          <FileInfo TimeInfo="2023-12-21T22:28:56.6549645Z" />
+          <FileInfo TimeInfo="2023-12-28T10:19:02.0786156Z" />
         </Baggage>
       </Baggages>
       <Hardware>

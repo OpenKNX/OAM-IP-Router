@@ -71,6 +71,9 @@
             <Messages>
               <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
               <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="BASE" />
+              <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="NET" />
+              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="ROUTE" />
             </Messages>
             <Script>
               <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="BASE" />

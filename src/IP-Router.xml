@@ -18,10 +18,10 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="40" ReplacesVersions="0" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="41" ReplacesVersions="0" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
-          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="4" />
-          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="5" KoSingleOffset="10" />
+          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="10" />
+          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11" />
           <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
           <Static>
             <Code>
@@ -65,9 +65,6 @@
                 <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
               </LoadProcedure>
             </LoadProcedures>
-            <BusInterfaces>
-              <op:include href="IP-Router.tunnels.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="TUNNEL" />
-            </BusInterfaces>
             <Messages>
               <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
               <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
@@ -80,6 +77,9 @@
               <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="NET" />
               <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ROUTE" />
             </Script>
+            <BusInterfaces>
+              <op:include href="IP-Router.tunnels.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="TUNNEL" />
+            </BusInterfaces>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
           <ModuleDefs>

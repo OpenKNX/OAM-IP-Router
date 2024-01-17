@@ -706,13 +706,13 @@ function newline(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="" Name="ets.png" Id="M-00FA_BG--ets.2Epng">
-          <FileInfo TimeInfo="2024-01-14T10:28:15.9980397Z" />
+          <FileInfo TimeInfo="2024-01-17T21:51:42.8440771Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Help_de.zip" Id="M-00FA_BG--Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-01-14T10:28:16.1800798Z" />
+          <FileInfo TimeInfo="2024-01-17T21:51:43.0236270Z" />
         </Baggage>
         <Baggage TargetPath="" Name="Icons.zip" Id="M-00FA_BG--Icons.2Ezip">
-          <FileInfo TimeInfo="2024-01-14T10:28:16.2420940Z" />
+          <FileInfo TimeInfo="2024-01-17T21:51:43.0786404Z" />
         </Baggage>
       </Baggages>
       <Hardware>

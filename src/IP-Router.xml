@@ -23,8 +23,12 @@
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
         <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="43" ReplacesVersions="0" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
-          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="10" />
-          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11" />
+          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="10" >
+            <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="17" />
+          </op:define>
+          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11">
+            <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
+          </op:define>
           <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
           <Static>
             <Code>
@@ -107,7 +111,7 @@
       <Hardware>
         <Hardware Id="%HardwareId%" Name="IP-Router%BuildSuffix%" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
-            <Product Id="%ProductId%" Text="OpenKNX: IP-Router%BuildSuffixText%" OrderNumber="SYS-REG1-IP-Router" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
+            <Product Id="%ProductId%" Text="OpenKNX: IP-Router%BuildSuffixText%" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />
             </Product>
           </Products>

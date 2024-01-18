@@ -14,6 +14,8 @@
 #define MAIN_ParameterSize 82
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "SYS-REG1-IP-Router"
+#define BASE_ModuleVersion 17
+#define NET_ModuleVersion 2
 // Parameter with single occurrence
 
 

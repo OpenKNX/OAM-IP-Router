@@ -10,8 +10,8 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 41
-#define MAIN_ParameterSize 177
+#define MAIN_ApplicationVersion 43
+#define MAIN_ParameterSize 82
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "SYS-REG1-IP-Router"
 // Parameter with single occurrence
@@ -40,35 +40,29 @@
 #define NET_SubnetMask                          10      // IP address, 4 Byte
 #define NET_GatewayAddress                      14      // IP address, 4 Byte
 #define NET_NameserverAddress                   18      // IP address, 4 Byte
-#define NET_WifiSSID                            22      // char*, 32 Byte
-#define NET_WifiPassword                        54      // char*, 63 Byte
-#define NET_CustomHostname                      117      // 1 Bit, Bit 7
+#define NET_CustomHostname                      22      // 1 Bit, Bit 7
 #define     NET_CustomHostnameMask 0x80
 #define     NET_CustomHostnameShift 7
-#define NET_StaticIP                            117      // 1 Bit, Bit 6
+#define NET_StaticIP                            22      // 1 Bit, Bit 6
 #define     NET_StaticIPMask 0x40
 #define     NET_StaticIPShift 6
-#define NET_CustomMacAddress                    117      // 1 Bit, Bit 5
+#define NET_CustomMacAddress                    22      // 1 Bit, Bit 5
 #define     NET_CustomMacAddressMask 0x20
 #define     NET_CustomMacAddressShift 5
-#define NET_mDNS                                118      // 1 Bit, Bit 7
+#define NET_mDNS                                23      // 1 Bit, Bit 7
 #define     NET_mDNSMask 0x80
 #define     NET_mDNSShift 7
-#define NET_HTTP                                118      // 1 Bit, Bit 6
+#define NET_HTTP                                23      // 1 Bit, Bit 6
 #define     NET_HTTPMask 0x40
 #define     NET_HTTPShift 6
-#define NET_NTP                                 118      // 1 Bit, Bit 5
+#define NET_NTP                                 23      // 1 Bit, Bit 5
 #define     NET_NTPMask 0x20
 #define     NET_NTPShift 5
-#define NET_HostName                            119      // char*, 24 Byte
-#define NET_MacAddress                          143      // char*, 17 Byte
-#define NET_LanMode                             160      // 4 Bits, Bit 7-4
+#define NET_HostName                            24      // char*, 24 Byte
+#define NET_LanMode                             65      // 4 Bits, Bit 7-4
 #define     NET_LanModeMask 0xF0
 #define     NET_LanModeShift 4
-#define NET_NetworkType                         160      // 4 Bits, Bit 3-0
-#define     NET_NetworkTypeMask 0x0F
-#define     NET_NetworkTypeShift 0
-#define NET_Dummy                               176      // uint8_t
+#define NET_Dummy                               81      // uint8_t
 
 // IP-Adresse
 #define ParamNET_HostAddress                         (knx.paramInt(NET_HostAddress))
@@ -78,10 +72,6 @@
 #define ParamNET_GatewayAddress                      (knx.paramInt(NET_GatewayAddress))
 // Nameserver
 #define ParamNET_NameserverAddress                   (knx.paramInt(NET_NameserverAddress))
-// SSID
-#define ParamNET_WifiSSID                            (knx.paramData(NET_WifiSSID))
-// Passswort
-#define ParamNET_WifiPassword                        (knx.paramData(NET_WifiPassword))
 // Hostname anpassen
 #define ParamNET_CustomHostname                      ((bool)(knx.paramByte(NET_CustomHostname) & NET_CustomHostnameMask))
 // DHCP
@@ -96,12 +86,8 @@
 #define ParamNET_NTP                                 ((bool)(knx.paramByte(NET_NTP) & NET_NTPMask))
 // Hostname
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
-// MAC-Adresse
-#define ParamNET_MacAddress                          (knx.paramData(NET_MacAddress))
 // LAN-Modus
 #define ParamNET_LanMode                             ((knx.paramByte(NET_LanMode) & NET_LanModeMask) >> NET_LanModeShift)
-// Typ
-#define ParamNET_NetworkType                         (knx.paramByte(NET_NetworkType) & NET_NetworkTypeMask)
 // 
 #define ParamNET_Dummy                               (knx.paramByte(NET_Dummy))
 
@@ -122,7 +108,7 @@
 #define BASE_KommentarModuleModuleParamSize 0
 #define BASE_KommentarModuleSubmodulesParamSize 0
 #define BASE_KommentarModuleParamSize 0
-#define BASE_KommentarModuleParamOffset 177
+#define BASE_KommentarModuleParamOffset 82
 #define BASE_KommentarModuleCalcIndex(index, m1) (index + BASE_KommentarModuleParamOffset + _channelIndex * BASE_KommentarModuleCount * BASE_KommentarModuleParamSize + m1 * BASE_KommentarModuleParamSize)
 
 

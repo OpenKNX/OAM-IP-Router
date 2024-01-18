@@ -6,6 +6,9 @@
   <op:config name="%BuildSuffix" value="" />
   <op:config name="%ApplicationNumber" value="30" />
   <op:config name="%Tunnelcount%" value="4" />
+  <op:nowarn id="1" regex="%BASE_" />
+
+
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -18,7 +21,7 @@
         <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
         <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
         <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="41" ReplacesVersions="0" ApplicationRevision="0" />
+        <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="43" ReplacesVersions="0" ApplicationRevision="0" />
         <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
           <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="10" />
           <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11" />

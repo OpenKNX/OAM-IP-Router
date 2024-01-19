@@ -159,6 +159,22 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
+            "label": "OpenKNXproducer Release",
+            "type": "shell",
+            "command": "${env:USERPROFILE}/bin/OpenKNXproducer.exe",
+            "args": [
+                "create",
+                "--Debug",
+                "-h",
+                "include/knxprod.h",
+                "src/IP-Router-Release.xml"
+            ],
+            "problemMatcher": [],
+            "group": "test",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Gen. Dependencies.txt"]
+        },
+        {
             "label": "Gen. Dependencies.txt",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/setup/reusable/Build-Dependencies.ps1",
@@ -194,11 +210,20 @@
         },
         // Build a release package for distribution
         {
+            "label": "Build-Beta",
+            "type": "shell",
+            "command": "scripts/Build-Release.ps1",
+            "args": [
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
             "label": "Build-Release",
             "type": "shell",
             "command": "scripts/Build-Release.ps1",
             "args": [
-            //    "Release"
+                "Release"
             ],
             "problemMatcher": [],
             "group": "test"

@@ -2,14 +2,14 @@
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
-  <op:config name="%ApplicationVersion%" value="44" /> <!-- 44 = 2.12 -->
+  <op:config name="%ApplicationVersion%" value="1" /> <!-- 1 = 0.1 -->
   <op:config name="%ApplicationRevision%" value="0" />
   <op:config name="%ReplacesVersions%" value="0" />
 
   <op:config name="%NET_IPConfigTool%" value="1" />
-  <op:config name="%BuildSuffixText%" value=" (Beta)" />
-  <op:config name="%BuildSuffix%" value="-Beta" />
-  <op:config name="%ApplicationNumber%" value="30" />
+  <op:config name="%BuildSuffixText%" value="" />
+  <op:config name="%BuildSuffix%" value="" />
+  <op:config name="%ApplicationNumber%" value="31" />
   <op:config name="%Tunnelcount%" value="4" />
   <op:nowarn id="1" regex="%BASE_" />
 

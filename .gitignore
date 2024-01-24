@@ -8,3 +8,4 @@
 release/*
 /include/versions.h
 /src/IP-Router.baggages
+/src/IP-Router-Release.baggages

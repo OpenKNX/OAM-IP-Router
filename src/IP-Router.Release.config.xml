@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
-  <op:config name="%NET_IPConfigTool%" value="1" />
-  <op:config name="%BuildSuffixText" value="" />
-  <op:config name="%BuildSuffix" value="" />
-  <op:config name="%ApplicationNumber" value="30" />
-  <op:config name="%Tunnelcount%" value="4" />
-</KNX>

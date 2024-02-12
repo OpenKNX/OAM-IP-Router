@@ -2,7 +2,7 @@
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
-  <op:config name="%ApplicationVersion%" value="44" /> <!-- 44 = 2.12 -->
+  <op:config name="%ApplicationVersion%" value="46" /> <!-- 46 = 2.14 -->
   <op:config name="%ApplicationRevision%" value="0" />
   <op:config name="%ReplacesVersions%" value="0" />
 
@@ -34,6 +34,7 @@
           <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11">
             <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
           </op:define>
+          <op:define prefix="ROUTE" header="../include/knxprod.h" ModuleType="98" />
           <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
           <Static>
             <Code>
@@ -104,6 +105,7 @@
                <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Network']" prefix="NET" />
                <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Routing']" prefix="ROUTE" />
+               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnels']" prefix="ROUTE" />
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>

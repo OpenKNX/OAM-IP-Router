@@ -80,15 +80,6 @@
               <Parameter Id="%AID%_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
-              
-              <Parameter Id="%AID%_P-0000020" Name="ResTunnel1" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 1" Value="0">
-                <Memory CodeSegment="%MID%" Offset="0" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-0000021" Name="Tunnel1IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 1" Value="192.168.0.0">
-                <Memory CodeSegment="%MID%" Offset="0" BitOffset="0" />
-              </Parameter>
-
-
             </Parameters>
             <ParameterRefs>
               <ParameterRef Id="%AID%_P-0000002_R-000000201" RefId="%AID%_P-0000002" Tag="42" />
@@ -104,11 +95,6 @@
               <ParameterRef Id="%AID%_P-0000012_R-000001201" RefId="%AID%_P-0000012" Tag="32" />
 			        <ParameterRef Id="%AID%_P-0000013_R-000001301" RefId="%AID%_P-0000013" Tag="29" />
               <ParameterRef Id="%AID%_P-0000014_R-000001401" RefId="%AID%_P-0000014" Tag="28" />
-
-              <ParameterRef Id="%AID%_P-0000020_R-000002001" RefId="%AID%_P-0000020" />
-              <ParameterRef Id="%AID%_P-0000021_R-000002101" RefId="%AID%_P-0000021" />
-
-
             </ParameterRefs>
             <ComObjectTable>
             </ComObjectTable>
@@ -144,12 +130,7 @@
 
               <ParameterBlock Id="%AID%_PB-1" Name="Tunnels" Text="Tunnels" Icon="lan-connect" HelpContext="TUNNEL-Info"> 
                 <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät zugewiesen werden." />
-                <ParameterRefRef RefId="%AID%_P-0000020_R-000002001" />
-                <choose ParamRefId="%AID%_P-0000020_R-000002001">
-                  <when test="1">
-                    <ParameterRefRef RefId="%AID%_P-0000021_R-000002101" />
-                  </when>
-                </choose>
+                <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnels']/*" IsInner="true" type="template" prefix="ROUTE" />
               </ParameterBlock>
 
 

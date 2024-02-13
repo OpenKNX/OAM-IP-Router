@@ -2,7 +2,7 @@
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
-  <op:config name="%ApplicationVersion%" value="46" /> <!-- 46 = 2.14 -->
+  <op:config name="%ApplicationVersion%" value="47" /> <!-- 47 = 2.15 -->
   <op:config name="%ApplicationRevision%" value="0" />
   <op:config name="%ReplacesVersions%" value="0" />
 
@@ -34,8 +34,7 @@
           <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11">
             <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
           </op:define>
-          <op:define prefix="ROUTE" header="../include/knxprod.h" ModuleType="98" />
-          <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
+          <op:define prefix="ROUTE" header="../include/knxprod.h" NumChannels="4" ModuleType="99" />
           <Static>
             <Code>
               <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
@@ -48,12 +47,14 @@
             <Parameters>
               <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="BASE" />
               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" prefix="ROUTE" />
+              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="ROUTE" />
+              <op:include href="IP-Router.templ.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="template" prefix="ROUTE" />
             </Parameters>
             <ParameterRefs>
               <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="BASE" />
               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="NET" />
               <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="ROUTE" />
+              <op:include href="IP-Router.templ.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" type="template" prefix="ROUTE" />
             </ParameterRefs>
             <ParameterCalculations>
               <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="BASE" />
@@ -91,7 +92,7 @@
               <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ROUTE" />
             </Script>
             <BusInterfaces>
-              <op:include href="IP-Router.tunnels.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="TUNNEL" />
+              <op:include href="IP-Router.share.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="ROUTE" />
             </BusInterfaces>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
@@ -104,8 +105,7 @@
             <ChannelIndependentBlock>
                <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Network']" prefix="NET" />
-               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Routing']" prefix="ROUTE" />
-               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnels']" prefix="ROUTE" />
+               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/*" prefix="ROUTE" />
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>

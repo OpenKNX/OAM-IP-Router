@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.8.0">
-  <!-- 1 = 0.1 -->
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.11.2.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -10,19 +9,15 @@
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
-        <!-- Each increase of AppliationVersion FORCES the Enduser to update according firmware, too -->
-        <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
-        <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
-        <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
         <!-- OpenKnxId="0xA1" ApplicationNumber="31" ApplicationVersion="1" ReplacesVersions="0" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11F-01-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG--Help.5Fde.2Ezip" IconFile="M-00FA_BG--Icons.2Ezip" ApplicationNumber="41247" ApplicationVersion="1" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
+        <ApplicationProgram Id="M-00FA_A-A11F-01-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG-A1.5C1F.5C01-Help.5Fde.2Ezip" IconFile="M-00FA_BG-A1.5C1F.5C01-Icons.2Ezip" ApplicationNumber="41247" ApplicationVersion="1" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
           <Static>
             <Code>
               <AbsoluteSegment Id="M-00FA_A-A11F-01-0000_AS-0100" Address="256" Size="256" />
             </Code>
             <ParameterTypes>
               <ParameterType Id="M-00FA_A-A11F-01-0000_PT-ETS" Name="ETS">
-                <TypePicture RefId="M-00FA_BG--ets.2Epng" HorizontalAlignment="Right" />
+                <TypePicture RefId="M-00FA_BG-A1.5C1F.5C01-ets.2Epng" HorizontalAlignment="Right" />
               </ParameterType>
               <ParameterType Id="M-00FA_A-A11F-01-0000_PT-Text40Byte" Name="Text40Byte">
                 <TypeText SizeInBit="320" />
@@ -443,7 +438,6 @@ function newline(device, online, progress, context) {
               </Static>
               <Dynamic>
                 <ParameterBlock Id="M-00FA_A-A11F-01-0000_MD-1000001_PB-1" Inline="true">
-                  <!-- ParameterRefRef BASE_Kommentar-1000001 'Kommentar'-->
                   <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_MD-1000001_P-1000001_R-100000101" HelpContext="BASE-Comment" />
                   <Button Id="M-00FA_A-A11F-01-0000_MD-1000001_B-1000001" Text="Alle '\n' im Text durch neue Zeile(n) ersetzen" EventHandler="newline" EventHandlerParameters="{ &quot;textbox&quot;:&quot;BASE_Kommentar-1000001&quot; }" />
                 </ParameterBlock>
@@ -454,7 +448,6 @@ function newline(device, online, progress, context) {
             <ChannelIndependentBlock>
               <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-2" Name="BASE_General" Text="Allgemein" Icon="cog" HelpContext="BASE-OpenKNX">
                 <!-- Hidden -->
-                <!-- ParameterRefRef BASE_InternalTime 'InternalTime'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-1000010_R-100001001" />
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-1" Text="Allgemein" UIHint="Headline" />
                 <!-- Startup Delay pattern -->
@@ -468,13 +461,10 @@ function newline(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11F-01-0000_PB-3_C-3" Name="BASE_Col3" Width="20%" />
                   </Columns>
                   <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-2" Text="  Startverzögerung" Cell="1,1" />
-                  <!-- ParameterRefRef BASE_StartupDelayTime 'Zeit'-->
                   <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1000003_R-100000301" Cell="1,2" IndentLevel="1" />
-                  <!-- ParameterRefRef BASE_StartupDelayBase 'Zeitbasis'-->
                   <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1000002_R-100000201" Cell="1,3" IndentLevel="1" />
                 </ParameterBlock>
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-3" Text="Erweitert" UIHint="Headline" />
-                <!-- ParameterRefRef BASE_Watchdog 'Watchdog aktivieren'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1000147_R-100014701" HelpContext="BASE-Watchdog" IndentLevel="1" />
                 <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-4" Name="BASE_OpenKNX" Inline="true" Layout="Grid">
                   <Rows>
@@ -484,32 +474,23 @@ function newline(device, online, progress, context) {
                   <Columns>
                     <Column Id="M-00FA_A-A11F-01-0000_PB-4_C-1" Name="BASE_Col1" Width="100%" />
                   </Columns>
-                  <!-- ParameterRefRef BASE_ETS 'ETS'-->
                   <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-1000001_R-100000101" Cell="1,1" HelpContext="BASE-OpenKNX" />
                 </ParameterBlock>
               </ParameterBlock>
               <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-5" Name="NET_Network" Text="Netzwerk" Icon="ethernet" HelpContext="Empty">
                 <!-- Hidden -->
-                <!-- ParameterRefRef NET_SelectHelper ''-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-1101000_R-110100000" />
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-4" Text="IP-Adresse" UIHint="Headline" />
-                <!-- choose NET_SelectHelper ''-->
                 <choose ParamRefId="M-00FA_A-A11F-01-0000_P-1101000_R-110100000">
                   <!-- Static 0 -->
                   <when test="1">
                     <!-- default -->
-                    <!-- ParameterRefRef NET_StaticIP 'DHCP'-->
                     <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100002_R-110000201" IndentLevel="1" HelpContext="NET-IpAddress" />
-                    <!-- choose NET_StaticIP 'DHCP'-->
                     <choose ParamRefId="M-00FA_A-A11F-01-0000_UP-1100002_R-110000201">
                       <when test="1">
-                        <!-- ParameterRefRef NET_HostAddress 'IP-Adresse'-->
                         <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100011_R-110001101" IndentLevel="1" HelpContext="NET-IpAddress" />
-                        <!-- ParameterRefRef NET_SubnetMask 'Subnetzsmaske'-->
                         <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100012_R-110001201" IndentLevel="1" HelpContext="NET-IpAddress" />
-                        <!-- ParameterRefRef NET_GatewayAddress 'Standardgateway'-->
                         <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100013_R-110001301" IndentLevel="1" HelpContext="NET-IpAddress" />
-                        <!-- ParameterRefRef NET_NameserverAddress 'Nameserver'-->
                         <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100021_R-110002101" IndentLevel="1" HelpContext="NET-IpAddress" />
                       </when>
                     </choose>
@@ -520,15 +501,11 @@ function newline(device, online, progress, context) {
                   </when>
                 </choose>
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-6" Text="Services" UIHint="Headline" />
-                <!-- ParameterRefRef NET_mDNS 'mDNS'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100031_R-110003101" IndentLevel="1" HelpContext="NET-MDNS" />
                 <!-- HTTP -->
-                <!-- choose NET_SelectHelper ''-->
                 <choose ParamRefId="M-00FA_A-A11F-01-0000_P-1101000_R-110100000">
                   <when test="!=0">
-                    <!-- ParameterRefRef NET_HTTP 'Weberver'-->
                     <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100032_R-110003201" IndentLevel="1" />
-                    <!-- choose NET_HTTP 'Weberver'-->
                     <choose ParamRefId="M-00FA_A-A11F-01-0000_UP-1100032_R-110003201">
                       <when test="1">
                         <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-6" Name="NET_HTTP" Text="Webserver" Icon="web" HelpContext="Empty">
@@ -539,19 +516,14 @@ function newline(device, online, progress, context) {
                   </when>
                 </choose>
                 <!-- NTP -->
-                <!-- choose NET_SelectHelper ''-->
                 <choose ParamRefId="M-00FA_A-A11F-01-0000_P-1101000_R-110100000">
                   <when test="!=0">
-                    <!-- ParameterRefRef NET_NTP 'Zeitgeber (NTP)'-->
                     <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100033_R-110003301" IndentLevel="1" />
-                    <!-- choose NET_NTP 'Zeitgeber (NTP)'-->
                     <choose ParamRefId="M-00FA_A-A11F-01-0000_UP-1100033_R-110003301">
                       <when test="0">
-                        <!-- Assign-Target BASE_InternalTime 'InternalTime'-->
                         <Assign TargetParamRefRef="M-00FA_A-A11F-01-0000_P-1000010_R-100001001" Value="0" />
                       </when>
                       <when test="1">
-                        <!-- Assign-Target BASE_InternalTime 'InternalTime'-->
                         <Assign TargetParamRefRef="M-00FA_A-A11F-01-0000_P-1000010_R-100001001" Value="1" />
                         <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-7" Name="NET_NTP" Text="Zeitgeber" Icon="clock-outline" HelpContext="Empty">
                           <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-8" Text="Zeitgeber (NTP)" UIHint="Headline" />
@@ -561,52 +533,34 @@ function newline(device, online, progress, context) {
                   </when>
                 </choose>
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-9" Text="Erweiterte Einstellung" UIHint="Headline" />
-                <!-- ParameterRefRef NET_CustomHostname 'Hostname anpassen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100001_R-110000101" IndentLevel="1" HelpContext="NET-Hostname" />
-                <!-- choose NET_CustomHostname 'Hostname anpassen'-->
                 <choose ParamRefId="M-00FA_A-A11F-01-0000_UP-1100001_R-110000101">
                   <when test="1">
-                    <!-- ParameterRefRef NET_HostName 'Hostname'-->
                     <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-1100010_R-110001001" IndentLevel="2" HelpContext="NET-Hostname" />
                   </when>
                 </choose>
-                <!-- ParameterRefRef NET_LanMode 'LAN-Modus'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_UP-1100052_R-110005201" IndentLevel="1" HelpContext="NET-LanMode" />
               </ParameterBlock>
               <ParameterBlock Id="M-00FA_A-A11F-01-0000_PB-8" Name="ROUTE_Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info">
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-10" Text="Routing KNX -&gt; IP" UIHint="Headline" />
-                <!-- ParameterRefRef ROUTE_GrpTelSubMain_0_13 'Gruppentelegramme (Hauptgruppe 0 - 13)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000007_R-000000701" />
-                <!-- ParameterRefRef ROUTE_GrpTelSubMain_14_31 'Gruppentelegramme (Hauptgruppe 14 - 31)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000006_R-000000601" />
-                <!-- ParameterRefRef ROUTE_PhysTelSubMain 'Phys. addressierte Telegramme'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000005_R-000000501" />
-                <!-- ParameterRefRef ROUTE_BroadcastTelSubMain 'Broadcast Telegramme'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000004_R-000000401" />
-                <!-- ParameterRefRef ROUTE_AckOfGrpTelSubMain 'Bestätigung (ACK) von Gruppentelegrammen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000003_R-000000301" />
-                <!-- ParameterRefRef ROUTE_AckOfPhysTelSubMain 'Bestätigung (ACK) von phys. addressierten Telegrammen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000002_R-000000201" />
-                <!-- choose ROUTE_AckOfPhysTelSubMain 'Bestätigung (ACK) von phys. addressierten Telegrammen'-->
                 <choose ParamRefId="M-00FA_A-A11F-01-0000_P-0000002_R-000000201">
                   <when test="3">
                     <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-11" Text="Attention: If &quot;Answer with NACK&quot;, parameterisation must be done by IP" />
                   </when>
                 </choose>
                 <ParameterSeparator Id="M-00FA_A-A11F-01-0000_PS-12" Text="Routing IP -&gt; KNX" UIHint="Headline" />
-                <!-- ParameterRefRef ROUTE_GrpTelMainSub_0_13 'Gruppentelegramme (Hauptgruppe 0 - 13)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000014_R-000001401" />
-                <!-- ParameterRefRef ROUTE_GrpTelMainSub_14_31 'Gruppentelegramme (Hauptgruppe 14 - 31)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000013_R-000001301" />
-                <!-- ParameterRefRef ROUTE_PhysTelMainSub 'Phys. addressierte Telegramme'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000011_R-000001101" />
-                <!-- ParameterRefRef ROUTE_BroadcastTelMainSub 'Broadcast Telegramme'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000009_R-000000901" />
-                <!-- ParameterRefRef ROUTE_RepetitionGrpTelMainSub 'Wiederholung von Gruppentelegrammen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000012_R-000001201" />
-                <!-- ParameterRefRef ROUTE_RepetitionPhysTelMainSub 'Wiederholung von phys. addressierten Telegrammen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000010_R-000001001" />
-                <!-- ParameterRefRef ROUTE_RepetitionBroadcastTelMainSub 'Wiederholung von Broadcast Telegrammen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11F-01-0000_P-0000008_R-000000801" />
               </ParameterBlock>
             </ChannelIndependentBlock>
@@ -614,18 +568,18 @@ function newline(device, online, progress, context) {
         </ApplicationProgram>
       </ApplicationPrograms>
       <Baggages>
-        <Baggage TargetPath="" Name="ets.png" Id="M-00FA_BG--ets.2Epng">
-          <FileInfo TimeInfo="2024-01-21T15:29:38.2834404Z" />
+        <Baggage TargetPath="A1\1F\01" Name="ets.png" Id="M-00FA_BG-A1.5C1F.5C01-ets.2Epng">
+          <FileInfo TimeInfo="2024-02-18T14:11:43.6720015Z" />
         </Baggage>
-        <Baggage TargetPath="" Name="Help_de.zip" Id="M-00FA_BG--Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-01-21T15:29:38.4461395Z" />
+        <Baggage TargetPath="A1\1F\01" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1F.5C01-Help.5Fde.2Ezip">
+          <FileInfo TimeInfo="2024-02-18T14:11:44.1462905Z" />
         </Baggage>
-        <Baggage TargetPath="" Name="Icons.zip" Id="M-00FA_BG--Icons.2Ezip">
-          <FileInfo TimeInfo="2024-01-21T15:29:38.5174885Z" />
+        <Baggage TargetPath="A1\1F\01" Name="Icons.zip" Id="M-00FA_BG-A1.5C1F.5C01-Icons.2Ezip">
+          <FileInfo TimeInfo="2024-02-18T14:11:44.2128184Z" />
         </Baggage>
       </Baggages>
       <Hardware>
-        <Hardware Id="M-00FA_H-1-1" Name="IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
+        <Hardware Id="M-00FA_H-1-1" Name="OpenKNX-IP-Router" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
             <Product Id="M-00FA_H-1-1_P-REG1.2DEth" Text="OpenKNX: IP-Router" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />

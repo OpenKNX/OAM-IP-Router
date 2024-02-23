@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.10.8.0">
-  <!-- 44 = 2.12 -->
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.11.2.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -10,19 +9,15 @@
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
-        <!-- Each increase of AppliationVersion FORCES the Enduser to update according firmware, too -->
-        <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
-        <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
-        <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
         <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="44" ReplacesVersions="0" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11E-2C-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Beta" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG--Help.5Fde.2Ezip" IconFile="M-00FA_BG--Icons.2Ezip" ApplicationNumber="41246" ApplicationVersion="44" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
+        <ApplicationProgram Id="M-00FA_A-A11E-2C-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Beta" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG-A1.5C1E.5C2C-Help.5Fde.2Ezip" IconFile="M-00FA_BG-A1.5C1E.5C2C-Icons.2Ezip" ApplicationNumber="41246" ApplicationVersion="44" ReplacesVersions="0" AdditionalAddressesCount="6" MaxTunnelingUserEntries="6">
           <Static>
             <Code>
               <AbsoluteSegment Id="M-00FA_A-A11E-2C-0000_AS-0100" Address="256" Size="256" />
             </Code>
             <ParameterTypes>
               <ParameterType Id="M-00FA_A-A11E-2C-0000_PT-ETS" Name="ETS">
-                <TypePicture RefId="M-00FA_BG--ets.2Epng" HorizontalAlignment="Right" />
+                <TypePicture RefId="M-00FA_BG-A1.5C1E.5C2C-ets.2Epng" HorizontalAlignment="Right" />
               </ParameterType>
               <ParameterType Id="M-00FA_A-A11E-2C-0000_PT-Text40Byte" Name="Text40Byte">
                 <TypeText SizeInBit="320" />
@@ -425,6 +420,8 @@ function newline(device, online, progress, context) {
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-2" AddressIndex="2" AccessType="Tunneling" Text="Tunnel 2" />
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-3" AddressIndex="3" AccessType="Tunneling" Text="Tunnel 3" />
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-4" AddressIndex="4" AccessType="Tunneling" Text="Tunnel 4" />
+              <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-5" AddressIndex="5" AccessType="Tunneling" Text="Tunnel 5" />
+              <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-6" AddressIndex="6" AccessType="Tunneling" Text="Tunnel 6" />
             </BusInterfaces>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
@@ -614,18 +611,18 @@ function newline(device, online, progress, context) {
         </ApplicationProgram>
       </ApplicationPrograms>
       <Baggages>
-        <Baggage TargetPath="" Name="ets.png" Id="M-00FA_BG--ets.2Epng">
-          <FileInfo TimeInfo="2024-01-22T20:29:14.2884019Z" />
+        <Baggage TargetPath="A1\1E\2C" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C2C-ets.2Epng">
+          <FileInfo TimeInfo="2024-02-18T20:08:41.2656823Z" />
         </Baggage>
-        <Baggage TargetPath="" Name="Help_de.zip" Id="M-00FA_BG--Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-01-22T20:29:14.4395671Z" />
+        <Baggage TargetPath="A1\1E\2C" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C2C-Help.5Fde.2Ezip">
+          <FileInfo TimeInfo="2024-02-18T20:08:41.9224963Z" />
         </Baggage>
-        <Baggage TargetPath="" Name="Icons.zip" Id="M-00FA_BG--Icons.2Ezip">
-          <FileInfo TimeInfo="2024-01-22T20:29:14.5906021Z" />
+        <Baggage TargetPath="A1\1E\2C" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C2C-Icons.2Ezip">
+          <FileInfo TimeInfo="2024-02-18T20:08:42.6475456Z" />
         </Baggage>
       </Baggages>
       <Hardware>
-        <Hardware Id="M-00FA_H-1-1" Name="IP-Router-Beta" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
+        <Hardware Id="M-00FA_H-1-1" Name="OpenKNX-IP-Router-Beta" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
             <Product Id="M-00FA_H-1-1_P-REG1.2DEth" Text="OpenKNX: IP-Router (Beta)" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
               <RegistrationInfo RegistrationStatus="Registered" />

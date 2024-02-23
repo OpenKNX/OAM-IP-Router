@@ -2,133 +2,32 @@
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
-  <op:config name="%ApplicationVersion%" value="1" /> <!-- 1 = 0.1 -->
-  <op:config name="%ApplicationRevision%" value="0" />
-  <op:config name="%ReplacesVersions%" value="0" />
-
   <op:config name="%NET_IPConfigTool%" value="1" />
-  <op:config name="%BuildSuffixText%" value="" />
-  <op:config name="%BuildSuffix%" value="" />
-  <op:config name="%ApplicationNumber%" value="31" />
   <op:config name="%Tunnelcount%" value="4" />
+  
   <op:nowarn id="1" regex="%BASE_" />
 
+  <op:ETS OpenKnxId="0xA1" 
+          ApplicationNumber="31" 
+          ApplicationVersion="0.1" 
+          ReplacesVersions="0" 
+          ApplicationRevision="0" 
+          ProductName="IP-Router" 
+          SerialNumber="1"
+          OrderNumber="REG1-Eth"
+          IsRailMounted="true"
+          BusCurrent="30"
+          MaskVersion="MV-091A"
+          />
 
-  <ManufacturerData>
-    <Manufacturer RefId="M-00FA">
-      <Catalog>
-        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="%CatalogItemId%" Name="OpenKNX: IP-Router%BuildSuffixText%" Number="1" ProductRefId="%ProductId%" Hardware2ProgramRefId="%Hardware2ProgramId%" DefaultLanguage="de" />
-        </CatalogSection>
-      </Catalog>
-      <ApplicationPrograms>
-        <!-- Each increase of AppliationVersion FORCES the Enduser to update according firmware, too -->
-        <!-- If you just want to have a BUGFIX-Update of the ETS-Appliation (without firmware), increase ApplicationVersion AND ApplicationRevision simultaneously -->
-        <!-- To sync ETS-Application and firmware again, increase ApplicationVersion AND set ApplicationRevision to 0 -->
-        <!-- ApplicationNumber 0xA100: A1 = Ing-Dom -->
-        <op:version OpenKnxId="0xA1" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="%ApplicationVersion%" ReplacesVersions="%ReplacesVersions%" ApplicationRevision="%ApplicationRevision%" />
-        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
-          <op:define prefix="BASE" header="../include/knxprod.h" KoOffset="0" ModuleType="10" >
-            <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="17" />
-          </op:define>
-          <op:define prefix="NET" header="../include/knxprod.h" KoOffset="0" ModuleType="11">
-            <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
-          </op:define>
-          <op:define prefix="TUNNEL" NumChannels="4" ModuleType="99" />
-          <Static>
-            <Code>
-              <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
-            </Code>
-            <ParameterTypes>
-              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ParameterTypes/ParameterType" prefix="BASE" />
-              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ParameterTypes/ParameterType" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ParameterTypes/ParameterType" prefix="ROUTE" />
-            </ParameterTypes>
-            <Parameters>
-              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="BASE" />
-              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" prefix="ROUTE" />
-            </Parameters>
-            <ParameterRefs>
-              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="BASE" />
-              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="ROUTE" />
-            </ParameterRefs>
-            <ParameterCalculations>
-              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="BASE" />
-              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="ROUTE" />
-            </ParameterCalculations>
-            <ParameterValidations>
-                <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="BASE" />
-                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="NET" />
-                <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="ROUTE" />
-            </ParameterValidations>
-            <LoadProcedures>
-              <LoadProcedure MergeId="1">
-                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
-                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
-                </LdCtrlCompareProp>
-                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
-                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
-                </LdCtrlCompareProp>
-              </LoadProcedure>
-              <LoadProcedure MergeId="4">
-                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
-              </LoadProcedure>
-            </LoadProcedures>
-            <Messages>
-              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
-              <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
-              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="BASE" />
-              <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="ROUTE" />
-            </Messages>
-            <Script>
-              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="BASE" />
-              <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="NET" />
-              <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="ROUTE" />
-            </Script>
-            <BusInterfaces>
-              <op:include href="IP-Router.tunnels.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="TUNNEL" />
-            </BusInterfaces>
-            <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
-          </Static>
-          <ModuleDefs>
-            <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="BASE" />
-            <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="NET" />
-            <op:include href="IP-Router.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="ROUTE" />
-          </ModuleDefs>
-          <Dynamic>
-            <ChannelIndependentBlock>
-               <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
-               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Network']" prefix="NET" />
-               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Routing']" prefix="ROUTE" />
-            </ChannelIndependentBlock>
-          </Dynamic>
-        </ApplicationProgram>
-      </ApplicationPrograms>
-      <Baggages>
-        <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//Baggages/*" prefix="BASE" />
-        <op:include href="../lib/OGM-Network/src/Network.share.xml" xpath="//Baggages/*" prefix="NET" />
-        <op:include href="IP-Router.share.xml" xpath="//Baggages/*" prefix="ROUTE" />
-      </Baggages>
-      <Hardware>
-        <Hardware Id="%HardwareId%" Name="IP-Router%BuildSuffix%" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
-          <Products>
-            <Product Id="%ProductId%" Text="OpenKNX: IP-Router%BuildSuffixText%" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
-              <RegistrationInfo RegistrationStatus="Registered" />
-            </Product>
-          </Products>
-          <Hardware2Programs>
-            <Hardware2Program Id="%Hardware2ProgramId%" MediumTypes="MT-0">
-              <ApplicationProgramRef RefId="%AID%" />
-              <RegistrationInfo RegistrationStatus="Registered"
-                RegistrationNumber="0001/%HardwareVersionEncoded%1" />
-            </Hardware2Program>
-          </Hardware2Programs>
-        </Hardware>
-      </Hardware>
-    </Manufacturer>
-  </ManufacturerData>
+  <op:define prefix="BASE" ModuleType="10" >
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.1" />
+  </op:define>
+  <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
+  </op:define>
+  <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.tunnels.xml" />
+
+  <generate base="TemplateRouter.xml"/>
+
 </KNX>

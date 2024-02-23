@@ -88,12 +88,79 @@
 // 
 #define ParamNET_Dummy                               (knx.paramByte(NET_Dummy))
 
-#define TUNNEL_ChannelCount 4
+#define ROUTE_AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6
+#define     ROUTE_AckOfPhysTelSubMainMask 0xC0
+#define     ROUTE_AckOfPhysTelSubMainShift 6
+#define ROUTE_AckOfGrpTelSubMain                   0      // 1 Bit, Bit 5
+#define     ROUTE_AckOfGrpTelSubMainMask 0x20
+#define     ROUTE_AckOfGrpTelSubMainShift 5
+#define ROUTE_BroadcastTelSubMain                  0      // 1 Bit, Bit 3
+#define     ROUTE_BroadcastTelSubMainMask 0x08
+#define     ROUTE_BroadcastTelSubMainShift 3
+#define ROUTE_PhysTelSubMain                       0      // 2 Bits, Bit 1-0
+#define     ROUTE_PhysTelSubMainMask 0x03
+#define     ROUTE_PhysTelSubMainShift 0
+#define ROUTE_GrpTelSubMain_14_31                  0      // 2 Bits, Bit 3-2
+#define     ROUTE_GrpTelSubMain_14_31Mask 0x0C
+#define     ROUTE_GrpTelSubMain_14_31Shift 2
+#define ROUTE_GrpTelSubMain_0_13                   0      // 2 Bits, Bit 1-0
+#define     ROUTE_GrpTelSubMain_0_13Mask 0x03
+#define     ROUTE_GrpTelSubMain_0_13Shift 0
+#define ROUTE_RepetitionBroadcastTelMainSub        0      // 1 Bit, Bit 4
+#define     ROUTE_RepetitionBroadcastTelMainSubMask 0x10
+#define     ROUTE_RepetitionBroadcastTelMainSubShift 4
+#define ROUTE_BroadcastTelMainSub                  0      // 1 Bit, Bit 3
+#define     ROUTE_BroadcastTelMainSubMask 0x08
+#define     ROUTE_BroadcastTelMainSubShift 3
+#define ROUTE_RepetitionPhysTelMainSub             0      // 1 Bit, Bit 2
+#define     ROUTE_RepetitionPhysTelMainSubMask 0x04
+#define     ROUTE_RepetitionPhysTelMainSubShift 2
+#define ROUTE_PhysTelMainSub                       0      // 2 Bits, Bit 1-0
+#define     ROUTE_PhysTelMainSubMask 0x03
+#define     ROUTE_PhysTelMainSubShift 0
+#define ROUTE_RepetitionGrpTelMainSub              0      // 1 Bit, Bit 4
+#define     ROUTE_RepetitionGrpTelMainSubMask 0x10
+#define     ROUTE_RepetitionGrpTelMainSubShift 4
+#define ROUTE_GrpTelMainSub_14_31                  0      // 2 Bits, Bit 3-2
+#define     ROUTE_GrpTelMainSub_14_31Mask 0x0C
+#define     ROUTE_GrpTelMainSub_14_31Shift 2
+#define ROUTE_GrpTelMainSub_0_13                   0      // 2 Bits, Bit 1-0
+#define     ROUTE_GrpTelMainSub_0_13Mask 0x03
+#define     ROUTE_GrpTelMainSub_0_13Shift 0
+
+// Bestätigung (ACK) von phys. addressierten Telegrammen
+#define ParamROUTE_AckOfPhysTelSubMain                 ((knx.paramByte(ROUTE_AckOfPhysTelSubMain) & ROUTE_AckOfPhysTelSubMainMask) >> ROUTE_AckOfPhysTelSubMainShift)
+// Bestätigung (ACK) von Gruppentelegrammen
+#define ParamROUTE_AckOfGrpTelSubMain                  ((bool)(knx.paramByte(ROUTE_AckOfGrpTelSubMain) & ROUTE_AckOfGrpTelSubMainMask))
+// Broadcast Telegramme
+#define ParamROUTE_BroadcastTelSubMain                 ((bool)(knx.paramByte(ROUTE_BroadcastTelSubMain) & ROUTE_BroadcastTelSubMainMask))
+// Phys. addressierte Telegramme
+#define ParamROUTE_PhysTelSubMain                      (knx.paramByte(ROUTE_PhysTelSubMain) & ROUTE_PhysTelSubMainMask)
+// Gruppentelegramme (Hauptgruppe 14 - 31)
+#define ParamROUTE_GrpTelSubMain_14_31                 ((knx.paramByte(ROUTE_GrpTelSubMain_14_31) & ROUTE_GrpTelSubMain_14_31Mask) >> ROUTE_GrpTelSubMain_14_31Shift)
+// Gruppentelegramme (Hauptgruppe 0 - 13)
+#define ParamROUTE_GrpTelSubMain_0_13                  (knx.paramByte(ROUTE_GrpTelSubMain_0_13) & ROUTE_GrpTelSubMain_0_13Mask)
+// Wiederholung von Broadcast Telegrammen
+#define ParamROUTE_RepetitionBroadcastTelMainSub       ((bool)(knx.paramByte(ROUTE_RepetitionBroadcastTelMainSub) & ROUTE_RepetitionBroadcastTelMainSubMask))
+// Broadcast Telegramme
+#define ParamROUTE_BroadcastTelMainSub                 ((bool)(knx.paramByte(ROUTE_BroadcastTelMainSub) & ROUTE_BroadcastTelMainSubMask))
+// Wiederholung von phys. addressierten Telegrammen
+#define ParamROUTE_RepetitionPhysTelMainSub            ((bool)(knx.paramByte(ROUTE_RepetitionPhysTelMainSub) & ROUTE_RepetitionPhysTelMainSubMask))
+// Phys. addressierte Telegramme
+#define ParamROUTE_PhysTelMainSub                      (knx.paramByte(ROUTE_PhysTelMainSub) & ROUTE_PhysTelMainSubMask)
+// Wiederholung von Gruppentelegrammen
+#define ParamROUTE_RepetitionGrpTelMainSub             ((bool)(knx.paramByte(ROUTE_RepetitionGrpTelMainSub) & ROUTE_RepetitionGrpTelMainSubMask))
+// Gruppentelegramme (Hauptgruppe 14 - 31)
+#define ParamROUTE_GrpTelMainSub_14_31                 ((knx.paramByte(ROUTE_GrpTelMainSub_14_31) & ROUTE_GrpTelMainSub_14_31Mask) >> ROUTE_GrpTelMainSub_14_31Shift)
+// Gruppentelegramme (Hauptgruppe 0 - 13)
+#define ParamROUTE_GrpTelMainSub_0_13                  (knx.paramByte(ROUTE_GrpTelMainSub_0_13) & ROUTE_GrpTelMainSub_0_13Mask)
+
+#define ROUTE_ChannelCount 6
 
 // Parameter per channel
-#define TUNNEL_ParamBlockOffset 0
-#define TUNNEL_ParamBlockSize -1
-#define TUNNEL_ParamCalcIndex(index) (index + TUNNEL_ParamBlockOffset + _channelIndex * TUNNEL_ParamBlockSize)
+#define ROUTE_ParamBlockOffset 0
+#define ROUTE_ParamBlockSize -1
+#define ROUTE_ParamCalcIndex(index) (index + ROUTE_ParamBlockOffset + _channelIndex * ROUTE_ParamBlockSize)
 
 
 

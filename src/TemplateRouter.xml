@@ -4,13 +4,13 @@
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
-        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="%CatalogItemId%" Name="OpenKNX: %CatalogName%%BuildSuffixText%" Number="1" ProductRefId="%ProductId%" Hardware2ProgramRefId="%Hardware2ProgramId%" DefaultLanguage="de" />
+        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de-DE">
+          <CatalogItem Id="%CatalogItemId%" Name="OpenKNX: %CatalogName%%BuildSuffixText%" Number="1" ProductRefId="%ProductId%" Hardware2ProgramRefId="%Hardware2ProgramId%" DefaultLanguage="de-DE" />
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
         <op:version OpenKnxId="%OpenKnxId%" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="%ApplicationVersion%" ReplacesVersions="%ReplacesVersions%" ApplicationRevision="%ApplicationRevision%" />
-        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="%MaskVersion%" Name="%ApplicationName%%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="%MaskVersion%" Name="%ApplicationName%%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
           <Static>
             <Code>
               <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
@@ -83,7 +83,7 @@
       <Hardware>
         <Hardware Id="%HardwareId%" Name="OpenKNX-%HardwareName%%BuildSuffix%" SerialNumber="%SerialNumber%" VersionNumber="1" BusCurrent="%BusCurrent%" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
-            <Product Id="%ProductId%" Text="OpenKNX: %ProductName%%BuildSuffixText%" OrderNumber="%OrderNumber%" IsRailMounted="%IsRailMounted%" WidthInMillimeter="18" DefaultLanguage="de">
+            <Product Id="%ProductId%" Text="OpenKNX: %ProductName%%BuildSuffixText%" OrderNumber="%OrderNumber%" IsRailMounted="%IsRailMounted%" WidthInMillimeter="18" DefaultLanguage="de-DE">
               <RegistrationInfo RegistrationStatus="Registered" />
             </Product>
           </Products>

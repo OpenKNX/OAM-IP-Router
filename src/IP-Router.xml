@@ -9,7 +9,7 @@
 
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="30" 
-          ApplicationVersion="3.0" 
+          ApplicationVersion="3.1" 
           ReplacesVersions="0" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 
@@ -28,7 +28,7 @@
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
     <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
   </op:define>
-  <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.tunnels.xml" />
+  <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.templ.xml" />
 
   <generate base="TemplateRouter.xml"/>
 

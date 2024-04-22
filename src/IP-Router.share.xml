@@ -113,7 +113,7 @@
                 <ParameterRefRef RefId="%AID%_P-0000002_R-000000201" />
                 <choose ParamRefId="%AID%_P-0000002_R-000000201">
                   <when test="3">
-                    <ParameterSeparator Id="%AID%_PS-" Text="Attention: If &quot;Answer with NACK&quot;, parameterisation must be done by IP" />
+                    <ParameterSeparator Id="%AID%_PS-" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich" />
                   </when>
                 </choose>
                 <ParameterSeparator Id="%AID%_PS-2" Text="Routing IP -&gt; KNX" UIHint="Headline" />
@@ -125,6 +125,16 @@
                 <ParameterRefRef RefId="%AID%_P-0000010_R-000001001" />
                 <ParameterRefRef RefId="%AID%_P-0000008_R-000000801" />
               </ParameterBlock>
+
+
+
+              <ParameterBlock Id="%AID%_PB-1" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info"> 
+                <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät zugewiesen werden." />
+                <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnel']/*" IsInner="true" type="template" prefix="ROUTE" />
+              </ParameterBlock>
+
+
+
             </ChannelIndependentBlock>
           </Dynamic>
         </ApplicationProgram>

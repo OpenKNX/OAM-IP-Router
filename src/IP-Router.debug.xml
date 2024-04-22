@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="2.11.2.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.1.1.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
-        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de">
-          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-2C-0000_CI-REG1.2DEth-1" Name="OpenKNX: IP-Router (Beta)" Number="1" ProductRefId="M-00FA_H-1-1_P-REG1.2DEth" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-2C-0000" DefaultLanguage="de" />
+        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de-DE">
+          <CatalogItem Id="M-00FA_H-1-1_HP-A11E-2C-0000_CI-REG1.2DEth-1" Name="OpenKNX: IP-Router (Beta)" Number="1" ProductRefId="M-00FA_H-1-1_P-REG1.2DEth" Hardware2ProgramRefId="M-00FA_H-1-1_HP-A11E-2C-0000" DefaultLanguage="de-DE" />
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
         <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="44" ReplacesVersions="0" ApplicationRevision="0" -->
-        <ApplicationProgram Id="M-00FA_A-A11E-2C-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Beta" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG-A1.5C1E.5C2C-Help.5Fde.2Ezip" IconFile="M-00FA_BG-A1.5C1E.5C2C-Icons.2Ezip" ApplicationNumber="41246" ApplicationVersion="44" ReplacesVersions="0" AdditionalAddressesCount="6" MaxTunnelingUserEntries="6">
+        <ApplicationProgram Id="M-00FA_A-A11E-2C-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Beta" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG-A1.5C1E.5C2C-Help.5Fde.2Ezip" IconFile="M-00FA_BG-A1.5C1E.5C2C-Icons.2Ezip" ApplicationNumber="41246" ApplicationVersion="44" ReplacesVersions="0" AdditionalAddressesCount="4" MaxTunnelingUserEntries="4">
           <Static>
             <Code>
               <AbsoluteSegment Id="M-00FA_A-A11E-2C-0000_AS-0100" Address="256" Size="256" />
@@ -420,8 +420,6 @@ function newline(device, online, progress, context) {
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-2" AddressIndex="2" AccessType="Tunneling" Text="Tunnel 2" />
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-3" AddressIndex="3" AccessType="Tunneling" Text="Tunnel 3" />
               <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-4" AddressIndex="4" AccessType="Tunneling" Text="Tunnel 4" />
-              <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-5" AddressIndex="5" AccessType="Tunneling" Text="Tunnel 5" />
-              <BusInterface Id="M-00FA_A-A11E-2C-0000_BI-6" AddressIndex="6" AccessType="Tunneling" Text="Tunnel 6" />
             </BusInterfaces>
             <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
           </Static>
@@ -612,19 +610,19 @@ function newline(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\2C" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C2C-ets.2Epng">
-          <FileInfo TimeInfo="2024-02-18T20:08:41.2656823Z" />
+          <FileInfo TimeInfo="2023-12-19T22:54:28.4997473Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\2C" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C2C-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-02-18T20:08:41.9224963Z" />
+          <FileInfo TimeInfo="2024-04-22T14:21:21.8524837Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\2C" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C2C-Icons.2Ezip">
-          <FileInfo TimeInfo="2024-02-18T20:08:42.6475456Z" />
+          <FileInfo TimeInfo="2024-04-22T14:21:22.1382242Z" />
         </Baggage>
       </Baggages>
       <Hardware>
         <Hardware Id="M-00FA_H-1-1" Name="OpenKNX-IP-Router-Beta" SerialNumber="1" VersionNumber="1" BusCurrent="30" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
           <Products>
-            <Product Id="M-00FA_H-1-1_P-REG1.2DEth" Text="OpenKNX: IP-Router (Beta)" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de">
+            <Product Id="M-00FA_H-1-1_P-REG1.2DEth" Text="OpenKNX: IP-Router (Beta)" OrderNumber="REG1-Eth" IsRailMounted="true" WidthInMillimeter="18" DefaultLanguage="de-DE">
               <RegistrationInfo RegistrationStatus="Registered" />
             </Product>
           </Products>

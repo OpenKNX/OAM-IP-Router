@@ -155,7 +155,7 @@
 // Gruppentelegramme (Hauptgruppe 0 - 13)
 #define ParamROUTE_GrpTelMainSub_0_13                  (knx.paramByte(ROUTE_GrpTelMainSub_0_13) & ROUTE_GrpTelMainSub_0_13Mask)
 
-#define ROUTE_ChannelCount 6
+#define ROUTE_ChannelCount 4
 
 // Parameter per channel
 #define ROUTE_ParamBlockOffset 0

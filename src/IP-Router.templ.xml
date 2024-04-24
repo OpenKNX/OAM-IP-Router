@@ -8,10 +8,10 @@
           <Static>
             <Parameters>
               <Parameter Id="%AID%_P-%TT%%CC%001" Name="ResTunnel%C%" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel %C%" Value="0">
-                <Memory CodeSegment="%MID%" Offset="0" BitOffset="0" />
+                <Memory CodeSegment="%MID%" Offset="4" BitOffset="0" />
               </Parameter>
               <Parameter Id="%AID%_P-%TT%%CC%002" Name="Tunnel%C%IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel %C%" Value="192.168.0.0">
-                <Memory CodeSegment="%MID%" Offset="1" BitOffset="0" />
+                <Memory CodeSegment="%MID%" Offset="0" BitOffset="0" />
               </Parameter>
             </Parameters>
             <ParameterRefs>

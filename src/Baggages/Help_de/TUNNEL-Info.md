@@ -1,4 +1,4 @@
-### Tunnels
+### Tunnel
 
-Hier können Tunnel Endgeräten fest zugewiesen werden. Die Identifizierung erfolgt anhand der IP-Adresse des Endgeräts.
-Das Verhalten bei belegten, reservierten Tunneln kann gewählt werden: Entweder wird der Tunnel-Request abgelehnt oder - falls vorhanden - dem nächsten freien Tunnel zugewiesen.
+Hier können bestimmte Tunnel fest Endgeräten zugewiesen werden. Die Identifizierung erfolgt anhand der IP-Adresse des Endgeräts.
+Das Verhalten bei einem belegten, reservierten Tunnel kann gewählt werden: Entweder wird der Tunnel-Request abgelehnt oder - falls vorhanden - dem nächsten freien Tunnel zugewiesen.

@@ -16,19 +16,6 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "Build REG1 USB",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "develop_REG1_ETH_USB",
-                "upload"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
             "label": "Build REG1 JLINK",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
@@ -47,19 +34,6 @@
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
                 "develop_REG1_ETH_V1"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
-            "label": "Build REG1-V1 USB",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "develop_REG1_ETH_V1_USB",
-                "upload"
             ],
             "group": "build",
             "problemMatcher": [],
@@ -92,50 +66,11 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "Build PiPico USB",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "develop_PIPICO_USB",
-                "upload"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
             "label": "Build PiPicoW",
             "type": "shell",
             "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
             "args": [
                 "develop_PIPICOW"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
-            "label": "Build PiPicoW USB",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "develop_PIPICOW_USB",
-                "upload"
-            ],
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOrder": "sequence",
-            "dependsOn": ["Gen. Dependencies.txt"]
-        },
-        {
-            "label": "Build W5500_EVB_PICO USB",
-            "type": "shell",
-            "command": "lib/OGM-Common/scripts/build/OpenKNX-Build.ps1",
-            "args": [
-                "develop_W5500_EVB_PICO_USB",
-                "upload"
             ],
             "group": "build",
             "problemMatcher": [],
@@ -198,7 +133,7 @@
         {
             "label": "Pull & Restore",
             "type": "shell",
-            "command": "${workspaceFolder}/restore/Restore-Checkout-Branch.ps1",
+            "command": "${workspaceFolder}/restore/Restore-Dependencies-Branch.ps1",
             "args": [
             ],
             "options": {

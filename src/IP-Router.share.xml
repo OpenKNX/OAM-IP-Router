@@ -41,60 +41,60 @@
               </ParameterType>
             </ParameterTypes>
             <Parameters>
-              <Parameter Id="%AID%_P-0000002" Name="AckOfPhysTelSubMain" ParameterType="%AID%_PT-PhysAcknowledge" Text="Bestätigung (ACK) von phys. addressierten Telegrammen" Value="1">
+              <Parameter Id="%AID%_P-%TT%00002" Name="AckOfPhysTelSubMain" ParameterType="%AID%_PT-PhysAcknowledge" Text="Bestätigung (ACK) von phys. addressierten Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="0" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000003" Name="AckOfGrpTelSubMain" ParameterType="%AID%_PT-GrpAcknowledge" Text="Bestätigung (ACK) von Gruppentelegrammen" Value="1">
+              <Parameter Id="%AID%_P-%TT%00003" Name="AckOfGrpTelSubMain" ParameterType="%AID%_PT-GrpAcknowledge" Text="Bestätigung (ACK) von Gruppentelegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="2" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000004" Name="BroadcastTelSubMain" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
+              <Parameter Id="%AID%_P-%TT%00004" Name="BroadcastTelSubMain" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000005" Name="PhysTelSubMain" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
+              <Parameter Id="%AID%_P-%TT%00005" Name="PhysTelSubMain" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
                 <Property ObjectType="6" PropertyId="53" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000006" Name="GrpTelSubMain_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
+              <Parameter Id="%AID%_P-%TT%00006" Name="GrpTelSubMain_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
                 <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000007" Name="GrpTelSubMain_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
+              <Parameter Id="%AID%_P-%TT%00007" Name="GrpTelSubMain_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="55" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000008" Name="RepetitionBroadcastTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Broadcast Telegrammen" Value="1">
+              <Parameter Id="%AID%_P-%TT%00008" Name="RepetitionBroadcastTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Broadcast Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="3" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000009" Name="BroadcastTelMainSub" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
+              <Parameter Id="%AID%_P-%TT%00009" Name="BroadcastTelMainSub" ParameterType="%AID%_PT-BroadcastLock" Text="Broadcast Telegramme" Value="0">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000010" Name="RepetitionPhysTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von phys. addressierten Telegrammen" Value="1">
+              <Parameter Id="%AID%_P-%TT%00010" Name="RepetitionPhysTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von phys. addressierten Telegrammen" Value="1">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="5" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000011" Name="PhysTelMainSub" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
+              <Parameter Id="%AID%_P-%TT%00011" Name="PhysTelMainSub" ParameterType="%AID%_PT-RoutingWithFilter" Text="Phys. addressierte Telegramme" Value="3">
                 <Property ObjectType="6" PropertyId="52" Offset="0" BitOffset="6" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000012" Name="RepetitionGrpTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Gruppentelegrammen"  Value="1">
+              <Parameter Id="%AID%_P-%TT%00012" Name="RepetitionGrpTelMainSub" ParameterType="%AID%_PT-Bool" Text="Wiederholung von Gruppentelegrammen"  Value="1">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="3" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000013" Name="GrpTelMainSub_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
+              <Parameter Id="%AID%_P-%TT%00013" Name="GrpTelMainSub_14_31" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 14 - 31)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="4" />
               </Parameter>
-              <Parameter Id="%AID%_P-0000014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
+              <Parameter Id="%AID%_P-%TT%00014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
             </Parameters>
             <ParameterRefs>
-              <ParameterRef Id="%AID%_P-0000002_R-000000201" RefId="%AID%_P-0000002" Tag="42" />
-			        <ParameterRef Id="%AID%_P-0000003_R-000000301" RefId="%AID%_P-0000003" Tag="27" />
-		      	  <ParameterRef Id="%AID%_P-0000004_R-000000401" RefId="%AID%_P-0000004" Tag="26" />
-              <ParameterRef Id="%AID%_P-0000005_R-000000501" RefId="%AID%_P-0000005" Tag="25" />
-              <ParameterRef Id="%AID%_P-0000006_R-000000601" RefId="%AID%_P-0000006" Tag="24" />
-              <ParameterRef Id="%AID%_P-0000007_R-000000701" RefId="%AID%_P-0000007" Tag="23" />
-              <ParameterRef Id="%AID%_P-0000008_R-000000801" RefId="%AID%_P-0000008" Tag="34" />
-              <ParameterRef Id="%AID%_P-0000009_R-000000901" RefId="%AID%_P-0000009" Tag="31" />
-              <ParameterRef Id="%AID%_P-0000010_R-000001001" RefId="%AID%_P-0000010" Tag="33" />
-              <ParameterRef Id="%AID%_P-0000011_R-000001101" RefId="%AID%_P-0000011" Tag="30" />
-              <ParameterRef Id="%AID%_P-0000012_R-000001201" RefId="%AID%_P-0000012" Tag="32" />
-			        <ParameterRef Id="%AID%_P-0000013_R-000001301" RefId="%AID%_P-0000013" Tag="29" />
-              <ParameterRef Id="%AID%_P-0000014_R-000001401" RefId="%AID%_P-0000014" Tag="28" />
+              <ParameterRef Id="%AID%_P-%TT%00002_R-%TT%0000201" RefId="%AID%_P-%TT%00002" Tag="42" />
+			        <ParameterRef Id="%AID%_P-%TT%00003_R-%TT%0000301" RefId="%AID%_P-%TT%00003" Tag="27" />
+		      	  <ParameterRef Id="%AID%_P-%TT%00004_R-%TT%0000401" RefId="%AID%_P-%TT%00004" Tag="26" />
+              <ParameterRef Id="%AID%_P-%TT%00005_R-%TT%0000501" RefId="%AID%_P-%TT%00005" Tag="25" />
+              <ParameterRef Id="%AID%_P-%TT%00006_R-%TT%0000601" RefId="%AID%_P-%TT%00006" Tag="24" />
+              <ParameterRef Id="%AID%_P-%TT%00007_R-%TT%0000701" RefId="%AID%_P-%TT%00007" Tag="23" />
+              <ParameterRef Id="%AID%_P-%TT%00008_R-%TT%0000801" RefId="%AID%_P-%TT%00008" Tag="34" />
+              <ParameterRef Id="%AID%_P-%TT%00009_R-%TT%0000901" RefId="%AID%_P-%TT%00009" Tag="31" />
+              <ParameterRef Id="%AID%_P-%TT%00010_R-%TT%0001001" RefId="%AID%_P-%TT%00010" Tag="33" />
+              <ParameterRef Id="%AID%_P-%TT%00011_R-%TT%0001101" RefId="%AID%_P-%TT%00011" Tag="30" />
+              <ParameterRef Id="%AID%_P-%TT%00012_R-%TT%0001201" RefId="%AID%_P-%TT%00012" Tag="32" />
+			        <ParameterRef Id="%AID%_P-%TT%00013_R-%TT%0001301" RefId="%AID%_P-%TT%00013" Tag="29" />
+              <ParameterRef Id="%AID%_P-%TT%00014_R-%TT%0001401" RefId="%AID%_P-%TT%00014" Tag="28" />
             </ParameterRefs>
             <ComObjectTable>
             </ComObjectTable>
@@ -105,25 +105,25 @@
             <ChannelIndependentBlock>
               <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info"> 
                 <ParameterSeparator Id="%AID%_PS-" Text="Routing KNX -&gt; IP" UIHint="Headline" />
-                <ParameterRefRef RefId="%AID%_P-0000007_R-000000701" />
-                <ParameterRefRef RefId="%AID%_P-0000006_R-000000601" />
-                <ParameterRefRef RefId="%AID%_P-0000005_R-000000501" />
-                <ParameterRefRef RefId="%AID%_P-0000004_R-000000401" />
-                <ParameterRefRef RefId="%AID%_P-0000003_R-000000301" />
-                <ParameterRefRef RefId="%AID%_P-0000002_R-000000201" />
-                <choose ParamRefId="%AID%_P-0000002_R-000000201">
+                <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00006_R-%TT%0000601" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00005_R-%TT%0000501" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00004_R-%TT%0000401" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00003_R-%TT%0000301" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00002_R-%TT%0000201" />
+                <choose ParamRefId="%AID%_P-%TT%00002_R-%TT%0000201">
                   <when test="3">
                     <ParameterSeparator Id="%AID%_PS-" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich" />
                   </when>
                 </choose>
                 <ParameterSeparator Id="%AID%_PS-2" Text="Routing IP -&gt; KNX" UIHint="Headline" />
-                <ParameterRefRef RefId="%AID%_P-0000014_R-000001401" />
-                <ParameterRefRef RefId="%AID%_P-0000013_R-000001301" />
-                <ParameterRefRef RefId="%AID%_P-0000011_R-000001101" />
-                <ParameterRefRef RefId="%AID%_P-0000009_R-000000901" />
-                <ParameterRefRef RefId="%AID%_P-0000012_R-000001201" />
-                <ParameterRefRef RefId="%AID%_P-0000010_R-000001001" />
-                <ParameterRefRef RefId="%AID%_P-0000008_R-000000801" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00014_R-%TT%0001401" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00013_R-%TT%0001301" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00011_R-%TT%0001101" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00009_R-%TT%0000901" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00012_R-%TT%0001201" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00010_R-%TT%0001001" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00008_R-%TT%0000801" />
               </ParameterBlock>
 
 

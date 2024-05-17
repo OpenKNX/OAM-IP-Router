@@ -9,7 +9,7 @@
 
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="30" 
-          ApplicationVersion="3.0" 
+          ApplicationVersion="3.1" 
           ReplacesVersions="0" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 

@@ -11,7 +11,7 @@
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
 #define MAIN_ApplicationVersion 48
-#define MAIN_ParameterSize 102
+#define MAIN_ParameterSize 82
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "REG1-Eth"
 #define BASE_ModuleVersion 17
@@ -158,11 +158,11 @@
 #define ROUTE_ChannelCount 4
 
 // Parameter per channel
-#define ROUTE_ParamBlockOffset 82
-#define ROUTE_ParamBlockSize 5
+#define ROUTE_ParamBlockOffset 0
+#define ROUTE_ParamBlockSize -1
 #define ROUTE_ParamCalcIndex(index) (index + ROUTE_ParamBlockOffset + _channelIndex * ROUTE_ParamBlockSize)
 
-#define ROUTE_ResTunnel                            4      // 1 Bit, Bit 7
+#define ROUTE_ResTunnel                            0      // 1 Bit, Bit 7
 #define     ROUTE_ResTunnelMask 0x80
 #define     ROUTE_ResTunnelShift 7
 #define ROUTE_TunnelIP                             0      // IP address, 4 Byte
@@ -180,7 +180,7 @@
 #define BASE_KommentarModuleModuleParamSize 0
 #define BASE_KommentarModuleSubmodulesParamSize 0
 #define BASE_KommentarModuleParamSize 0
-#define BASE_KommentarModuleParamOffset 102
+#define BASE_KommentarModuleParamOffset 82
 #define BASE_KommentarModuleCalcIndex(index, m1) (index + BASE_KommentarModuleParamOffset + _channelIndex * BASE_KommentarModuleCount * BASE_KommentarModuleParamSize + m1 * BASE_KommentarModuleParamSize)
 
 

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.2.1.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.0.13.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -16,6 +16,13 @@
               <AbsoluteSegment Id="M-00FA_A-A11E-30-0000_AS-0100" Address="256" Size="256" />
             </Code>
             <ParameterTypes>
+              <ParameterType Id="M-00FA_A-A11E-30-0000_PT-ModuleSelector" Name="ModuleSelector">
+                <TypeRestriction Base="Value" SizeInBit="8">
+                  <Enumeration Text="Allgemein" Value="0" Id="M-00FA_A-A11E-30-0000_PT-ModuleSelector_EN-0" />
+                  <Enumeration Text="NET" Value="1" Id="M-00FA_A-A11E-30-0000_PT-ModuleSelector_EN-1" />
+                  <Enumeration Text="ROUTE" Value="2" Id="M-00FA_A-A11E-30-0000_PT-ModuleSelector_EN-2" />
+                </TypeRestriction>
+              </ParameterType>
               <ParameterType Id="M-00FA_A-A11E-30-0000_PT-ETS" Name="ETS">
                 <TypePicture RefId="M-00FA_BG-A1.5C1E.5C30-ets.2Epng" HorizontalAlignment="Right" />
               </ParameterType>
@@ -357,28 +364,36 @@
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9901001" Name="ROUTE_ResTunnel1" ParameterType="M-00FA_A-A11E-30-0000_PT-Bool" Text="Reserviere Tunnel 1" Value="0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="86" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="200" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_CTRL=200 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9901002" Name="ROUTE_Tunnel1IP" ParameterType="M-00FA_A-A11E-30-0000_PT-HostAddress" Text="IP-Adresse für Tunnel 1" Value="192.168.0.0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="82" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_IP=201 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9902001" Name="ROUTE_ResTunnel2" ParameterType="M-00FA_A-A11E-30-0000_PT-Bool" Text="Reserviere Tunnel 2" Value="0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="91" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="200" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_CTRL=200 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9902002" Name="ROUTE_Tunnel2IP" ParameterType="M-00FA_A-A11E-30-0000_PT-HostAddress" Text="IP-Adresse für Tunnel 2" Value="192.168.0.0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="87" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_IP=201 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9903001" Name="ROUTE_ResTunnel3" ParameterType="M-00FA_A-A11E-30-0000_PT-Bool" Text="Reserviere Tunnel 3" Value="0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="96" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="200" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_CTRL=200 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9903002" Name="ROUTE_Tunnel3IP" ParameterType="M-00FA_A-A11E-30-0000_PT-HostAddress" Text="IP-Adresse für Tunnel 3" Value="192.168.0.0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="92" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_IP=201 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9904001" Name="ROUTE_ResTunnel4" ParameterType="M-00FA_A-A11E-30-0000_PT-Bool" Text="Reserviere Tunnel 4" Value="0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="101" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="200" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_CTRL=200 -->
               </Parameter>
               <Parameter Id="M-00FA_A-A11E-30-0000_P-9904002" Name="ROUTE_Tunnel4IP" ParameterType="M-00FA_A-A11E-30-0000_PT-HostAddress" Text="IP-Adresse für Tunnel 4" Value="192.168.0.0">
-                <Memory CodeSegment="M-00FA_A-A11E-30-0000_AS-0100" Offset="97" BitOffset="0" />
+                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0" />
+                <!-- OT_IP_PARAMETER=11, PID_CUSTOM_RESERVED_TUNNELS_IP=201 -->
               </Parameter>
             </Parameters>
             <ParameterRefs>
@@ -432,6 +447,8 @@
               </LoadProcedure>
               <LoadProcedure MergeId="4">
                 <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="200" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="201" Verify="true" />
               </LoadProcedure>
             </LoadProcedures>
             <Messages>
@@ -440,6 +457,35 @@
               <Message Id="M-00FA_A-A11E-30-0000_M-1100001" Name="NET_InvalidHostName" Text="Darf nur 24 Zeichen lang sein und muss aus Buchstaben, Zahlen und Bindestriche bestehen." />
             </Messages>
             <Script>
+var version_information = [0xA11E, 0x30];
+var module_order = ["BASE","NET","ROUTE"];
+
+var channel_params = {
+"BASE": {
+  "version": 0x11,
+  "share": {
+    "names": ["StartupDelayBase","StartupDelayTime","Watchdog"],
+    "defaults": [0,1,1]
+    }},
+"NET": {
+  "version": 0x2,
+  "share": {
+    "names": ["HostAddress","SubnetMask","GatewayAddress","NameserverAddress","CustomHostname","StaticIP","mDNS","HTTP","NTP","HostName","LanMode"],
+    "defaults": ["192.168.178.2","255.255.255.0","192.168.178.1","192.168.178.1",0,0,1,1,0,"",0]
+    }},
+"ROUTE": {
+  "channels": 4,
+  "share": {
+    "names": ["AckOfPhysTelSubMain","AckOfGrpTelSubMain","BroadcastTelSubMain","PhysTelSubMain","GrpTelSubMain_14_31","GrpTelSubMain_0_13","RepetitionBroadcastTelMainSub","BroadcastTelMainSub","RepetitionPhysTelMainSub","PhysTelMainSub","RepetitionGrpTelMainSub","GrpTelMainSub_14_31","GrpTelMainSub_0_13"],
+    "defaults": [1,1,0,3,3,3,1,0,1,3,1,3,3]
+    },
+  "templ": {
+    "names": ["ResTunnel~","Tunnel~IP"],
+    "defaults": [0,"192.168.0.0"]
+    }}
+};
+
+
 function newline(device, online, progress, context) {
     // input contains c++ like control chars (\n,\\)
     var text = device.getParameterByName(context.textbox);
@@ -681,13 +727,13 @@ function newline(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\30" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C30-ets.2Epng">
-          <FileInfo TimeInfo="2024-04-29T08:34:43.7328217Z" />
+          <FileInfo TimeInfo="2024-05-17T11:29:00.3100182Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\30" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C30-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-04-29T08:34:44.0994938Z" />
+          <FileInfo TimeInfo="2024-05-17T11:29:00.3888943Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\30" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C30-Icons.2Ezip">
-          <FileInfo TimeInfo="2024-04-29T08:34:44.6761813Z" />
+          <FileInfo TimeInfo="2024-05-17T11:29:00.5256969Z" />
         </Baggage>
       </Baggages>
       <Hardware>

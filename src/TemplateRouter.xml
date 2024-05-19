@@ -50,8 +50,8 @@
               </LoadProcedure>
               <LoadProcedure MergeId="4">
                 <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
-                <LdCtrlWriteProp ObjType="11" PropId="200" Verify="true" />
-                <LdCtrlWriteProp ObjType="11" PropId="201" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="201" Count="%Tunnelcount%" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="202" Count="%Tunnelcount%" Verify="true" />
               </LoadProcedure>
             </LoadProcedures>
             <Messages>

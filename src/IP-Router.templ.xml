@@ -7,17 +7,21 @@
         <ApplicationProgram>
           <Static>
             <Parameters>
-              
+              <!--
               <Parameter Id="%AID%_P-%TT%%CC%001" Name="ResTunnel%C%" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel %C%" Value="0">
                 <Property ObjectType="11" PropertyId="200" Offset="%C%-1" BitOffset="0"/>
               </Parameter>
               <Parameter Id="%AID%_P-%TT%%CC%002" Name="Tunnel%C%IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel %C%" Value="0.0.0.0">
                 <Property ObjectType="11" PropertyId="201" Offset="%C%*4-4" BitOffset="0" />
               </Parameter>
+              <Parameter Id="%AID%_P-%TT%%CC%003" Name="OptTunnel%C%" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
+                <Property ObjectType="11" PropertyId="201" Offset="%C%-1" BitOffset="1"/>
+              </Parameter>-->
             </Parameters>
             <ParameterRefs>
               <ParameterRef Id="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" RefId="%AID%_P-%TT%%CC%001" />
               <ParameterRef Id="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" RefId="%AID%_P-%TT%%CC%002" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" RefId="%AID%_P-%TT%%CC%003" />
             </ParameterRefs>
             <BusInterfaces>
               <BusInterface Id="%AID%_BI-%C%" AddressIndex="%C%" AccessType="Tunneling" Text="Tunnel %C%" />
@@ -30,6 +34,7 @@
                 <choose ParamRefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101">
                   <when test="1">
                     <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" />
                   </when>
                 </choose>
               </ParameterBlock>

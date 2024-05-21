@@ -127,34 +127,6 @@
 #define ROUTE_GrpTelMainSub_0_13                   0      // 2 Bits, Bit 1-0
 #define     ROUTE_GrpTelMainSub_0_13Mask 0x03
 #define     ROUTE_GrpTelMainSub_0_13Shift 0
-#define ROUTE_ResTunnel1                           0      // 1 Bit, Bit 7
-#define     ROUTE_ResTunnel1Mask 0x80
-#define     ROUTE_ResTunnel1Shift 7
-#define ROUTE_OptTunnel1                           0      // 2 Bits, Bit 6-5
-#define     ROUTE_OptTunnel1Mask 0x60
-#define     ROUTE_OptTunnel1Shift 5
-#define ROUTE_Tunnel1IP                            0      // IP address, 4 Byte
-#define ROUTE_ResTunnel2                           1      // 1 Bit, Bit 7
-#define     ROUTE_ResTunnel2Mask 0x80
-#define     ROUTE_ResTunnel2Shift 7
-#define ROUTE_OptTunnel2                           1      // 2 Bits, Bit 6-5
-#define     ROUTE_OptTunnel2Mask 0x60
-#define     ROUTE_OptTunnel2Shift 5
-#define ROUTE_Tunnel2IP                            4      // IP address, 4 Byte
-#define ROUTE_ResTunnel3                           2      // 1 Bit, Bit 7
-#define     ROUTE_ResTunnel3Mask 0x80
-#define     ROUTE_ResTunnel3Shift 7
-#define ROUTE_OptTunnel3                           2      // 2 Bits, Bit 6-5
-#define     ROUTE_OptTunnel3Mask 0x60
-#define     ROUTE_OptTunnel3Shift 5
-#define ROUTE_Tunnel3IP                            8      // IP address, 4 Byte
-#define ROUTE_ResTunnel4                           3      // 1 Bit, Bit 7
-#define     ROUTE_ResTunnel4Mask 0x80
-#define     ROUTE_ResTunnel4Shift 7
-#define ROUTE_OptTunnel4                           3      // 2 Bits, Bit 6-5
-#define     ROUTE_OptTunnel4Mask 0x60
-#define     ROUTE_OptTunnel4Shift 5
-#define ROUTE_Tunnel4IP                           12      // IP address, 4 Byte
 
 // Bestätigung (ACK) von phys. addressierten Telegrammen
 #define ParamROUTE_AckOfPhysTelSubMain                 ((knx.paramByte(ROUTE_AckOfPhysTelSubMain) & ROUTE_AckOfPhysTelSubMainMask) >> ROUTE_AckOfPhysTelSubMainShift)
@@ -182,30 +154,6 @@
 #define ParamROUTE_GrpTelMainSub_14_31                 ((knx.paramByte(ROUTE_GrpTelMainSub_14_31) & ROUTE_GrpTelMainSub_14_31Mask) >> ROUTE_GrpTelMainSub_14_31Shift)
 // Gruppentelegramme (Hauptgruppe 0 - 13)
 #define ParamROUTE_GrpTelMainSub_0_13                  (knx.paramByte(ROUTE_GrpTelMainSub_0_13) & ROUTE_GrpTelMainSub_0_13Mask)
-// Reserviere Tunnel 1
-#define ParamROUTE_ResTunnel1                          ((bool)(knx.paramByte(ROUTE_ResTunnel1) & ROUTE_ResTunnel1Mask))
-// Verhalten wenn Tunnel belegt
-#define ParamROUTE_OptTunnel1                          ((knx.paramByte(ROUTE_OptTunnel1) & ROUTE_OptTunnel1Mask) >> ROUTE_OptTunnel1Shift)
-// IP-Adresse für Tunnel 1
-#define ParamROUTE_Tunnel1IP                           (knx.paramInt(ROUTE_Tunnel1IP))
-// Reserviere Tunnel 2
-#define ParamROUTE_ResTunnel2                          ((bool)(knx.paramByte(ROUTE_ResTunnel2) & ROUTE_ResTunnel2Mask))
-// Verhalten wenn Tunnel belegt
-#define ParamROUTE_OptTunnel2                          ((knx.paramByte(ROUTE_OptTunnel2) & ROUTE_OptTunnel2Mask) >> ROUTE_OptTunnel2Shift)
-// IP-Adresse für Tunnel 2
-#define ParamROUTE_Tunnel2IP                           (knx.paramInt(ROUTE_Tunnel2IP))
-// Reserviere Tunnel 3
-#define ParamROUTE_ResTunnel3                          ((bool)(knx.paramByte(ROUTE_ResTunnel3) & ROUTE_ResTunnel3Mask))
-// Verhalten wenn Tunnel belegt
-#define ParamROUTE_OptTunnel3                          ((knx.paramByte(ROUTE_OptTunnel3) & ROUTE_OptTunnel3Mask) >> ROUTE_OptTunnel3Shift)
-// IP-Adresse für Tunnel 3
-#define ParamROUTE_Tunnel3IP                           (knx.paramInt(ROUTE_Tunnel3IP))
-// Reserviere Tunnel 4
-#define ParamROUTE_ResTunnel4                          ((bool)(knx.paramByte(ROUTE_ResTunnel4) & ROUTE_ResTunnel4Mask))
-// Verhalten wenn Tunnel belegt
-#define ParamROUTE_OptTunnel4                          ((knx.paramByte(ROUTE_OptTunnel4) & ROUTE_OptTunnel4Mask) >> ROUTE_OptTunnel4Shift)
-// IP-Adresse für Tunnel 4
-#define ParamROUTE_Tunnel4IP                           (knx.paramInt(ROUTE_Tunnel4IP))
 
 #define ROUTE_ChannelCount 4
 
@@ -214,7 +162,20 @@
 #define ROUTE_ParamBlockSize -1
 #define ROUTE_ParamCalcIndex(index) (index + ROUTE_ParamBlockOffset + _channelIndex * ROUTE_ParamBlockSize)
 
+#define ROUTE_ResTunnel                            0      // 1 Bit, Bit 7
+#define     ROUTE_ResTunnelMask 0x80
+#define     ROUTE_ResTunnelShift 7
+#define ROUTE_TunnelIP                             0      // IP address, 4 Byte
+#define ROUTE_OptTunnel                            0      // 2 Bits, Bit 6-5
+#define     ROUTE_OptTunnelMask 0x60
+#define     ROUTE_OptTunnelShift 5
 
+// Reserviere Tunnel %C%
+#define ParamROUTE_ResTunnel                           ((bool)(knx.paramByte(ROUTE_ParamCalcIndex(ROUTE_ResTunnel)) & ROUTE_ResTunnelMask))
+// IP-Adresse für Tunnel %C%
+#define ParamROUTE_TunnelIP                            (knx.paramInt(ROUTE_ParamCalcIndex(ROUTE_TunnelIP)))
+// Verhalten wenn Tunnel belegt
+#define ParamROUTE_OptTunnel                           ((knx.paramByte(ROUTE_ParamCalcIndex(ROUTE_OptTunnel)) & ROUTE_OptTunnelMask) >> ROUTE_OptTunnelShift)
 
 
 

@@ -87,6 +87,8 @@
               <Parameter Id="%AID%_P-%TT%00014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
+
+              <!--
               <Parameter Id="%AID%_P-%TT%01001" Name="ResTunnel1" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 1" Value="0">
                 <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0"/>
               </Parameter>
@@ -123,6 +125,8 @@
               <Parameter Id="%AID%_P-%TT%04002" Name="Tunnel4IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 4" Value="0.0.0.0">
                 <Property ObjectType="11" PropertyId="202" Offset="12" BitOffset="0" />
               </Parameter>
+
+            -->
             </Parameters>
             <ParameterRefs>
               <ParameterRef Id="%AID%_P-%TT%00002_R-%TT%0000201" RefId="%AID%_P-%TT%00002" Tag="42" />

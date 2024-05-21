@@ -10,3 +10,4 @@
 release/*
 /include/versions.h
 src/*.baggages
+extensions.json

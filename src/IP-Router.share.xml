@@ -150,7 +150,7 @@
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info"> 
+              <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info">
                 <ParameterSeparator Id="%AID%_PS-" Text="Routing KNX -&gt; IP" UIHint="Headline" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00006_R-%TT%0000601" />
@@ -174,10 +174,23 @@
               </ParameterBlock>
 
 
-
-              <ParameterBlock Id="%AID%_PB-1" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info"> 
-                <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät zugewiesen werden." />
-                <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnel']/*" IsInner="true" type="template" prefix="ROUTE" />
+              <ParameterBlock Id="%AID%_PB-1" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info">
+                <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät exklusiv zugeordnet werden." />
+                <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
+                  <Rows>
+                    <Row Id="%AID%_PB-nnn_R-1" />
+                  </Rows>
+                  <Columns>
+                    <Column Id="%AID%_PB-nnn_C-1" Width="18%" />
+                    <Column Id="%AID%_PB-nnn_C-2" Width="5%" />
+                    <Column Id="%AID%_PB-nnn_C-3" Width="20%" />
+                    <Column Id="%AID%_PB-nnn_C-4" Width="50%" />
+                  </Columns>
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Zuordnung" UIHint="Headline" Cell="1,1" />
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="IP-Adresse" UIHint="Headline" Cell="1,3" />
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Verhalten, wenn Tunnel belegt" UIHint="Headline" Cell="1,4" />
+                </ParameterBlock>
+                <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/*" IsInner="true" type="template" prefix="ROUTE" />
               </ParameterBlock>
 
 

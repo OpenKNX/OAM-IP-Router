@@ -7,7 +7,7 @@
         <ApplicationProgram>
           <Static>
             <Parameters>
-              <Parameter Id="%AID%_P-%TT%%CC%001" Name="ResTunnel%C%" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel %C%" Value="0">
+              <Parameter Id="%AID%_P-%TT%%CC%001" Name="ResTunnel%C%" ParameterType="%AID%_PT-CheckBox" Text="Reserviere Tunnel %C%" Value="0">
                 <Property ObjectType="11" PropertyId="200" Offset="%C-1%" BitOffset="0"/>
               </Parameter>
               <Parameter Id="%AID%_P-%TT%%CC%002" Name="Tunnel%C%IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel %C%" Value="0.0.0.0">
@@ -28,12 +28,22 @@
           </Static>
           <Dynamic>
             <ChannelIndependentBlock>
-              <ParameterBlock Id="%AID%_PB-1" Name="Tunnel" Text="" Icon=""> 
-                <ParameterRefRef RefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" />
+              <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
+                <Rows>
+                  <Row Id="%AID%_PB-nnn_R-1" />
+                </Rows>
+                <Columns>
+                  <Column Id="%AID%_PB-nnn_C-1" Width="18%" />
+                  <Column Id="%AID%_PB-nnn_C-2" Width="5%" />
+                  <Column Id="%AID%_PB-nnn_C-3" Width="20%" />
+                  <Column Id="%AID%_PB-nnn_C-4" Width="50%" />
+                </Columns>
+                <ParameterSeparator Id="%AID%_PS-nnn" Text="Tunnel %C%" Cell="1,1" />
+                <ParameterRefRef RefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" Cell="1,2" />
                 <choose ParamRefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101">
                   <when test="1">
-                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" />
-                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" Cell="1,3" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" Cell="1,4" />
                   </when>
                 </choose>
               </ParameterBlock>

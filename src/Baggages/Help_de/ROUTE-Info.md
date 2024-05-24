@@ -1,3 +1,3 @@
 ### Routing
 
-Hier kannst du die Routing-Einstellungen vornehmen.
+Hier werden die Routing-Einstellungen vorgenommen.

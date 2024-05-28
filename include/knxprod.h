@@ -10,7 +10,7 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 57
+#define MAIN_ApplicationVersion 63
 #define MAIN_ParameterSize 82
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "REG1-Eth"
@@ -155,7 +155,7 @@
 // Gruppentelegramme (Hauptgruppe 0 - 13)
 #define ParamROUTE_GrpTelMainSub_0_13                  (knx.paramByte(ROUTE_GrpTelMainSub_0_13) & ROUTE_GrpTelMainSub_0_13Mask)
 
-#define ROUTE_ChannelCount 4
+#define ROUTE_ChannelCount 16
 
 // Parameter per channel
 #define ROUTE_ParamBlockOffset 0

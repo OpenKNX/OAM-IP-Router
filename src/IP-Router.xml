@@ -3,14 +3,14 @@
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
   <op:config name="%NET_IPConfigTool%" value="1" />
-  <op:config name="%Tunnelcount%" value="4" />
+  <op:config name="%Tunnelcount%" value="16" />
   
   <op:nowarn id="1" regex="%BASE_" />
 
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="30" 
-          ApplicationVersion="3.9" 
-          ReplacesVersions="3.4 3.5 3.6 3.7 3.8" 
+          ApplicationVersion="3.15" 
+          ReplacesVersions="3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 
           BuildSuffixText=" (Beta)"

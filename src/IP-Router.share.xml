@@ -87,46 +87,6 @@
               <Parameter Id="%AID%_P-%TT%00014" Name="GrpTelMainSub_0_13" ParameterType="%AID%_PT-RoutingWithFilter" Text="Gruppentelegramme (Hauptgruppe 0 - 13)" Value="3">
                 <Property ObjectType="6" PropertyId="54" Offset="0" BitOffset="6" />
               </Parameter>
-
-              <!--
-              <Parameter Id="%AID%_P-%TT%01001" Name="ResTunnel1" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 1" Value="0">
-                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="0"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%01003" Name="OptTunnel1" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
-                <Property ObjectType="11" PropertyId="201" Offset="0" BitOffset="1"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%01002" Name="Tunnel1IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 1" Value="0.0.0.0">
-                <Property ObjectType="11" PropertyId="202" Offset="0" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%02001" Name="ResTunnel2" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 2" Value="0">
-                <Property ObjectType="11" PropertyId="201" Offset="1" BitOffset="0"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%02003" Name="OptTunnel2" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
-                <Property ObjectType="11" PropertyId="201" Offset="1" BitOffset="1"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%02002" Name="Tunnel2IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 2" Value="0.0.0.0">
-                <Property ObjectType="11" PropertyId="202" Offset="4" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%03001" Name="ResTunnel3" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 3" Value="0">
-                <Property ObjectType="11" PropertyId="201" Offset="2" BitOffset="0"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%03003" Name="OptTunnel3" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
-                <Property ObjectType="11" PropertyId="201" Offset="2" BitOffset="1"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%03002" Name="Tunnel3IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 3" Value="0.0.0.0">
-                <Property ObjectType="11" PropertyId="202" Offset="8" BitOffset="0" />
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%04001" Name="ResTunnel4" ParameterType="%AID%_PT-Bool" Text="Reserviere Tunnel 4" Value="0">
-                <Property ObjectType="11" PropertyId="201" Offset="3" BitOffset="0"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%04003" Name="OptTunnel4" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
-                <Property ObjectType="11" PropertyId="201" Offset="3" BitOffset="1"/>
-              </Parameter>
-              <Parameter Id="%AID%_P-%TT%04002" Name="Tunnel4IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel 4" Value="0.0.0.0">
-                <Property ObjectType="11" PropertyId="202" Offset="12" BitOffset="0" />
-              </Parameter>
-
-            -->
             </Parameters>
             <ParameterRefs>
               <ParameterRef Id="%AID%_P-%TT%00002_R-%TT%0000201" RefId="%AID%_P-%TT%00002" Tag="42" />
@@ -149,8 +109,8 @@
             </ComObjectRefs>
           </Static>
           <Dynamic>
-            <ChannelIndependentBlock>
-              <ParameterBlock Id="%AID%_PB-1" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info">
+            <Channel Id="%AID%_CH-%PREFIX%-Routing" Number="%PREFIX%-Routing" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info">
+              <ParameterBlock Id="%AID%_PB-nnn" Name="Routing" Text="Routing" Icon="router-network">
                 <ParameterSeparator Id="%AID%_PS-" Text="Routing KNX -&gt; IP" UIHint="Headline" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00006_R-%TT%0000601" />
@@ -172,9 +132,9 @@
                 <ParameterRefRef RefId="%AID%_P-%TT%00010_R-%TT%0001001" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00008_R-%TT%0000801" />
               </ParameterBlock>
-
-
-              <ParameterBlock Id="%AID%_PB-1" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info">
+            </Channel>
+            <Channel Id="%AID%_CH-%PREFIX%-Tunnel" Number="%PREFIX%-Tunnel" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info">
+              <ParameterBlock Id="%AID%_PB-nnn" Name="Tunnel" Text="Tunnel" Icon="lan-connect">
                 <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät exklusiv zugeordnet werden." />
                 <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
                   <Rows>
@@ -192,10 +152,7 @@
                 </ParameterBlock>
                 <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/*" IsInner="true" type="template" prefix="ROUTE" />
               </ParameterBlock>
-
-
-
-            </ChannelIndependentBlock>
+            </Channel>
           </Dynamic>
         </ApplicationProgram>
       </ApplicationPrograms>

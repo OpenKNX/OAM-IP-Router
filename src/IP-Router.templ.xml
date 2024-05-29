@@ -33,17 +33,18 @@
                   <Row Id="%AID%_PB-nnn_R-1" />
                 </Rows>
                 <Columns>
-                  <Column Id="%AID%_PB-nnn_C-1" Width="18%" />
-                  <Column Id="%AID%_PB-nnn_C-2" Width="5%" />
-                  <Column Id="%AID%_PB-nnn_C-3" Width="20%" />
-                  <Column Id="%AID%_PB-nnn_C-4" Width="50%" />
+                  <Column Id="%AID%_PB-nnn_C-1" Width="2%" />
+                  <Column Id="%AID%_PB-nnn_C-2" Width="18%" />
+                  <Column Id="%AID%_PB-nnn_C-3" Width="5%" />
+                  <Column Id="%AID%_PB-nnn_C-4" Width="20%" />
+                  <Column Id="%AID%_PB-nnn_C-5" Width="50%" />
                 </Columns>
-                <ParameterSeparator Id="%AID%_PS-nnn" Text="Tunnel %C%" Cell="1,1" />
-                <ParameterRefRef RefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" Cell="1,2" />
+                <ParameterSeparator Id="%AID%_PS-nnn" Text="Tunnel %C%" Cell="1,2" />
+                <ParameterRefRef RefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" Cell="1,3" />
                 <choose ParamRefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101">
                   <when test="1">
-                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" Cell="1,3" />
-                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" Cell="1,4" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" Cell="1,4" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" Cell="1,5" />
                   </when>
                 </choose>
               </ParameterBlock>

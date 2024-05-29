@@ -15,9 +15,9 @@
               </ParameterType>
               <ParameterType Id="%AID%_PT-RoutingWithFilter" Name="RoutingWithFilter">
                 <TypeRestriction Base="Value" SizeInBit="2">
-                  <Enumeration Text="blockieren" Value="2" Id="%AID%_PT-RoutingWithFilter_EN-2" />
-                  <Enumeration Text="weiterleiten" Value="1" Id="%AID%_PT-RoutingWithFilter_EN-1" />
-                  <Enumeration Text="filtern" Value="3" Id="%AID%_PT-RoutingWithFilter_EN-3" />
+                  <Enumeration Text="Blockieren" Value="2" Id="%AID%_PT-RoutingWithFilter_EN-2" />
+                  <Enumeration Text="Weiterleiten" Value="1" Id="%AID%_PT-RoutingWithFilter_EN-1" />
+                  <Enumeration Text="Filtern" Value="3" Id="%AID%_PT-RoutingWithFilter_EN-3" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-GrpAcknowledge" Name="GrpAcknowledge">
@@ -28,8 +28,8 @@
               </ParameterType>
               <ParameterType Id="%AID%_PT-BroadcastLock" Name="BroadcastLock">
                 <TypeRestriction Base="Value" SizeInBit="1">
-                  <Enumeration Text="blockieren" Value="1" Id="%AID%_PT-BroadcastLock_EN-1" />
-                  <Enumeration Text="weiterleiten" Value="0" Id="%AID%_PT-BroadcastLock_EN-0" />
+                  <Enumeration Text="Blockieren" Value="1" Id="%AID%_PT-BroadcastLock_EN-1" />
+                  <Enumeration Text="Weiterleiten" Value="0" Id="%AID%_PT-BroadcastLock_EN-0" />
                 </TypeRestriction>
               </ParameterType>
               <ParameterType Id="%AID%_PT-PhysAcknowledge" Name="PhysAcknowledge">
@@ -109,46 +109,48 @@
             </ComObjectRefs>
           </Static>
           <Dynamic>
-            <Channel Id="%AID%_CH-%PREFIX%-Routing" Number="%PREFIX%-Routing" Name="Routing" Text="Routing" Icon="router-network" HelpContext="ROUTE-Info">
-              <ParameterBlock Id="%AID%_PB-nnn" Name="Routing" Text="Routing" Icon="router-network">
-                <ParameterSeparator Id="%AID%_PS-" Text="Routing KNX -&gt; IP" UIHint="Headline" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00006_R-%TT%0000601" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00005_R-%TT%0000501" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00004_R-%TT%0000401" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00003_R-%TT%0000301" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00002_R-%TT%0000201" />
+            <Channel Id="%AID%_CH-%PREFIX%-Routing" Number="%PREFIX%-Routing" Name="IP-Router" Text="IP-Router" Icon="router-network">
+              <ParameterBlock Id="%AID%_PB-nnn" Name="RoutingKNXIP" Text="Routing KNX -&gt; IP" Icon="router" HelpContext="ROUTE-KNXIP">
+                <ParameterSeparator Id="%AID%_PS-" Text="Einstellungen für das Routing von Telegrammen von TP nach IP" UIHint="Headline" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00006_R-%TT%0000601" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00005_R-%TT%0000501" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00004_R-%TT%0000401" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00003_R-%TT%0000301" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00002_R-%TT%0000201" IndentLevel="1"/>
                 <choose ParamRefId="%AID%_P-%TT%00002_R-%TT%0000201">
                   <when test="3">
-                    <ParameterSeparator Id="%AID%_PS-" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich" />
+                    <ParameterSeparator Id="%AID%_PS-" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich"/>
                   </when>
                 </choose>
-                <ParameterSeparator Id="%AID%_PS-2" Text="Routing IP -&gt; KNX" UIHint="Headline" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00014_R-%TT%0001401" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00013_R-%TT%0001301" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00011_R-%TT%0001101" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00009_R-%TT%0000901" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00012_R-%TT%0001201" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00010_R-%TT%0001001" />
-                <ParameterRefRef RefId="%AID%_P-%TT%00008_R-%TT%0000801" />
               </ParameterBlock>
-            </Channel>
-            <Channel Id="%AID%_CH-%PREFIX%-Tunnel" Number="%PREFIX%-Tunnel" Name="Tunnel" Text="Tunnel" Icon="lan-connect" HelpContext="TUNNEL-Info">
-              <ParameterBlock Id="%AID%_PB-nnn" Name="Tunnel" Text="Tunnel" Icon="lan-connect">
-                <ParameterSeparator Id="%AID%_PS-" Text="Hier können bestimmte Tunnel fest einem Endgerät exklusiv zugeordnet werden." />
+              <ParameterBlock Id="%AID%_PB-nnn" Name="RoutingIPKNX" Text="Routing IP -&gt; KNX" Icon="router" HelpContext="ROUTE-IPKNX">
+                <ParameterSeparator Id="%AID%_PS-" Text="Einstellungen für das Routing von Telegrammen von IP nach TP" UIHint="Headline" />
+                <ParameterRefRef RefId="%AID%_P-%TT%00014_R-%TT%0001401" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00013_R-%TT%0001301" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00011_R-%TT%0001101" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00009_R-%TT%0000901" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00012_R-%TT%0001201" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00010_R-%TT%0001001" IndentLevel="1"/>
+                <ParameterRefRef RefId="%AID%_P-%TT%00008_R-%TT%0000801" IndentLevel="1"/>
+              </ParameterBlock>
+              <ParameterBlock Id="%AID%_PB-nnn" Name="Tunnel" Text="Tunnelverbindungen" Icon="lan-connect" HelpContext="TUNNEL-Info">
+                <ParameterSeparator Id="%AID%_PS-" Text="Einstellungen für reservierte Tunnelverbindungen" UIHint="Headline" />
+                <ParameterSeparator Id="%AID%_PS-nnn" Text="die Physikalischen Adressen (PA) der Tunnelverbindungen werden über die Topologieansicht in der ETS konfiguriert" UIHint="Information" />
                 <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
                   <Rows>
                     <Row Id="%AID%_PB-nnn_R-1" />
                   </Rows>
                   <Columns>
-                    <Column Id="%AID%_PB-nnn_C-1" Width="18%" />
-                    <Column Id="%AID%_PB-nnn_C-2" Width="5%" />
-                    <Column Id="%AID%_PB-nnn_C-3" Width="20%" />
-                    <Column Id="%AID%_PB-nnn_C-4" Width="50%" />
+                    <Column Id="%AID%_PB-nnn_C-1" Width="2%" />
+                    <Column Id="%AID%_PB-nnn_C-2" Width="18%" />
+                    <Column Id="%AID%_PB-nnn_C-3" Width="5%" />
+                    <Column Id="%AID%_PB-nnn_C-4" Width="20%" />
+                    <Column Id="%AID%_PB-nnn_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Zuordnung" UIHint="Headline" Cell="1,1" />
-                  <ParameterSeparator Id="%AID%_PS-nnn" Text="IP-Adresse" UIHint="Headline" Cell="1,3" />
-                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Verhalten, wenn Tunnel belegt" UIHint="Headline" Cell="1,4" />
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Zuordnung" UIHint="Headline" Cell="1,2" />
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="IP-Adresse" UIHint="Headline" Cell="1,4" />
+                  <ParameterSeparator Id="%AID%_PS-nnn" Text="Verhalten, wenn Tunnel belegt" UIHint="Headline" Cell="1,5" />
                 </ParameterBlock>
                 <op:include href="IP-Router.templ.xml" xpath="//Dynamic/ChannelIndependentBlock/*" IsInner="true" type="template" prefix="ROUTE" />
               </ParameterBlock>

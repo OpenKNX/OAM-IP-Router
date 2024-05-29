@@ -10,7 +10,7 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 63
+#define MAIN_ApplicationVersion 69
 #define MAIN_ParameterSize 82
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "REG1-Eth"

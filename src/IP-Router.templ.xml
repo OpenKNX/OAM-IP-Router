@@ -14,7 +14,7 @@
                 <Property ObjectType="11" PropertyId="202" Offset="%C*4-4%" BitOffset="0" />
               </Parameter>
               <Parameter Id="%AID%_P-%TT%%CC%003" Name="OptTunnel%C%" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
-                <Property ObjectType="11" PropertyId="202" Offset="%C-1%" BitOffset="1"/>
+                <Property ObjectType="11" PropertyId="201" Offset="%C-1%" BitOffset="1"/>
               </Parameter>
             </Parameters>
             <ParameterRefs>

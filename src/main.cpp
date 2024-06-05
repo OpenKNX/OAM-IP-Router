@@ -24,7 +24,7 @@ void activity(uint8_t info)
 
 void setup()
 {
-    const uint8_t firmwareRevision = 3;
+    const uint8_t firmwareRevision = 4;
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);

@@ -24,7 +24,7 @@ void activity(uint8_t info)
 
 void setup()
 {
-    const uint8_t firmwareRevision = 2;
+    const uint8_t firmwareRevision = 3;
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);
@@ -42,9 +42,16 @@ void setup()
 #endif
 }
 
+uint32_t _showMem = 0;
 void loop()
 {
     openknx.loop();
+
+    if (delayCheck(_showMem, 1000))
+    {
+        openknx.console.showMemory();
+        _showMem = millis();
+    }
 }
 
 /*

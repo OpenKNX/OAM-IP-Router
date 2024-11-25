@@ -1,11 +1,15 @@
 #include "OpenKNX.h"
 
-#include "FileTransferModule.h"
-#include "NetworkModule.h"
-#include "UsbExchangeModule.h"
 
+#include "NetworkModule.h"
+#ifdef ARDUINO_ARCH_RP2040
+#include "UsbExchangeModule.h"
+#include "FileTransferModule.h"
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
+#endif
+
+
 
 bool core1_separate_stack = true;
 
@@ -28,8 +32,11 @@ void setup()
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);
+    #ifdef ARDUINO_ARCH_RP2040
     openknx.addModule(8, openknxUsbExchangeModule);
     openknx.addModule(9, openknxFileTransferModule);
+    #endif
+
     
     openknx.setup();
 
@@ -49,7 +56,7 @@ void loop()
 
     if (delayCheck(_showMem, 1000))
     {
-        openknx.console.showMemory();
+        //openknx.console.showMemory();
         _showMem = millis();
     }
 }

@@ -73,7 +73,7 @@ reverse activity led and signal ip and tp link with "on"
 
 BUGS
 -------
-none atm :)
+- memleak apdu 3da 3db
 
 
 IMPROVEMENTS
@@ -83,7 +83,6 @@ return false on send unicast in rp2040 plattform
 
 "cache" router objekt properties? in programming mode, you could lock out yourseld in the middle of the programming. behaviour only should change after restart maybe?
 
--assign tunnels to ip-adresses
 
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 

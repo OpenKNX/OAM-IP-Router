@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.3.4.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.4.1.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -1355,13 +1355,13 @@ function sendWifiSettings(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\4C" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C4C-ets.2Epng">
-          <FileInfo TimeInfo="2024-11-25T21:29:15.1310320Z" />
+          <FileInfo TimeInfo="2024-12-15T09:04:40.3097543Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\4C" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C4C-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2024-11-25T21:29:15.6614298Z" />
+          <FileInfo TimeInfo="2024-12-15T09:04:40.8859599Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\4C" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C4C-Icons.2Ezip">
-          <FileInfo TimeInfo="2024-11-25T21:29:16.3969106Z" />
+          <FileInfo TimeInfo="2024-12-15T09:04:41.7845794Z" />
         </Baggage>
       </Baggages>
       <Hardware>

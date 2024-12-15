@@ -134,8 +134,12 @@
 
 #ifdef BOARD_REG1_LAN_TP_BASE
 
-#define OKNXHW_REG1_CONTROLLERESP
-#include "OpenKNXHardware.h"
+#define DEVICE_ID "REG1-LAN-TP-Base"
+#define DEVICE_NAME "REG1-ControllerESP"
+
+#define OKNXHW_REG1_CONTROLLERESP_V00_02
+#define OKNXHW_REG1_FRONT_RGB
+#include "HardwareConfig/OpenKNX/REG1.h"
 
 //#define PROG_LED_COLOR 31,0,0
 //#define INFO1_LED_COLOR 0,31,0
@@ -143,3 +147,5 @@
 //#define INFO3_LED_COLOR 0,31,0
 
 #endif
+
+#include "HardwareConfig/OpenKNX/REG1.h"

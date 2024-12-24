@@ -10,10 +10,10 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 76
+#define MAIN_ApplicationVersion 79
 #define MAIN_ParameterSize 118
 #define MAIN_MaxKoNumber 0
-#define MAIN_OrderNumber "REG1-Eth"
+#define MAIN_OrderNumber "OpenKnxIPRouter"
 #define BASE_ModuleVersion 19
 #define NET_ModuleVersion 4
 // Parameter with single occurrence
@@ -77,6 +77,9 @@
 #define NET_NTP                                 24      // 1 Bit, Bit 5
 #define     NET_NTPMask 0x20
 #define     NET_NTPShift 5
+#define NET_OTAUpdate                           24      // 2 Bits, Bit 4-3
+#define     NET_OTAUpdateMask 0x18
+#define     NET_OTAUpdateShift 3
 #define NET_HostName                            25      // char*, 24 Byte
 #define NET_LanMode                             66      // 4 Bits, Bit 7-4
 #define     NET_LanModeMask 0xF0
@@ -99,13 +102,15 @@
 #define ParamNET_mDNS                                ((bool)(knx.paramByte(NET_mDNS) & NET_mDNSMask))
 // Weberver
 #define ParamNET_HTTP                                ((bool)(knx.paramByte(NET_HTTP) & NET_HTTPMask))
-// Zeitgeber (NTP)
+// NTP-Client
 #define ParamNET_NTP                                 ((bool)(knx.paramByte(NET_NTP) & NET_NTPMask))
+// OTA-Update
+#define ParamNET_OTAUpdate                           ((knx.paramByte(NET_OTAUpdate) & NET_OTAUpdateMask) >> NET_OTAUpdateShift)
 // Hostname
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
 // LAN-Modus
 #define ParamNET_LanMode                             ((knx.paramByte(NET_LanMode) & NET_LanModeMask) >> NET_LanModeShift)
-// NTP Server
+// Zeitserver
 #define ParamNET_NTPServer                           (knx.paramData(NET_NTPServer))
 
 #define ROUTE_AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6

@@ -35,10 +35,10 @@ if (!$?) { exit 1 }
 # see comment in Build-Step.ps1 for argument description
 
 # Example call, the following 2 lines might be there multiple times for each firmware which should be built
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG1_ETH firmware-IP-Router-REG1-Eth-V0 uf2
+ ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG1_ETH firmware-IP-Router-REG1-Eth uf2
  if (!$?) { exit 1 }
 
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG1_ETH_V1 firmware-IP-Router-REG1-Eth-V1 uf2
+ ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG1_LAN_TP_BASE firmware-IP-Router-REG1-LAN-TP-Base esp32
  if (!$?) { exit 1 }
 
 

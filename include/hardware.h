@@ -148,4 +148,5 @@
 
 #endif
 
-#include "HardwareConfig/OpenKNX/REG1.h"
+// Using OFM-HardwareConfig to include the OpenKNX Hardware Configurations
+#include "HardwareConfig.h"

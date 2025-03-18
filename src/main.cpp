@@ -44,7 +44,7 @@ void setup()
     openknx.setup();
 
 #ifdef DEVICE_DISPLAY_MODULE
-    WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(5000, WidgetFlags::DefaultWidget); // Create a new IP Router widget
+    WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(15000, WidgetFlags::DefaultWidget); // Create a new IP Router widget
     openknxDisplayModule.widgetManager.addWidget(ipRouterWidget);
 #endif
 

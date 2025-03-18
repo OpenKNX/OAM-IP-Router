@@ -6,7 +6,7 @@
 
 class WidgetIPRouter : public Widget
 {
-public:
+  public:
     const std::string logPrefix() { return "WidgetIPRouter"; }
     WidgetIPRouter(uint32_t displayTime, WidgetFlags action);
 
@@ -23,7 +23,7 @@ public:
 
     uint32_t getDisplayTime() const override;
     WidgetFlags getAction() const override;
-    
+
     inline void setDisplayTime(uint32_t displayTime) override { _displayTime = displayTime; }
     inline void setAction(uint8_t action) override { _action = static_cast<WidgetFlags>(action); }
     inline void addAction(uint8_t action) override { _action = static_cast<WidgetFlags>(_action | action); }
@@ -32,7 +32,7 @@ public:
     void setDisplayModule(i2cDisplay *displayModule) override;
     i2cDisplay *getDisplayModule() const override;
 
-private:
+  private:
     WidgetState _state;
     uint32_t _displayTime;
     WidgetFlags _action;

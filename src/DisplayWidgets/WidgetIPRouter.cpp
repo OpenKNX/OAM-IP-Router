@@ -5,7 +5,7 @@
 #include <WiFi.h>
 
 WidgetIPRouter::WidgetIPRouter(uint32_t displayTime, WidgetFlags action)
-    : _displayTime(displayTime), _action(action), _state(WidgetState::STOPPED), _display(nullptr) 
+    : _displayTime(displayTime), _action(action), _state(WidgetState::STOPPED), _display(nullptr)
 {
     rxTrafficHistory.resize(20, 0);
     txTrafficHistory.resize(20, 0);
@@ -23,7 +23,8 @@ void WidgetIPRouter::setup()
 
 void WidgetIPRouter::start()
 {
-    if (_state == WidgetState::RUNNING) return;
+    if (_state == WidgetState::RUNNING)
+        return;
 
     logInfoP("Starting IP Router Widget...");
     _state = WidgetState::RUNNING;
@@ -60,70 +61,100 @@ void WidgetIPRouter::resume()
 
 void WidgetIPRouter::loop()
 {
-    if (_state != WidgetState::RUNNING || !_display) return;
+    if (_state != WidgetState::RUNNING || !_display)
+        return;
 
     drawIPInfo();
-    //drawTrafficGraph();
+    // drawTrafficGraph();
 }
 
-uint32_t WidgetIPRouter::getDisplayTime() const { return _displayTime; }
-WidgetFlags WidgetIPRouter::getAction() const { return _action; }
+uint32_t WidgetIPRouter::getDisplayTime() const
+{
+    return _displayTime;
+}
+WidgetFlags WidgetIPRouter::getAction() const
+{
+    return _action;
+}
 
-void WidgetIPRouter::setDisplayModule(i2cDisplay *displayModule) { _display = displayModule; }
-i2cDisplay *WidgetIPRouter::getDisplayModule() const { return _display; }
+void WidgetIPRouter::setDisplayModule(i2cDisplay *displayModule)
+{
+    _display = displayModule;
+}
+i2cDisplay *WidgetIPRouter::getDisplayModule() const
+{
+    return _display;
+}
+
+static const unsigned char PROGMEM x_icon[] = {
+    0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81};
 
 void WidgetIPRouter::drawIPInfo()
 {
-    if (!_display) return;
+    if (!_display)
+        return;
 
     _display->display->clearDisplay();
-    
-    String ip = openknxNetwork.localIP().toString().c_str();
-    String subnet = openknxNetwork.subnetMask().toString().c_str();
-    String gateway = openknxNetwork.gatewayIP().toString().c_str();
-    String dns = openknxNetwork.nameServerIP().toString().c_str();
-    #ifdef ARDUINO_ARCH_ESP32
-    String hostname = KNX_NETIF.getHostname();
-    #endif
+    _display->display->setTextColor(WHITE);
 
-    _display->display->setTextWrap(false);
-    #ifdef ARDUINO_ARCH_ESP32
-    _display->display->setCursor(0, 0);
-    _display->display->print("");
-    _display->display->print(hostname.c_str());
-    #endif
+    const uint16_t SCREEN_WIDTH = _display->GetDisplayWidth();
+    const uint16_t CENTER_X = SCREEN_WIDTH / 2;
 
-    _display->display->setCursor(0, 20);
-    _display->display->print("IP: ");
-    _display->display->print(ip.c_str());
+    String firmwareVersion = String(openknx.info.humanFirmwareVersion().c_str()) + " " + String(openknx.info.firmwareName().c_str());
+    _display->display->setTextSize(1);
+    _display->display->setCursor((SCREEN_WIDTH - (firmwareVersion.length() * 6)) / 2, 0);
+    _display->display->print(firmwareVersion.c_str());
 
-    _display->display->setCursor(0, 30);
-    _display->display->print("Subnet: ");
-    _display->display->print(subnet.c_str());
+    // Horizontale Linie unter dem Titel
+    _display->display->drawLine(0, 10, SCREEN_WIDTH, 10, WHITE);
 
-    _display->display->setCursor(0, 40);
-    _display->display->print("Gateway: ");
-    _display->display->print(gateway.c_str());
+    if (openknxNetwork.established())
+    {
+        // IP, Gateway & DNS
+        String ip = "IP: " + openknxNetwork.localIP().toString();
+        String gw = "GW: " + openknxNetwork.gatewayIP().toString();
+        String dns = "DNS: " + openknxNetwork.nameServerIP().toString();
 
-    _display->display->setCursor(0, 50);
-    _display->display->print("DNS: ");
-    _display->display->print(dns.c_str());
+        _display->display->setCursor((SCREEN_WIDTH - (ip.length() * 6)) / 2, 20);
+        _display->display->print(ip.c_str());
 
-    
+        _display->display->setCursor((SCREEN_WIDTH - (gw.length() * 6)) / 2, 30);
+        _display->display->print(gw.c_str());
+
+        _display->display->setCursor((SCREEN_WIDTH - (dns.length() * 6)) / 2, 40);
+        _display->display->print(dns.c_str());
+
+#ifdef ARDUINO_ARCH_ESP32
+        // ESP32 Hostname (zentriert)
+        String hostname = KNX_NETIF.getHostname();
+        _display->display->setCursor((SCREEN_WIDTH - (hostname.length() * 6)) / 2, 50);
+        _display->display->print(hostname.c_str());
+#endif
+    }
+    else
+    {
+        // Kein Netzwerk (X-Icon zentriert)
+        _display->display->drawBitmap(CENTER_X - 4, 20, x_icon, 8, 8, WHITE);
+        _display->display->setCursor(CENTER_X - 30, 36);
+        _display->display->print("DISCONNECTED");
+        _display->display->setCursor(CENTER_X - 42, 50);
+        _display->display->print("Check LAN Cable");
+    }
 
     _display->displayBuff();
 }
 
 void WidgetIPRouter::drawTrafficGraph()
 {
-    if (!_display) return;
+    if (!_display)
+        return;
 
     rxTrafficHistory.erase(rxTrafficHistory.begin());
     txTrafficHistory.erase(txTrafficHistory.begin());
 
     uint16_t rxBytes = getRxBytes();
     uint16_t txBytes = getTxBytes();
-    
+
     rxTrafficHistory.push_back(rxBytes);
     txTrafficHistory.push_back(txBytes);
 
@@ -164,6 +195,5 @@ uint16_t WidgetIPRouter::getTxBytes()
     lastTxBytes = bytes;
     return delta;
 }
-
 
 #endif // DEVICE_DISPLAY_MODULE

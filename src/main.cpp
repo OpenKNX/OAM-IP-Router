@@ -7,6 +7,11 @@
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 #endif
+#ifdef DEVICE_DISPLAY_MODULE
+    #include "GPIOModule.h"
+    #include "DeviceDisplay.h"
+    #include "DisplayWidgets/WidgetIPRouter.h"
+#endif
 
 bool core1_separate_stack = true;
 
@@ -32,8 +37,17 @@ void setup()
     openknx.addModule(8, openknxUsbExchangeModule);
     openknx.addModule(9, openknxFileTransferModule);
 #endif
-
+#ifdef DEVICE_DISPLAY_MODULE
+    openknx.addModule(10, openknxDisplayModule);
+    openknx.addModule(20, openknxGPIOModule);
+#endif
     openknx.setup();
+
+#ifdef DEVICE_DISPLAY_MODULE
+    WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(5000, WidgetFlags::DefaultWidget); // Create a new IP Router widget
+    openknxDisplayModule.widgetManager.addWidget(ipRouterWidget);
+#endif
+
 }
 
 uint32_t _showMem = 0;

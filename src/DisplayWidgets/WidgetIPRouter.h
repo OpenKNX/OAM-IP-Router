@@ -7,7 +7,7 @@
 class WidgetIPRouter : public Widget
 {
   public:
-    const std::string logPrefix() { return "WidgetIPRouter"; }
+    const std::string logPrefix() { return "Widget IP-Router"; }
     WidgetIPRouter(uint32_t displayTime, WidgetFlags action);
 
     void start() override;
@@ -37,7 +37,7 @@ class WidgetIPRouter : public Widget
     uint32_t _displayTime;
     WidgetFlags _action;
     i2cDisplay *_display;
-    std::string _name = "IP Router";
+    std::string _name = "IP-Router";
 
     std::vector<uint16_t> rxTrafficHistory;
     std::vector<uint16_t> txTrafficHistory;

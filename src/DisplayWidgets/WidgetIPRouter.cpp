@@ -13,7 +13,7 @@ WidgetIPRouter::WidgetIPRouter(uint32_t displayTime, WidgetFlags action)
 
 void WidgetIPRouter::setup()
 {
-    logInfoP("IP Router Setup...");
+    logDebugP("Setup...");
     if (_display == nullptr)
     {
         logErrorP("Display is NULL.");
@@ -26,13 +26,13 @@ void WidgetIPRouter::start()
     if (_state == WidgetState::RUNNING)
         return;
 
-    logInfoP("Starting IP Router Widget...");
+    logDebugP("Starting...");
     _state = WidgetState::RUNNING;
 }
 
 void WidgetIPRouter::stop()
 {
-    logInfoP("Stopping IP Router Widget...");
+    logDebugP("Stopping...");
     _state = WidgetState::STOPPED;
     if (_display)
     {
@@ -45,7 +45,7 @@ void WidgetIPRouter::pause()
 {
     if (_state == WidgetState::RUNNING)
     {
-        logInfoP("Pausing IP Router Widget...");
+        logDebugP("Pausing...");
         _state = WidgetState::PAUSED;
     }
 }
@@ -54,7 +54,7 @@ void WidgetIPRouter::resume()
 {
     if (_state == WidgetState::PAUSED)
     {
-        logInfoP("Resuming IP Router Widget...");
+        logDebugP("Resuming");
         _state = WidgetState::RUNNING;
     }
 }
@@ -100,7 +100,8 @@ void WidgetIPRouter::drawIPInfo()
     const uint16_t SCREEN_WIDTH = _display->GetDisplayWidth();
     const uint16_t CENTER_X = SCREEN_WIDTH / 2;
 
-    String firmwareVersion = String(openknx.info.humanFirmwareVersion().c_str()) + " " + String(openknx.info.firmwareName().c_str());
+    //String firmwareVersion = String(openknx.info.humanFirmwareVersion().c_str()) + " " + String(openknx.info.firmwareName().c_str());
+    String firmwareVersion = String(_name.c_str()) + " (v" + String(openknx.info.humanFirmwareVersion().c_str()) + ")";
     _display->display->setTextSize(1);
     _display->display->setCursor((SCREEN_WIDTH - (firmwareVersion.length() * 6)) / 2, 0);
     _display->display->print(firmwareVersion.c_str());
@@ -126,7 +127,7 @@ void WidgetIPRouter::drawIPInfo()
 
 #ifdef ARDUINO_ARCH_ESP32
         // ESP32 Hostname (zentriert)
-        String hostname = KNX_NETIF.getHostname();
+        String hostname = String("H:") + KNX_NETIF.getHostname();
         _display->display->setCursor((SCREEN_WIDTH - (hostname.length() * 6)) / 2, 50);
         _display->display->print(hostname.c_str());
 #endif

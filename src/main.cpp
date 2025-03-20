@@ -44,8 +44,9 @@ void setup()
     openknx.setup();
 
 #ifdef DEVICE_DISPLAY_MODULE
+    // Setup the IP Router widget after the display module is ready (setup is called )
     WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(15000, WidgetFlags::DefaultWidget); // Create a new IP Router widget
-    openknxDisplayModule.widgetManager.addWidget(ipRouterWidget);
+    openknxDisplayModule.widgetManager.addWidget(ipRouterWidget); // Add the widget to the widget manager queue.
 #endif
 
 }

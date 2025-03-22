@@ -50,10 +50,14 @@ if (!$?) { exit 1 }
 if (!$?) { exit 1 }
 ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_W_ETH_DD firmware-IP-Router-REG2-PicoW-Eth-DD uf2
 if (!$?) { exit 1 }
-#../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_ESP_S3_PICO_ETH firmware-IP-Router-REG2-PicoW-Eth-DD uf2
-#if (!$?) { exit 1 }
-#../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_ESP_S3_PICO_ETH_DD firmware-IP-Router-REG2-PicoW-Eth-DD uf2
-#if (!$?) { exit 1 }
+../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO2_ETH firmware-IP-Router-REG2-Pico2-Eth uf2
+if (!$?) { exit 1 }
+../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO2_ETH_DD firmware-IP-Router-REG2-Pico2-Eth-DD uf2
+if (!$?) { exit 1 }
+../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ESP_ETH firmware-IP-Router-REG2-Pico-Esp-Eth esp32
+if (!$?) { exit 1 }
+../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ESP_ETH_DD firmware-IP-Router-REG2-Pico-Esp-Eth-DD esp32
+if (!$?) { exit 1 }
 
 
 

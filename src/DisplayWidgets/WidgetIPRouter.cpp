@@ -125,12 +125,11 @@ void WidgetIPRouter::drawIPInfo()
         _display->display->setCursor((SCREEN_WIDTH - (dns.length() * 6)) / 2, 40);
         _display->display->print(dns.c_str());
 
-#ifdef ARDUINO_ARCH_ESP32
-        // ESP32 Hostname (zentriert)
-        String hostname = String("H:") + KNX_NETIF.getHostname();
+        // Hostname
+        char _hostName[25] = {}; memcpy(_hostName, ParamNET_HostName, 24);
+        String hostname = String("H:") + String(_hostName);
         _display->display->setCursor((SCREEN_WIDTH - (hostname.length() * 6)) / 2, 50);
         _display->display->print(hostname.c_str());
-#endif
     }
     else
     {

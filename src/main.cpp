@@ -8,9 +8,15 @@
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 #endif
 #ifdef DEVICE_DISPLAY_MODULE
-    #include "GPIOModule.h"
-    #include "DeviceDisplay.h"
-    #include "DisplayWidgets/WidgetIPRouter.h"
+#include "DeviceDisplay.h"
+#include "DisplayWidgets/WidgetIPRouter.h"
+#include "GPIOModule.h"
+#endif
+#ifdef USE_GPIO_MODULE
+#include "GPIOModule.h"
+#endif
+#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+#include "SDCardModule.h"
 #endif
 
 bool core1_separate_stack = true;
@@ -39,16 +45,20 @@ void setup()
 #endif
 #ifdef DEVICE_DISPLAY_MODULE
     openknx.addModule(10, openknxDisplayModule);
+#endif
+#ifdef USE_GPIO_MODULE
     openknx.addModule(20, openknxGPIOModule);
+#endif
+#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+    openknx.addModule(30, sdCardModule);
 #endif
     openknx.setup();
 
 #ifdef DEVICE_DISPLAY_MODULE
     // Setup the IP Router widget after the display module is ready (setup is called )
     WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(15000, WidgetFlags::DefaultWidget); // Create a new IP Router widget
-    openknxDisplayModule.widgetManager.addWidget(ipRouterWidget); // Add the widget to the widget manager queue.
+    openknxDisplayModule.widgetManager.addWidget(ipRouterWidget);                           // Add the widget to the widget manager queue.
 #endif
-
 }
 
 uint32_t _showMem = 0;

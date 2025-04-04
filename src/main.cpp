@@ -1,15 +1,12 @@
 #include "OpenKNX.h"
 
-
 #include "NetworkModule.h"
 #ifdef ARDUINO_ARCH_RP2040
-#include "UsbExchangeModule.h"
 #include "FileTransferModule.h"
-#pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
+// #include "UsbExchangeModule.h"
+#pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 #endif
-
-
 
 bool core1_separate_stack = true;
 
@@ -18,118 +15,137 @@ uint32_t _ipLedActivity = 0;
 #ifdef KNX_ACTIVITYCALLBACK
 void activity(uint8_t info)
 {
-    if((info >> KNX_ACTIVITYCALLBACK_NET))
+    if ((info >> KNX_ACTIVITYCALLBACK_NET))
         _ipLedActivity = millis();
     else
         _tpLedActivity = millis();
 }
 #endif
 
-
 void setup()
 {
-    const uint8_t firmwareRevision = 2;
+    const uint8_t firmwareRevision = 23;
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);
-    #ifdef ARDUINO_ARCH_RP2040
-    openknx.addModule(8, openknxUsbExchangeModule);
+#ifdef ARDUINO_ARCH_RP2040
+    // openknx.addModule(8, openknxUsbExchangeModule);
     openknx.addModule(9, openknxFileTransferModule);
-    #endif
+#endif
 
-    
     openknx.setup();
+    //__tpuart = &knx.bau().getSecondaryDataLinkLayer()->getTPUart();
+
+    // delay(3000);
+    // char test[] = {0xBC, 0x10, 0x67, 0x17, 0x0A, 0xE3, 0x00, 0x80, 0x58, 0x3A, 0x07, 0x4B, 0xFB, 0x07, 0x4B, 0xFB};
+    // TPUart::Frame frame(test);
+    // logInfo("Frame", frame.printFrame().c_str());
 }
 
 uint32_t _showMem = 0;
 uint32_t _leds = 0;
 uint8_t _ipLedState = 0;
 uint8_t _tpLedState = 0;
+uint32_t _vvvv1 = 1000;
+
 void loop()
 {
     openknx.loop();
 
     if (delayCheck(_leds, 100))
     {
-        #ifdef KNX_ACTIVITYCALLBACK
-            #if defined(INFO2_LED_PIN) && defined(INFO3_LED_PIN)
-            if(openknxNetwork.established())
+#ifdef KNX_ACTIVITYCALLBACK
+#if defined(INFO2_LED_PIN) && defined(INFO3_LED_PIN)
+        if (openknxNetwork.established())
+        {
+            if (_ipLedState != 1)
             {
-                if(_ipLedState != 1)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
-                    #endif
-                    openknx.info2Led.activity(_ipLedActivity, true);
-                    _ipLedState = 1;
-                }
+#ifdef OPENKNX_SERIALLED_ENABLE
+                openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
+#endif
+                openknx.info2Led.activity(_ipLedActivity, true);
+                _ipLedState = 1;
             }
-            else if(openknxNetwork.connected())
+        }
+        else if (openknxNetwork.connected())
+        {
+            if (_ipLedState != 2)
             {
-                if(_ipLedState != 2)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_YELLOW);
-                    openknx.info2Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
+#ifdef OPENKNX_SERIALLED_ENABLE
+                openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_YELLOW);
+                openknx.info2Led.on();
+#else
+                openknx.info2Led.off();
+#endif
 
-                    _ipLedState = 2;
-                }
+                _ipLedState = 2;
             }
-            else
+        }
+        else
+        {
+            if (_ipLedState != 3)
             {
-                if(_ipLedState != 3)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
-                    openknx.info2Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
-                    _ipLedState = 3;
-                }
+#ifdef OPENKNX_SERIALLED_ENABLE
+                openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
+                openknx.info2Led.on();
+#else
+                openknx.info2Led.off();
+#endif
+                _ipLedState = 3;
             }
+        }
 
-            if(knx.bau().getSecondaryDataLinkLayer()->isConnected())
+        if (knx.bau().getSecondaryDataLinkLayer()->isConnected())
+        {
+            if (_tpLedState != 1)
             {
-                if(_tpLedState != 1)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
-                    #endif
-                    openknx.info3Led.activity(_tpLedActivity, true);
-                    _tpLedState = 1;
-                }
+#ifdef OPENKNX_SERIALLED_ENABLE
+                openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
+#endif
+                openknx.info3Led.activity(_tpLedActivity, true);
+                _tpLedState = 1;
             }
-            else
+        }
+        else
+        {
+            if (_tpLedState != 3)
             {
-                if(_tpLedState != 3)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
-                    openknx.info3Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
-                    _tpLedState = 3;
-                }
+#ifdef OPENKNX_SERIALLED_ENABLE
+                openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
+                openknx.info3Led.on();
+#else
+                openknx.info2Led.off();
+#endif
+                _tpLedState = 3;
             }
-            #endif
-            knx.bau().setActivityCallback(activity);
-        #endif
+        }
+#endif
+        knx.bau().setActivityCallback(activity);
+#endif
 
         _leds = millis();
     }
 
     if (delayCheck(_showMem, 1000))
     {
-        //openknx.console.showMemory();
+        // openknx.console.showMemory();
         _showMem = millis();
     }
 }
+#ifdef OPENKNX_DUALCORE
+void setup1()
+{
+    openknx.setup1();
+}
 
+void loop1()
+{
+    openknx.loop1();
+    knx.bau().getSecondaryDataLinkLayer()->getTPUart().processReceviedByte();
+    knx.bau().getSecondaryDataLinkLayer()->getTPUart().processReceviedByte();
+    knx.bau().getSecondaryDataLinkLayer()->getTPUart().processTransmitByte();
+}
+#endif
 /*
 ToDos:
 -------
@@ -151,7 +167,7 @@ return false on send unicast in rp2040 plattform
 PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
 
 - set PID_KNXNETIP_DEVICE_CAPABILITIES
-- set PID_KNXNETIP_DEVICE_STATE 
+- set PID_KNXNETIP_DEVICE_STATE
     PID_QUEUE_OVERFLOW_TO_IP = 72,
     PID_QUEUE_OVERFLOW_TO_KNX = 73,
     PID_MSG_TRANSMIT_TO_IP = 74,

@@ -100,13 +100,29 @@ void WidgetIPRouter::drawIPInfo()
     const uint16_t SCREEN_WIDTH = _display->GetDisplayWidth();
     const uint16_t CENTER_X = SCREEN_WIDTH / 2;
 
-    //String firmwareVersion = String(openknx.info.humanFirmwareVersion().c_str()) + " " + String(openknx.info.firmwareName().c_str());
     String firmwareVersion = String(_name.c_str()) + " (v" + String(openknx.info.humanFirmwareVersion().c_str()) + ")";
+    //String firmwareVersion = String(_name.c_str()) + " " + String(openknx.info.humanFirmwareVersion().c_str()) + "";
     _display->display->setTextSize(1);
     _display->display->setCursor((SCREEN_WIDTH - (firmwareVersion.length() * 6)) / 2, 0);
     _display->display->print(firmwareVersion.c_str());
 
-    // Horizontale Linie unter dem Titel
+
+    // Show the elapsed time in seconds in the top right corner
+    /*
+    static uint32_t timerStart = millis();
+    uint32_t elapsedMillis = millis() - timerStart;
+    uint32_t remainingSeconds = (_displayTime > elapsedMillis) ? (_displayTime - elapsedMillis) / 1000 : 0;
+    if (remainingSeconds == 0)
+    {
+        timerStart = millis();
+        remainingSeconds = _displayTime / 1000; // Reset to initial time in seconds
+    }
+    String timerText = String(remainingSeconds) + "s";
+    _display->display->setCursor(SCREEN_WIDTH - (timerText.length() * 6), 0);
+    _display->display->print(timerText);
+    */
+
+    // Draw a horizontal line
     _display->display->drawLine(0, 10, SCREEN_WIDTH, 10, WHITE);
 
     if (openknxNetwork.established())

@@ -10,8 +10,8 @@
                                              
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 80
-#define MAIN_ParameterSize 118
+#define MAIN_ApplicationVersion 81
+#define MAIN_ParameterSize 182
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "OpenKnxIPRouter"
 #define BASE_ModuleVersion 19
@@ -31,15 +31,16 @@
 #define BASE_Timezone                             6      // 5 Bits, Bit 7-3
 #define     BASE_TimezoneMask 0xF8
 #define     BASE_TimezoneShift 3
-#define BASE_SummertimeAll                        6      // 2 Bits, Bit 1-0
-#define     BASE_SummertimeAllMask 0x03
-#define     BASE_SummertimeAllShift 0
 #define BASE_CombinedTimeDate                     6      // 1 Bit, Bit 2
 #define     BASE_CombinedTimeDateMask 0x04
 #define     BASE_CombinedTimeDateShift 2
+#define BASE_SummertimeAll                        6      // 2 Bits, Bit 1-0
+#define     BASE_SummertimeAllMask 0x03
+#define     BASE_SummertimeAllShift 0
 #define BASE_InternalTime                         6      // 1 Bit, Bit 0
 #define     BASE_InternalTimeMask 0x01
 #define     BASE_InternalTimeShift 0
+#define BASE_TimezoneCustom                       7      // char*, 63 Byte
 
 // Zeitbasis
 #define ParamBASE_StartupDelayBase                    ((knx.paramByte(BASE_StartupDelayBase) & BASE_StartupDelayBaseMask) >> BASE_StartupDelayBaseShift)
@@ -51,40 +52,42 @@
 #define ParamBASE_Watchdog                            ((bool)(knx.paramByte(BASE_Watchdog) & BASE_WatchdogMask))
 // Zeitzone
 #define ParamBASE_Timezone                            ((knx.paramByte(BASE_Timezone) & BASE_TimezoneMask) >> BASE_TimezoneShift)
-// Sommerzeit ermitteln durch
-#define ParamBASE_SummertimeAll                       (knx.paramByte(BASE_SummertimeAll) & BASE_SummertimeAllMask)
 // Empfangen über
 #define ParamBASE_CombinedTimeDate                    ((bool)(knx.paramByte(BASE_CombinedTimeDate) & BASE_CombinedTimeDateMask))
+// Sommerzeit ermitteln durch
+#define ParamBASE_SummertimeAll                       (knx.paramByte(BASE_SummertimeAll) & BASE_SummertimeAllMask)
 // InternalTime
 #define ParamBASE_InternalTime                        ((bool)(knx.paramByte(BASE_InternalTime) & BASE_InternalTimeMask))
+// POSIX TZ-String
+#define ParamBASE_TimezoneCustom                      (knx.paramData(BASE_TimezoneCustom))
 
-#define NET_HostAddress                          7      // IP address, 4 Byte
-#define NET_SubnetMask                          11      // IP address, 4 Byte
-#define NET_GatewayAddress                      15      // IP address, 4 Byte
-#define NET_NameserverAddress                   19      // IP address, 4 Byte
-#define NET_CustomHostname                      23      // 1 Bit, Bit 7
+#define NET_HostAddress                         71      // IP address, 4 Byte
+#define NET_SubnetMask                          75      // IP address, 4 Byte
+#define NET_GatewayAddress                      79      // IP address, 4 Byte
+#define NET_NameserverAddress                   83      // IP address, 4 Byte
+#define NET_CustomHostname                      87      // 1 Bit, Bit 7
 #define     NET_CustomHostnameMask 0x80
 #define     NET_CustomHostnameShift 7
-#define NET_StaticIP                            23      // 1 Bit, Bit 6
+#define NET_StaticIP                            87      // 1 Bit, Bit 6
 #define     NET_StaticIPMask 0x40
 #define     NET_StaticIPShift 6
-#define NET_mDNS                                24      // 1 Bit, Bit 7
+#define NET_mDNS                                88      // 1 Bit, Bit 7
 #define     NET_mDNSMask 0x80
 #define     NET_mDNSShift 7
-#define NET_HTTP                                24      // 1 Bit, Bit 6
+#define NET_HTTP                                88      // 1 Bit, Bit 6
 #define     NET_HTTPMask 0x40
 #define     NET_HTTPShift 6
-#define NET_NTP                                 24      // 1 Bit, Bit 5
+#define NET_NTP                                 88      // 1 Bit, Bit 5
 #define     NET_NTPMask 0x20
 #define     NET_NTPShift 5
-#define NET_OTAUpdate                           24      // 2 Bits, Bit 4-3
+#define NET_OTAUpdate                           88      // 2 Bits, Bit 4-3
 #define     NET_OTAUpdateMask 0x18
 #define     NET_OTAUpdateShift 3
-#define NET_HostName                            25      // char*, 24 Byte
-#define NET_LanMode                             66      // 4 Bits, Bit 7-4
+#define NET_HostName                            89      // char*, 24 Byte
+#define NET_LanMode                             130      // 4 Bits, Bit 7-4
 #define     NET_LanModeMask 0xF0
 #define     NET_LanModeShift 4
-#define NET_NTPServer                           67      // char*, 50 Byte
+#define NET_NTPServer                           131      // char*, 50 Byte
 
 // IP-Adresse
 #define ParamNET_HostAddress                         (knx.paramInt(NET_HostAddress))
@@ -210,7 +213,7 @@
 #define BASE_KommentarModuleModuleParamSize 0
 #define BASE_KommentarModuleSubmodulesParamSize 0
 #define BASE_KommentarModuleParamSize 0
-#define BASE_KommentarModuleParamOffset 118
+#define BASE_KommentarModuleParamOffset 182
 #define BASE_KommentarModuleCalcIndex(index, m1) (index + BASE_KommentarModuleParamOffset + _channelIndex * BASE_KommentarModuleCount * BASE_KommentarModuleParamSize + m1 * BASE_KommentarModuleParamSize)
 
 

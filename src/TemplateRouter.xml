@@ -75,7 +75,7 @@
             <op:includetemplate href="%templ%" xpath="//ApplicationProgram/ModuleDefs/*" type="template" prefix="%prefix%" />
           </ModuleDefs>
           <Dynamic>
-            <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/*" prefix="NET" />
+            <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/*" prefix="BASE" />
             <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
             <op:include href="IP-Router.share.xml" xpath="//Dynamic/*" prefix="ROUTE" />
             <!--

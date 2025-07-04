@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
+  <ManufacturerData>
+    <Manufacturer RefId="M-00FA">
+      <ApplicationPrograms>
+        <ApplicationProgram>
+          <Static>
+            <Parameters>
+              <Parameter Id="%AID%_P-%TT%%CC%001" Name="ResTunnel%C%" ParameterType="%AID%_PT-CheckBox" Text="Reserviere Tunnel %C%" Value="0">
+                <Property ObjectType="11" PropertyId="201" Offset="%C-1%" BitOffset="0"/>
+              </Parameter>
+              <Parameter Id="%AID%_P-%TT%%CC%002" Name="Tunnel%C%IP" ParameterType="%AID%_PT-HostAddress" Text="IP-Adresse für Tunnel %C%" Value="0.0.0.0">
+                <Property ObjectType="11" PropertyId="202" Offset="%C*4-4%" BitOffset="0" />
+              </Parameter>
+              <Parameter Id="%AID%_P-%TT%%CC%003" Name="OptTunnel%C%" ParameterType="%AID%_PT-TunnelResOpt" Text="Verhalten wenn Tunnel belegt" Value="1">
+                <Property ObjectType="11" PropertyId="201" Offset="%C-1%" BitOffset="1"/>
+              </Parameter>
+            </Parameters>
+            <ParameterRefs>
+              <ParameterRef Id="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" RefId="%AID%_P-%TT%%CC%001" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" RefId="%AID%_P-%TT%%CC%002" />
+              <ParameterRef Id="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" RefId="%AID%_P-%TT%%CC%003" />
+            </ParameterRefs>
+            <BusInterfaces>
+              <BusInterface Id="%AID%_BI-%C%" AddressIndex="%C%" AccessType="Tunneling" Text="Tunnel %C%" />
+            </BusInterfaces>
+          </Static>
+          <Dynamic>
+            <ChannelIndependentBlock>
+              <ParameterBlock Id="%AID%_PB-nnn" Inline="true" Layout="Grid">
+                <Rows>
+                  <Row Id="%AID%_PB-nnn_R-1" />
+                </Rows>
+                <Columns>
+                  <Column Id="%AID%_PB-nnn_C-1" Width="2%" />
+                  <Column Id="%AID%_PB-nnn_C-2" Width="18%" />
+                  <Column Id="%AID%_PB-nnn_C-3" Width="5%" />
+                  <Column Id="%AID%_PB-nnn_C-4" Width="20%" />
+                  <Column Id="%AID%_PB-nnn_C-5" Width="50%" />
+                </Columns>
+                <ParameterSeparator Id="%AID%_PS-nnn" Text="Tunnel %C%" Cell="1,2" />
+                <ParameterRefRef RefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101" Cell="1,3" />
+                <choose ParamRefId="%AID%_P-%TT%%CC%001_R-%TT%%CC%00101">
+                  <when test="1">
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%002_R-%TT%%CC%00201" Cell="1,4" />
+                    <ParameterRefRef RefId="%AID%_P-%TT%%CC%003_R-%TT%%CC%00301" Cell="1,5" />
+                  </when>
+                </choose>
+              </ParameterBlock>
+            </ChannelIndependentBlock>
+          </Dynamic>
+        </ApplicationProgram>
+      </ApplicationPrograms>
+    </Manufacturer>
+  </ManufacturerData>
+</KNX>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-model href="../../Organization/knxprod-support/knx_project_20/knx-editor.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
+  <ManufacturerData>
+    <Manufacturer RefId="M-00FA">
+      <Catalog>
+        <CatalogSection Id="M-00FA_CS-OpenKNX" Name="OpenKNX" Number="OpenKNX" DefaultLanguage="de-DE">
+          <CatalogItem Id="%CatalogItemId%" Name="OpenKNX: %CatalogName%%BuildSuffixText%" Number="1" ProductRefId="%ProductId%" Hardware2ProgramRefId="%Hardware2ProgramId%" DefaultLanguage="de-DE" />
+        </CatalogSection>
+      </Catalog>
+      <ApplicationPrograms>
+        <op:version OpenKnxId="%OpenKnxId%" ApplicationNumber="%ApplicationNumber%" ApplicationVersion="%ApplicationVersion%" ReplacesVersions="%ReplacesVersions%" ApplicationRevision="%ApplicationRevision%" />
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="%MaskVersion%" Name="%ApplicationName%%BuildSuffix%" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
+          <Static>
+            <Code>
+              <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />
+            </Code>
+            <ParameterTypes>
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ParameterTypes/ParameterType" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" prefix="%prefix%" />
+            </ParameterTypes>
+            <Parameters>
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="parameter" prefix="%prefix%" />
+              <op:includetemplate href="%templ%" xpath="//ApplicationProgram/Static/Parameters/Parameter|//ApplicationProgram/Static/Parameters/Union" type="template" prefix="%prefix%" />
+            </Parameters>
+            <ParameterRefs>
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" prefix="%prefix%" />
+              <op:includetemplate href="%templ%" xpath="//ApplicationProgram/Static/ParameterRefs/ParameterRef" type="template" prefix="%prefix%" />
+            </ParameterRefs>
+            <ParameterCalculations>
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" prefix="%prefix%" />
+              <op:includetemplate href="%templ%" xpath="//ApplicationProgram/Static/ParameterCalculations/ParameterCalculation" type="template" prefix="%prefix%" />
+            </ParameterCalculations>
+            <ParameterValidations>
+                <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="BASE" />
+                <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" prefix="%prefix%" />
+                <op:includetemplate href="%templ%" xpath="//ApplicationProgram/Static/ParameterValidations/ParameterValidation" type="template" prefix="%prefix%" />
+            </ParameterValidations>
+            <LoadProcedures>
+              <LoadProcedure MergeId="1">
+                <LdCtrlCompareProp InlineData="00FA" ObjIdx="0" PropId="12">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-1" />
+                </LdCtrlCompareProp>
+                <LdCtrlCompareProp InlineData="%VersionCheck%" ObjIdx="0" PropId="78">
+                  <OnError Cause="CompareMismatch" MessageRef="%AID%_M-2" />
+                </LdCtrlCompareProp>
+              </LoadProcedure>
+              <LoadProcedure MergeId="4">
+                <LdCtrlWriteMem Address="256" Size="256" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="201" Count="%Tunnelcount%" Verify="true" />
+                <LdCtrlWriteProp ObjType="11" PropId="202" Count="%Tunnelcount%" Verify="true" />
+              </LoadProcedure>
+            </LoadProcedures>
+            <Messages>
+              <Message Id="%AID%_M-1" Name="VersionMismatch" Text="Herstellerkennung inkompatibel!" />
+              <Message Id="%AID%_M-2" Name="VersionMismatch" Text="Hardware-Type oder Firmware-Version inkompatibel!" />
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Messages/*" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/Messages/*" prefix="%prefix%" />
+            </Messages>
+            <Script>
+              <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/Static/Script/text()" prefix="BASE" />
+              <op:includetemplate href="%share%" xpath="//ApplicationProgram/Static/Script/text()" prefix="%prefix%" />
+            </Script>
+            <BusInterfaces>
+              <op:include href="IP-Router.templ.xml" xpath="//BusInterfaces/BusInterface" type="template" prefix="ROUTE" />
+            </BusInterfaces>
+            <Options LineCoupler0912NewProgrammingStyle="true" Comparable="false" Reconstructable="false" SupportsExtendedMemoryServices="true" SupportsExtendedPropertyServices="true" SupportsIpSystemBroadcast="true" />
+          </Static>
+          <ModuleDefs>
+            <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//ApplicationProgram/ModuleDefs/*" prefix="BASE" />
+            <op:includetemplate href="%share%" xpath="//ApplicationProgram/ModuleDefs/*" prefix="%prefix%" />
+            <op:includetemplate href="%templ%" xpath="//ApplicationProgram/ModuleDefs/*" type="template" prefix="%prefix%" />
+          </ModuleDefs>
+          <Dynamic>
+            <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/*" prefix="BASE" />
+            <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
+            <op:include href="IP-Router.share.xml" xpath="//Dynamic/*" prefix="ROUTE" />
+            <!--
+            <ChannelIndependentBlock>
+               <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
+               <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
+               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Routing']" prefix="ROUTE" />
+               <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnel']" prefix="ROUTE" />
+            </ChannelIndependentBlock>-->
+          </Dynamic>
+        </ApplicationProgram>
+      </ApplicationPrograms>
+      <Baggages>
+        <op:include href="../lib/OGM-Common/src/Common.share.xml" xpath="//Baggages/*" prefix="BASE" />
+        <op:includetemplate href="%share%" xpath="//Manufacturer/Baggages/*" prefix="%prefix%" />
+      </Baggages>
+      <Hardware>
+        <Hardware Id="%HardwareId%" Name="OpenKNX-%HardwareName%%BuildSuffix%" SerialNumber="%SerialNumber%" VersionNumber="1" BusCurrent="%BusCurrent%" HasIndividualAddress="true" IsCoupler="true" HasApplicationProgram="true" IsIPEnabled="1">
+          <Products>
+            <Product Id="%ProductId%" Text="OpenKNX: %ProductName%%BuildSuffixText%" OrderNumber="%OrderNumber%" IsRailMounted="%IsRailMounted%" WidthInMillimeter="18" DefaultLanguage="de-DE">
+              <RegistrationInfo RegistrationStatus="Registered" />
+            </Product>
+          </Products>
+          <Hardware2Programs>
+            <Hardware2Program Id="%Hardware2ProgramId%" MediumTypes="%MediumTypes%">
+              <ApplicationProgramRef RefId="%AID%" />
+              <RegistrationInfo RegistrationStatus="Registered"
+                RegistrationNumber="0001/%HardwareVersionEncoded%1" />
+            </Hardware2Program>
+          </Hardware2Programs>
+        </Hardware>
+      </Hardware>
+    </Manufacturer>
+  </ManufacturerData>
+</KNX>

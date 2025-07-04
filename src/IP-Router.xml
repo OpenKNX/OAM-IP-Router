@@ -10,8 +10,8 @@
 
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="30" 
-          ApplicationVersion="5.1" 
-          ReplacesVersions="2.10 2.11 2.12 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14 3.15 4.5 4.6 4.7 4.12 4.13 4.14 4.15 5.0" 
+          ApplicationVersion="5.2" 
+          ReplacesVersions="5.1 2.10 2.11 2.12 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14 3.15 4.5 4.6 4.7 4.12 4.13 4.14 4.15 5.0" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 
           BuildSuffixText=" (Beta)"
@@ -25,10 +25,10 @@
           />
 
   <op:define prefix="BASE" ModuleType="10" >
-    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.3" />
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.4" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
-    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.4" />
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.5" />
   </op:define>
   <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.templ.xml" />
 

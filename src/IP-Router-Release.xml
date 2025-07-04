@@ -3,30 +3,34 @@
 <KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">
 
   <op:config name="%NET_IPConfigTool%" value="1" />
-  <op:config name="%Tunnelcount%" value="4" />
+  <op:config name="%Tunnelcount%" value="16" />
+  <op:config name="%NET_ServiceNTP%" value="1" />
   
   <op:nowarn id="1" regex="%BASE_" />
 
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="31" 
-          ApplicationVersion="0.1" 
-          ReplacesVersions="0" 
+          ApplicationVersion="0.3" 
+          ReplacesVersions="0.2 0.1" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 
+
+
           SerialNumber="1"
-          OrderNumber="REG1-Eth"
+          OrderNumber="OpenKnxIPRouter"
+          ApplicationName="IP-Router"
           IsRailMounted="true"
           BusCurrent="30"
           MaskVersion="MV-091A"
           />
 
   <op:define prefix="BASE" ModuleType="10" >
-    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.1" />
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.4" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
-    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="2" />
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.5" />
   </op:define>
-  <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.tunnels.xml" />
+  <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.templ.xml" />
 
   <generate base="TemplateRouter.xml"/>
 

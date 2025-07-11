@@ -9,8 +9,8 @@
                                          (time & 0x3FFF) * 3600000 ) : 0 )
                                              
 #define MAIN_OpenKnxId 0xA1
-#define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 82
+#define MAIN_ApplicationNumber 31
+#define MAIN_ApplicationVersion 3
 #define MAIN_ParameterSize 182
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "OpenKnxIPRouter"

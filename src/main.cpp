@@ -28,7 +28,7 @@ void activity(uint8_t info)
 
 void setup()
 {
-    const uint8_t firmwareRevision = 0;
+    const uint8_t firmwareRevision = 1;
     openknx.init(firmwareRevision);
 
     openknx.addModule(7, openknxNetwork);
@@ -39,6 +39,10 @@ void setup()
 
     
     openknx.setup();
+
+    knx.bau().getSecondaryDataLinkLayer()->getTPUart().registerReceivedFrame([](TPUart::Frame &frame) -> void {
+        logInfo("TP", frame.printFrame().c_str());
+    });
 }
 
 uint32_t _showMem = 0;

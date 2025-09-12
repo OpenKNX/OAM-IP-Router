@@ -109,7 +109,7 @@
             </ComObjectRefs>
           </Static>
           <Dynamic>
-            <Channel Id="%AID%_CH-%PREFIX%-Routing" Number="%PREFIX%-Routing" Name="IP-Router" Text="IP-Router" Icon="router-network">
+            <Channel Id="%AID%_CH-%PREFIX%-Routing" Number="%PREFIX%" Name="IP-Router" Text="IP-Router" Icon="router-network">
               <ParameterBlock Id="%AID%_PB-nnn" Name="RoutingKNXIP" Text="Routing KNX -&gt; IP" Icon="router" HelpContext="ROUTE-KNXIP">
                 <ParameterSeparator Id="%AID%_PS-" Text="Einstellungen für das Routing von Telegrammen von TP nach IP" UIHint="Headline" />
                 <ParameterRefRef RefId="%AID%_P-%TT%00007_R-%TT%0000701" IndentLevel="1"/>

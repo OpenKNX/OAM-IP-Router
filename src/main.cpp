@@ -28,8 +28,7 @@ void activity(uint8_t info)
 
 void setup()
 {
-    const uint8_t firmwareRevision = 2;
-    openknx.init(firmwareRevision);
+    openknx.init();
 
     openknx.addModule(7, openknxNetwork);
     #ifdef ARDUINO_ARCH_RP2040

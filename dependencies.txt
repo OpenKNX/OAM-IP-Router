@@ -1,5 +1,5 @@
 ﻿------- Built with -------
-ee3c00e v1dev lib/knx https://github.com/OpenKNX/knx.git
+83afcad v1dev-router lib/knx https://github.com/OpenKNX/knx.git
 ad9b0da v1 lib/OFM-FileTransferModule https://github.com/OpenKNX/OFM-FileTransferModule.git
 70804df v1 lib/OFM-Network https://github.com/OpenKNX/OFM-Network.git
 42daf08 v1 lib/OFM-UsbExchange https://github.com/OpenKNX/OFM-UsbExchange.git

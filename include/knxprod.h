@@ -15,7 +15,7 @@
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 83
+#define MAIN_ApplicationVersion 84
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 182
 #define MAIN_MaxKoNumber 0

@@ -78,7 +78,7 @@
             "dependsOn": ["Gen. Dependencies.txt"]
         },
         {
-            "label": "OpenKNXproducer",
+            "label": "OpenKNXproducer Dev",
             "type": "shell",
             "command": "${env:USERPROFILE}/bin/OpenKNXproducer.exe",
             "args": [
@@ -86,7 +86,7 @@
                 "--Debug",
                 "-h",
                 "include/knxprod.h",
-                "src/IP-Router.xml"
+                "src/IP-Router-Dev.xml"
             ],
             "problemMatcher": [],
             "group": "test",
@@ -145,16 +145,17 @@
         },
         // Build a release package for distribution
         {
-            "label": "Build-Beta",
+            "label": "Build-Release-Dev",
             "type": "shell",
             "command": "scripts/Build-Release.ps1",
             "args": [
+                "Dev"
             ],
             "problemMatcher": [],
             "group": "test"
         },
         {
-            "label": "Build-Release",
+            "label": "Build-Release-Release",
             "type": "shell",
             "command": "scripts/Build-Release.ps1",
             "args": [

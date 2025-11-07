@@ -9,8 +9,8 @@
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
-        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="84" ReplacesVersions="83 82 81 42 43 44 52 53 54 55 56 57 58 59 60 61 62 63 69 70 71 76 77 78 79 80" ApplicationRevision="0" FirmwareRevision="-1" />
-        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Dev-Dev" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
+        <op:version OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="93" ReplacesVersions="92 91 90 89 88 87 86 85 84 83 82 81 42 43 44 52 53 54 55 56 57 58 59 60 61 62 63 69 70 71 76 77 78 79 80" ApplicationRevision="0" FirmwareRevision="-1" />
+        <ApplicationProgram Id="%AID%" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Dev" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="%FILE-HELP-de%" IconFile="%FILE-ICONS%" ApplicationNumber="0" ApplicationVersion="0" ReplacesVersions="0" AdditionalAddressesCount="%Tunnelcount%" MaxTunnelingUserEntries="%Tunnelcount%">
           <Static>
             <Code>
               <AbsoluteSegment Id="%AID%_AS-0100" Address="256" Size="256" />

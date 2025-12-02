@@ -13,18 +13,6 @@
 
 bool core1_separate_stack = true;
 
-uint32_t _tpLedActivity = 0;
-uint32_t _ipLedActivity = 0;
-#ifdef KNX_ACTIVITYCALLBACK
-void activity(uint8_t info)
-{
-    if((info >> KNX_ACTIVITYCALLBACK_NET))
-        _ipLedActivity = millis();
-    else
-        _tpLedActivity = millis();
-}
-#endif
-
 
 void setup()
 {
@@ -37,91 +25,20 @@ void setup()
     openknx.addModule(9, openknxFileTransferModule);
     #endif
 
+    if(!knx.configured())
+    {
+        openknx.ledFunctions.assignLed2Function(openknx.leds.getLed(OpenKNX::Led::LedType::LED_TYPE_INFO3), OPENKNX_LEDFUNC_BASE_KNX);
+        openknx.ledFunctions.assignLed2Function(openknx.leds.getLed(OpenKNX::Led::LedType::LED_TYPE_INFO2), OPENKNX_LEDFUNC_NET_STATE);
+    }
     
     openknx.setup();
 }
 
 uint32_t _showMem = 0;
-uint32_t _leds = 0;
-uint8_t _ipLedState = 0;
-uint8_t _tpLedState = 0;
+
 void loop()
 {
     openknx.loop();
-
-    if (delayCheck(_leds, 100))
-    {
-        #ifdef KNX_ACTIVITYCALLBACK
-            #if defined(INFO2_LED_PIN) && defined(INFO3_LED_PIN)
-            if(openknxNetwork.established())
-            {
-                if(_ipLedState != 1)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
-                    #endif
-                    openknx.info2Led.activity(_ipLedActivity, true);
-                    _ipLedState = 1;
-                }
-            }
-            else if(openknxNetwork.connected())
-            {
-                if(_ipLedState != 2)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_YELLOW);
-                    openknx.info2Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
-
-                    _ipLedState = 2;
-                }
-            }
-            else
-            {
-                if(_ipLedState != 3)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info2Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
-                    openknx.info2Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
-                    _ipLedState = 3;
-                }
-            }
-
-            if(knx.bau().getSecondaryDataLinkLayer()->isConnected())
-            {
-                if(_tpLedState != 1)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_GREEN);
-                    #endif
-                    openknx.info3Led.activity(_tpLedActivity, true);
-                    _tpLedState = 1;
-                }
-            }
-            else
-            {
-                if(_tpLedState != 3)
-                {
-                    #ifdef OPENKNX_SERIALLED_ENABLE
-                    openknx.info3Led.setColor(OPENKNX_SERIALLED_COLOR_RED);
-                    openknx.info3Led.on();
-                    #else
-                    openknx.info2Led.off();
-                    #endif
-                    _tpLedState = 3;
-                }
-            }
-            #endif
-            knx.bau().setActivityCallback(activity);
-        #endif
-
-        _leds = millis();
-    }
 
     if (delayCheck(_showMem, 1000))
     {

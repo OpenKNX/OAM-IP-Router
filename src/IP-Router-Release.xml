@@ -5,6 +5,16 @@
   <op:config name="%NET_IPConfigTool%" value="1" />
   <op:config name="%Tunnelcount%" value="16" />
   <op:config name="%NET_ServiceNTP%" value="1" />
+
+  <op:config name="%BASE_Info1LedLabel%" value=" (N/A)"></op:config>
+  <op:config name="%BASE_Info2LedLabel%" value=" (IP)"></op:config>
+  <op:config name="%BASE_Info3LedLabel%" value=" (KNX)"></op:config>
+  <op:config name="%BASE_Info1LedFunc%" value="0"></op:config>
+  <op:config name="%BASE_Info2LedFunc%" value="10"></op:config>
+  <op:config name="%BASE_Info3LedFunc%" value="3"></op:config>
+  <op:config name="%BASE_Info1LedFunc_Access%" value="ReadWrite"></op:config>
+  <op:config name="%BASE_Info2LedFunc_Access%" value="ReadWrite"></op:config>
+  <op:config name="%BASE_Info3LedFunc_Access%" value="ReadWrite"></op:config>
   
   <op:nowarn id="1" regex="%BASE_" />
   <op:nowarn id="3" regex="BASE_getUnsupportedEtsModules" />
@@ -26,7 +36,7 @@
           />
 
   <op:define prefix="BASE" ModuleType="10" >
-    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.5" />
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.6" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
     <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.5" />

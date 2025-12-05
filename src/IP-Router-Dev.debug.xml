@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <?xml-model href="../../Organization/knxprod-support/knx_project_20/knx.xsd" type="application/xml" schematypens="http://www.w3.org/2001/XMLSchema"?>
-<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.12.2.0">
+<KNX xmlns:op="http://github.com/OpenKNX/OpenKNXproducer" xmlns="http://knx.org/xml/project/20" CreatedBy="OpenKNXproducer" ToolVersion="3.12.5.0">
   <ManufacturerData>
     <Manufacturer RefId="M-00FA">
       <Catalog>
@@ -263,6 +263,12 @@
                 <TypeText SizeInBit="400" />
                 <!-- 50 bytes -->
               </ParameterType>
+              <ParameterType Id="M-00FA_A-A11E-60-0000_PT-NETWiFiMode" Name="NETWiFiMode">
+                <TypeRestriction Base="Value" SizeInBit="1" UIHint="DropDown">
+                  <Enumeration Text="Wifi Client" Value="0" Id="M-00FA_A-A11E-60-0000_PT-NETWiFiMode_EN-0" />
+                  <Enumeration Text="Access Point" Value="1" Id="M-00FA_A-A11E-60-0000_PT-NETWiFiMode_EN-1" />
+                </TypeRestriction>
+              </ParameterType>
               <ParameterType Id="M-00FA_A-A11E-60-0000_PT-Bool" Name="Bool">
                 <TypeRestriction Base="Value" SizeInBit="1">
                   <Enumeration Text="Deaktiviert" Value="0" Id="M-00FA_A-A11E-60-0000_PT-Bool_EN-0" />
@@ -353,7 +359,8 @@
                 <Parameter Id="M-00FA_A-A11E-60-0000_UP-1100032" Name="NET_HTTP" ParameterType="M-00FA_A-A11E-60-0000_PT-OnOffYesNo" Offset="0" BitOffset="1" Text="Weberver" Value="1" />
                 <Parameter Id="M-00FA_A-A11E-60-0000_UP-1100033" Name="NET_NTP" ParameterType="M-00FA_A-A11E-60-0000_PT-OnOffYesNo" Offset="0" BitOffset="2" Text="NTP-Client" Value="0" />
                 <Parameter Id="M-00FA_A-A11E-60-0000_UP-1100034" Name="NET_OTAUpdate" ParameterType="M-00FA_A-A11E-60-0000_PT-OTAUpdate" Offset="0" BitOffset="3" Text="OTA-Update" Value="0" />
-                <!-- 5 bits free -->
+                <Parameter Id="M-00FA_A-A11E-60-0000_UP-1100035" Name="NET_WiFiMode" ParameterType="M-00FA_A-A11E-60-0000_PT-NETWiFiMode" Offset="0" BitOffset="4" Text="Modus" Value="0" />
+                <!-- 4 bits free -->
               </Union>
               <Parameter Id="M-00FA_A-A11E-60-0000_P-1100010" Name="NET_HostName" ParameterType="M-00FA_A-A11E-60-0000_PT-Hostname" Text="Hostname" Value="">
                 <Memory CodeSegment="M-00FA_A-A11E-60-0000_AS-0100" Offset="95" BitOffset="0" />
@@ -576,6 +583,7 @@
               <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100031_R-110003101" RefId="M-00FA_A-A11E-60-0000_UP-1100031" />
               <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100032_R-110003201" RefId="M-00FA_A-A11E-60-0000_UP-1100032" />
               <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100033_R-110003301" RefId="M-00FA_A-A11E-60-0000_UP-1100033" />
+              <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100035_R-110003501" RefId="M-00FA_A-A11E-60-0000_UP-1100035" />
               <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100052_R-110005201" RefId="M-00FA_A-A11E-60-0000_UP-1100052" />
               <ParameterRef Id="M-00FA_A-A11E-60-0000_UP-1100061_R-110006101" RefId="M-00FA_A-A11E-60-0000_UP-1100061" />
               <ParameterRef Id="M-00FA_A-A11E-60-0000_P-9900002_R-990000201" RefId="M-00FA_A-A11E-60-0000_P-9900002" Tag="42" />
@@ -861,37 +869,59 @@ function sendWifiSettings(device, online, progress, context) {
                 <choose ParamRefId="M-00FA_A-A11E-60-0000_P-1101000_R-110100000">
                   <!-- Static 0 -->
                   <when test="!=0">
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-21" Text="Diese Einstellungen sind lediglich für Geräte mit IP-Schnittstelle vorgesehen.&#xD;&#xA;Geräte, die ausschließlich per TP angebunden sind, benötigen hier keine Konfiguration" UIHint="Information" />
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-21" Text="Diese Einstellungen sind lediglich für Geräte mit IP-Schnittstelle vorgesehen.&#xA;Geräte, die ausschließlich per TP angebunden sind, benötigen hier keine Konfiguration" UIHint="Information" />
                   </when>
                 </choose>
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-22" Text="IP-Adresse" UIHint="Headline" />
+                <!-- Wifi Mode -->
                 <!-- choose NET_SelectHelper ''-->
                 <choose ParamRefId="M-00FA_A-A11E-60-0000_P-1101000_R-110100000">
                   <!-- Static 0 -->
+                  <when test="!=1">
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-22" Text="WiFi" UIHint="Headline" />
+                    <!-- ParameterRefRef NET_WiFiMode 'Modus'-->
+                    <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100035_R-110003501" IndentLevel="1" HelpContext="NET-WiFiModus" />
+                  </when>
                   <when test="1">
-                    <!-- default -->
-                    <!-- ParameterRefRef NET_StaticIP 'DHCP'-->
-                    <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100002_R-110000201" IndentLevel="1" HelpContext="NET-IP-Adresse" />
-                    <!-- choose NET_StaticIP 'DHCP'-->
-                    <choose ParamRefId="M-00FA_A-A11E-60-0000_UP-1100002_R-110000201">
+                    <!-- Assign-Target NET_WiFiMode 'Modus'-->
+                    <Assign TargetParamRefRef="M-00FA_A-A11E-60-0000_UP-1100035_R-110003501" Value="0" />
+                  </when>
+                </choose>
+                <!-- IP Address Block-->
+                <!-- choose NET_WiFiMode 'Modus'-->
+                <choose ParamRefId="M-00FA_A-A11E-60-0000_UP-1100035_R-110003501">
+                  <!-- Wifi Mode-->
+                  <when test="0">
+                    <!-- Wifi Client -->
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-23" Text="IP-Adresse" UIHint="Headline" />
+                    <!-- choose NET_SelectHelper ''-->
+                    <choose ParamRefId="M-00FA_A-A11E-60-0000_P-1101000_R-110100000">
+                      <!-- Static 0 -->
                       <when test="1">
-                        <!-- ParameterRefRef NET_HostAddress 'IP-Adresse'-->
-                        <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100011_R-110001101" IndentLevel="1" HelpContext="NET-IP-Adresse" />
-                        <!-- ParameterRefRef NET_SubnetMask 'Subnetzsmaske'-->
-                        <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100012_R-110001201" IndentLevel="1" HelpContext="NET-IP-Adresse" />
-                        <!-- ParameterRefRef NET_GatewayAddress 'Standardgateway'-->
-                        <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100013_R-110001301" IndentLevel="1" HelpContext="NET-IP-Adresse" />
-                        <!-- ParameterRefRef NET_NameserverAddress 'Nameserver'-->
-                        <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100021_R-110002101" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                        <!-- default -->
+                        <!-- ParameterRefRef NET_StaticIP 'DHCP'-->
+                        <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100002_R-110000201" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                        <!-- choose NET_StaticIP 'DHCP'-->
+                        <choose ParamRefId="M-00FA_A-A11E-60-0000_UP-1100002_R-110000201">
+                          <when test="1">
+                            <!-- ParameterRefRef NET_HostAddress 'IP-Adresse'-->
+                            <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100011_R-110001101" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                            <!-- ParameterRefRef NET_SubnetMask 'Subnetzsmaske'-->
+                            <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100012_R-110001201" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                            <!-- ParameterRefRef NET_GatewayAddress 'Standardgateway'-->
+                            <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100013_R-110001301" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                            <!-- ParameterRefRef NET_NameserverAddress 'Nameserver'-->
+                            <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100021_R-110002101" IndentLevel="1" HelpContext="NET-IP-Adresse" />
+                          </when>
+                        </choose>
+                      </when>
+                      <when test="!=1">
+                        <!-- router -->
+                        <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-24" Text="IP-Einstellungen können im Eigenschaften Feld der ETS, Tab IP gesetzt werden." UIHint="Information" />
                       </when>
                     </choose>
                   </when>
-                  <when test="!=1">
-                    <!-- router -->
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-23" Text="IP-Einstellungen können im Eigenschaften Feld der ETS, Tab IP gesetzt werden." UIHint="Information" />
-                  </when>
                 </choose>
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-24" Text="Services" UIHint="Headline" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-25" Text="Services" UIHint="Headline" />
                 <!-- ParameterRefRef NET_mDNS 'mDNS'-->
                 <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100031_R-110003101" IndentLevel="1" HelpContext="NET-MDNS" />
                 <!-- HTTP -->
@@ -935,7 +965,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100034_R-110003401" IndentLevel="1" HelpContext="NET-OTA" />
                   </when>
                 </choose>
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-25" Text="Erweiterte Einstellung" UIHint="Headline" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-26" Text="Erweiterte Einstellung" UIHint="Headline" />
                 <!-- Hostname -->
                 <!-- ParameterRefRef NET_CustomHostname 'Hostname anpassen'-->
                 <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_UP-1100001_R-110000101" IndentLevel="1" HelpContext="NET-Hostname" />
@@ -960,7 +990,7 @@ function sendWifiSettings(device, online, progress, context) {
               <choose ParamRefId="M-00FA_A-A11E-60-0000_UP-1100032_R-110003201">
                 <when test="1">
                   <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-9" Name="NET_HTTP" Text="Webserver" Icon="web" HelpContext="NET-Webserver">
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-26" Text="Webserver" UIHint="Headline" />
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-27" Text="Webserver" UIHint="Headline" />
                   </ParameterBlock>
                 </when>
               </choose>
@@ -968,11 +998,11 @@ function sendWifiSettings(device, online, progress, context) {
               <!-- choose NET_SelectHelper ''-->
               <choose ParamRefId="M-00FA_A-A11E-60-0000_P-1101000_R-110100000">
                 <!-- Static 0 -->
-                <when test="!=0">
+                <when test="!=1">
                   <!-- default -->
                   <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-10" Name="NET_WiFi" Text="WiFi-Assistent" Icon="wifi" HelpContext="NET-WiFi-Assistent">
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-27" Text="Dieser WiFi-Assistent ermöglicht das Übertragen von WiFi-Zugangsdaten auf das Gerät.&#xD;&#xA;Diese Einstellungen sind lediglich für Geräte mit WiFi-Schnittstelle vorgesehen." UIHint="Information" />
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-28" Text="WiFi-Zugangsdaten" UIHint="Headline" />
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-28" Text="Dieser WiFi-Assistent ermöglicht das Übertragen von WiFi-Zugangsdaten auf das Gerät.&#xA;Diese Einstellungen sind lediglich für Geräte mit WiFi-Schnittstelle vorgesehen." UIHint="Information" />
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-29" Text="WiFi-Zugangsdaten" UIHint="Headline" />
                     <!-- ParameterRefRef NET_WifiSSID 'SSID'-->
                     <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-1101001_R-110100100" IndentLevel="1" />
                     <!-- ParameterRefRef NET_WifiPassword 'PSK'-->
@@ -993,7 +1023,7 @@ function sendWifiSettings(device, online, progress, context) {
             </Channel>
             <Channel Id="M-00FA_A-A11E-60-0000_CH-ROUTE-Routing" Number="ROUTE" Name="ROUTE_IP-Router" Text="IP-Router" Icon="router-network">
               <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-12" Name="ROUTE_RoutingKNXIP" Text="Routing KNX -&gt; IP" Icon="router" HelpContext="ROUTE-KNXIP">
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-29" Text="Einstellungen für das Routing von Telegrammen von TP nach IP" UIHint="Headline" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-30" Text="Einstellungen für das Routing von Telegrammen von TP nach IP" UIHint="Headline" />
                 <!-- ParameterRefRef ROUTE_GrpTelSubMain_0_13 'Gruppentelegramme (Hauptgruppe 0 - 13)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9900007_R-990000701" IndentLevel="1" />
                 <!-- ParameterRefRef ROUTE_GrpTelSubMain_14_31 'Gruppentelegramme (Hauptgruppe 14 - 31)'-->
@@ -1009,12 +1039,12 @@ function sendWifiSettings(device, online, progress, context) {
                 <!-- choose ROUTE_AckOfPhysTelSubMain 'Bestätigung (ACK) von phys. addressierten Telegrammen'-->
                 <choose ParamRefId="M-00FA_A-A11E-60-0000_P-9900002_R-990000201">
                   <when test="3">
-                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-30" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich" />
+                    <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-31" Text="Achtung: Bei &quot;immer abweisen (NACK)&quot; ist eine Programmierung nur über IP möglich" />
                   </when>
                 </choose>
               </ParameterBlock>
               <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-13" Name="ROUTE_RoutingIPKNX" Text="Routing IP -&gt; KNX" Icon="router" HelpContext="ROUTE-IPKNX">
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-31" Text="Einstellungen für das Routing von Telegrammen von IP nach TP" UIHint="Headline" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-32" Text="Einstellungen für das Routing von Telegrammen von IP nach TP" UIHint="Headline" />
                 <!-- ParameterRefRef ROUTE_GrpTelMainSub_0_13 'Gruppentelegramme (Hauptgruppe 0 - 13)'-->
                 <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9900014_R-990001401" IndentLevel="1" />
                 <!-- ParameterRefRef ROUTE_GrpTelMainSub_14_31 'Gruppentelegramme (Hauptgruppe 14 - 31)'-->
@@ -1031,8 +1061,8 @@ function sendWifiSettings(device, online, progress, context) {
                 <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9900008_R-990000801" IndentLevel="1" />
               </ParameterBlock>
               <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-14" Name="ROUTE_Tunnel" Text="Tunnelverbindungen" Icon="lan-connect" HelpContext="TUNNEL-Info">
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-32" Text="Einstellungen für reservierte Tunnelverbindungen" UIHint="Headline" />
-                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-33" Text="die Physikalischen Adressen (PA) der Tunnelverbindungen werden über die Topologieansicht in der ETS konfiguriert" UIHint="Information" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-33" Text="Einstellungen für reservierte Tunnelverbindungen" UIHint="Headline" />
+                <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-34" Text="die Physikalischen Adressen (PA) der Tunnelverbindungen werden über die Topologieansicht in der ETS konfiguriert" UIHint="Information" />
                 <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-15" Inline="true" Layout="Grid">
                   <Rows>
                     <Row Id="M-00FA_A-A11E-60-0000_PB-15_R-1" />
@@ -1044,9 +1074,9 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-15_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-15_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-34" Text="Zuordnung" UIHint="Headline" Cell="1,2" />
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-35" Text="IP-Adresse" UIHint="Headline" Cell="1,4" />
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-36" Text="Verhalten, wenn Tunnel belegt" UIHint="Headline" Cell="1,5" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-35" Text="Zuordnung" UIHint="Headline" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-36" Text="IP-Adresse" UIHint="Headline" Cell="1,4" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-37" Text="Verhalten, wenn Tunnel belegt" UIHint="Headline" Cell="1,5" />
                 </ParameterBlock>
                 <ParameterBlock Id="M-00FA_A-A11E-60-0000_PB-16" Inline="true" Layout="Grid">
                   <Rows>
@@ -1059,7 +1089,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-16_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-16_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-37" Text="Tunnel 1" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-38" Text="Tunnel 1" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel1 'Reserviere Tunnel 1'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9901001_R-990100101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel1 'Reserviere Tunnel 1'-->
@@ -1083,7 +1113,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-17_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-17_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-38" Text="Tunnel 2" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-39" Text="Tunnel 2" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel2 'Reserviere Tunnel 2'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9902001_R-990200101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel2 'Reserviere Tunnel 2'-->
@@ -1107,7 +1137,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-18_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-18_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-39" Text="Tunnel 3" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-40" Text="Tunnel 3" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel3 'Reserviere Tunnel 3'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9903001_R-990300101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel3 'Reserviere Tunnel 3'-->
@@ -1131,7 +1161,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-19_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-19_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-40" Text="Tunnel 4" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-41" Text="Tunnel 4" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel4 'Reserviere Tunnel 4'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9904001_R-990400101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel4 'Reserviere Tunnel 4'-->
@@ -1155,7 +1185,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-20_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-20_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-41" Text="Tunnel 5" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-42" Text="Tunnel 5" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel5 'Reserviere Tunnel 5'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9905001_R-990500101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel5 'Reserviere Tunnel 5'-->
@@ -1179,7 +1209,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-21_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-21_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-42" Text="Tunnel 6" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-43" Text="Tunnel 6" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel6 'Reserviere Tunnel 6'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9906001_R-990600101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel6 'Reserviere Tunnel 6'-->
@@ -1203,7 +1233,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-22_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-22_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-43" Text="Tunnel 7" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-44" Text="Tunnel 7" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel7 'Reserviere Tunnel 7'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9907001_R-990700101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel7 'Reserviere Tunnel 7'-->
@@ -1227,7 +1257,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-23_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-23_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-44" Text="Tunnel 8" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-45" Text="Tunnel 8" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel8 'Reserviere Tunnel 8'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9908001_R-990800101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel8 'Reserviere Tunnel 8'-->
@@ -1251,7 +1281,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-24_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-24_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-45" Text="Tunnel 9" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-46" Text="Tunnel 9" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel9 'Reserviere Tunnel 9'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9909001_R-990900101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel9 'Reserviere Tunnel 9'-->
@@ -1275,7 +1305,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-25_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-25_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-46" Text="Tunnel 10" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-47" Text="Tunnel 10" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel10 'Reserviere Tunnel 10'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9910001_R-991000101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel10 'Reserviere Tunnel 10'-->
@@ -1299,7 +1329,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-26_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-26_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-47" Text="Tunnel 11" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-48" Text="Tunnel 11" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel11 'Reserviere Tunnel 11'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9911001_R-991100101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel11 'Reserviere Tunnel 11'-->
@@ -1323,7 +1353,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-27_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-27_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-48" Text="Tunnel 12" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-49" Text="Tunnel 12" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel12 'Reserviere Tunnel 12'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9912001_R-991200101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel12 'Reserviere Tunnel 12'-->
@@ -1347,7 +1377,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-28_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-28_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-49" Text="Tunnel 13" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-50" Text="Tunnel 13" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel13 'Reserviere Tunnel 13'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9913001_R-991300101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel13 'Reserviere Tunnel 13'-->
@@ -1371,7 +1401,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-29_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-29_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-50" Text="Tunnel 14" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-51" Text="Tunnel 14" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel14 'Reserviere Tunnel 14'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9914001_R-991400101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel14 'Reserviere Tunnel 14'-->
@@ -1395,7 +1425,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-30_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-30_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-51" Text="Tunnel 15" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-52" Text="Tunnel 15" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel15 'Reserviere Tunnel 15'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9915001_R-991500101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel15 'Reserviere Tunnel 15'-->
@@ -1419,7 +1449,7 @@ function sendWifiSettings(device, online, progress, context) {
                     <Column Id="M-00FA_A-A11E-60-0000_PB-31_C-4" Width="20%" />
                     <Column Id="M-00FA_A-A11E-60-0000_PB-31_C-5" Width="50%" />
                   </Columns>
-                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-52" Text="Tunnel 16" Cell="1,2" />
+                  <ParameterSeparator Id="M-00FA_A-A11E-60-0000_PS-53" Text="Tunnel 16" Cell="1,2" />
                   <!-- ParameterRefRef ROUTE_ResTunnel16 'Reserviere Tunnel 16'-->
                   <ParameterRefRef RefId="M-00FA_A-A11E-60-0000_P-9916001_R-991600101" Cell="1,3" />
                   <!-- choose ROUTE_ResTunnel16 'Reserviere Tunnel 16'-->
@@ -1446,13 +1476,13 @@ function sendWifiSettings(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\60" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C60-ets.2Epng">
-          <FileInfo TimeInfo="2025-12-04T15:31:07.8111975Z" />
+          <FileInfo TimeInfo="2025-12-05T22:35:03.7925846Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\60" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C60-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2025-12-04T15:31:08.0137072Z" />
+          <FileInfo TimeInfo="2025-12-05T22:35:04.0094790Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\60" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C60-Icons.2Ezip">
-          <FileInfo TimeInfo="2025-12-04T15:31:08.2507662Z" />
+          <FileInfo TimeInfo="2025-12-05T22:35:04.1797486Z" />
         </Baggage>
       </Baggages>
       <Hardware>

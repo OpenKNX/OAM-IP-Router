@@ -148,4 +148,4 @@
 
 #endif
 
-#include "HardwareConfig/OpenKNX/REG1.h"
+#include "HardwareConfig.h"

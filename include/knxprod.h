@@ -98,6 +98,9 @@
 #define NET_OTAUpdate                           94      // 2 Bits, Bit 4-3
 #define     NET_OTAUpdateMask 0x18
 #define     NET_OTAUpdateShift 3
+#define NET_WiFiMode                            94      // 1 Bit, Bit 3
+#define     NET_WiFiModeMask 0x08
+#define     NET_WiFiModeShift 3
 #define NET_HostName                            95      // char*, 24 Byte
 #define NET_LanMode                             136      // 4 Bits, Bit 7-4
 #define     NET_LanModeMask 0xF0
@@ -124,6 +127,8 @@
 #define ParamNET_NTP                                 ((bool)(knx.paramByte(NET_NTP) & NET_NTPMask))
 // OTA-Update
 #define ParamNET_OTAUpdate                           ((knx.paramByte(NET_OTAUpdate) & NET_OTAUpdateMask) >> NET_OTAUpdateShift)
+// Modus
+#define ParamNET_WiFiMode                            ((bool)(knx.paramByte(NET_WiFiMode) & NET_WiFiModeMask))
 // Hostname
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
 // LAN-Modus

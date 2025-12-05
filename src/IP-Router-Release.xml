@@ -5,6 +5,7 @@
   <op:config name="%NET_IPConfigTool%" value="1" />
   <op:config name="%Tunnelcount%" value="16" />
   <op:config name="%NET_ServiceNTP%" value="1" />
+  <op:config name="%NET_WifiMode%" value="1" />
 
   <op:config name="%BASE_Info1LedLabel%" value=" (N/A)"></op:config>
   <op:config name="%BASE_Info2LedLabel%" value=" (IP)"></op:config>

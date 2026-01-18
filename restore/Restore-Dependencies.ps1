@@ -400,12 +400,6 @@ function CloneRepository($projectFilesGitInfo, $dependedProjects, $CloneDir, $Cl
         $GitCmd = "git --git-dir=""$($GitDir)"" --work-tree=""$($CloneTarget.ToString())"""
         if($Verbose) { Write-Host "- CloneRepository - $($checkoutTarget) - GitCmd: "$GitCmd -ForegroundColor Yellow }
 
-        if($CloneModeHash) {
-          $CheckOutTarget = $($dependedProject.Hash)  # Optional: If the CloneModeHash is true, use the Hash
-        } else {
-          $CheckOutTarget = $($dependedProject.Branch) # If the CloneModeHash is false (default), use the Branch
-        }
-
         if ((& git --version) -ge 'git version 2.23' -and $CloneModeHash -eq $false ) {
           $CheckOutMethod = "switch"    # If the Git version is 2.23 or higher, use the 'switch' command
         } else {
@@ -415,10 +409,19 @@ function CloneRepository($projectFilesGitInfo, $dependedProjects, $CloneDir, $Cl
         # Let's do the git checkout
         if($Verbose) { 
           Invoke-Expression "$GitCmd fetch --all"
-          Invoke-Expression "$GitCmd $CheckOutMethod $($CheckOutTarget)"
+          Invoke-Expression "$GitCmd $CheckOutMethod $($dependedProject.Branch)"
         } else { 
           Invoke-Expression "$GitCmd fetch --all -q" | Out-Null
-          Invoke-Expression "$GitCmd $CheckOutMethod $($CheckOutTarget) -q" | Out-Null
+          Invoke-Expression "$GitCmd $CheckOutMethod $($dependedProject.Branch) -q" | Out-Null
+        }
+
+        if($CloneModeHash) {
+          $CheckOutTarget = $($dependedProject.Hash)
+            if($Verbose) { 
+              Invoke-Expression "$GitCmd reset --hard $($dependedProject.Hash)"
+            } else { 
+              Invoke-Expression "$GitCmd reset --hard $($dependedProject.Hash) -q" | Out-Null
+            }
         }
 
         if($true) { 

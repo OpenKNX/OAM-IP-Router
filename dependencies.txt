@@ -4,4 +4,4 @@
 64e0348 v1dev lib/OFM-Network https://github.com/OpenKNX/OFM-Network.git
 55119fc v1dev lib/OFM-UsbExchange https://github.com/OpenKNX/OFM-UsbExchange.git
 2bc4d56 v1dev lib/OGM-Common https://github.com/OpenKNX/OGM-Common.git
-5ccb0f5 v1dev lib/OGM-HardwareConfig https://github.com/OpenKNX/OGM-HardwareConfig.git
+ea9479b v1dev lib/OGM-HardwareConfig https://github.com/OpenKNX/OGM-HardwareConfig.git

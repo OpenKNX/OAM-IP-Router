@@ -15,12 +15,12 @@
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 97
+#define MAIN_ApplicationVersion 112
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 189
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "OpenKnxIPRouter"
-#define BASE_ModuleVersion 22
+#define BASE_ModuleVersion 23
 #define NET_ModuleVersion 5
 // Parameter with single occurrence
 
@@ -37,7 +37,7 @@
 #define BASE_Info1LedFunc                         6      // 16 Bits, Bit 15-0
 #define BASE_Info2LedFunc                         8      // 16 Bits, Bit 15-0
 #define BASE_Info3LedFunc                        10      // 16 Bits, Bit 15-0
-#define BASE_DefaultLedFunc                      13      // 1 Bit, Bit 7
+#define BASE_DefaultLedFunc                      12      // 1 Bit, Bit 7
 #define     BASE_DefaultLedFuncMask 0x80
 #define     BASE_DefaultLedFuncShift 7
 #define BASE_Timezone                            13      // 5 Bits, Bit 7-3
@@ -53,6 +53,7 @@
 #define     BASE_InternalTimeMask 0x01
 #define     BASE_InternalTimeShift 0
 #define BASE_TimezoneCustom                      14      // char*, 63 Byte
+#define     BASE_TimezoneCustomLength 63
 
 // Zeitbasis
 #define ParamBASE_StartupDelayBase                    ((knx.paramByte(BASE_StartupDelayBase) & BASE_StartupDelayBaseMask) >> BASE_StartupDelayBaseShift)
@@ -80,6 +81,7 @@
 #define ParamBASE_InternalTime                        ((bool)(knx.paramByte(BASE_InternalTime) & BASE_InternalTimeMask))
 // POSIX TZ-String
 #define ParamBASE_TimezoneCustom                      (knx.paramData(BASE_TimezoneCustom))
+#define ParamBASE_TimezoneCustomStr                   (knx.paramString(BASE_TimezoneCustom, BASE_TimezoneCustomLength))
 
 #define NET_HostAddress                         78      // IP address, 4 Byte
 #define NET_SubnetMask                          82      // IP address, 4 Byte
@@ -104,10 +106,12 @@
 #define     NET_OTAUpdateMask 0x18
 #define     NET_OTAUpdateShift 3
 #define NET_HostName                            96      // char*, 24 Byte
+#define     NET_HostNameLength 24
 #define NET_LanMode                             137      // 4 Bits, Bit 7-4
 #define     NET_LanModeMask 0xF0
 #define     NET_LanModeShift 4
 #define NET_NTPServer                           138      // char*, 50 Byte
+#define     NET_NTPServerLength 50
 
 // IP-Adresse
 #define ParamNET_HostAddress                         (knx.paramInt(NET_HostAddress))
@@ -131,10 +135,12 @@
 #define ParamNET_OTAUpdate                           ((knx.paramByte(NET_OTAUpdate) & NET_OTAUpdateMask) >> NET_OTAUpdateShift)
 // Hostname
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
+#define ParamNET_HostNameStr                         (knx.paramString(NET_HostName, NET_HostNameLength))
 // LAN-Modus
 #define ParamNET_LanMode                             ((knx.paramByte(NET_LanMode) & NET_LanModeMask) >> NET_LanModeShift)
 // Zeitserver
 #define ParamNET_NTPServer                           (knx.paramData(NET_NTPServer))
+#define ParamNET_NTPServerStr                        (knx.paramString(NET_NTPServer, NET_NTPServerLength))
 
 #define ROUTE_AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6
 #define     ROUTE_AckOfPhysTelSubMainMask 0xC0

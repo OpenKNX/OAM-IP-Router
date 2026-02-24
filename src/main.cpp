@@ -2,6 +2,7 @@
 
 
 #include "NetworkModule.h"
+#include "IPRouterModule.h"
 #ifdef ARDUINO_ARCH_RP2040
 #include "UsbExchangeModule.h"
 #include "FileTransferModule.h"
@@ -18,7 +19,8 @@ void setup()
 {
     const uint8_t firmwareRevision = 0;
     openknx.init(firmwareRevision);
-
+    
+    openknx.addModule(6, openknxIPRouterModule);
     openknx.addModule(7, openknxNetwork);
     #ifdef ARDUINO_ARCH_RP2040
     openknx.addModule(8, openknxUsbExchangeModule);
@@ -91,8 +93,6 @@ PID_MEDIUM_STATUS (wenn kein TP1 / KNX => macht kein Sinn bei Busversorgt...)
     PID_MSG_TRANSMIT_TO_KNX = 75,
 
 ip data link layer send queue (priority queue?)
-
-- check max apdu length (curr: 220 in router obj, 254 in device. why? enertex: 248)
 
 entladen => filtertabelle löschen, props auf default ?
 

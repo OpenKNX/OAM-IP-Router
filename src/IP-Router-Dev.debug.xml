@@ -950,6 +950,7 @@ function sendWifiSettings(device, online, progress, context) {
                       </when>
                       <when test="=0">
                         <!-- Hide Default Checkbox-->
+                        <!-- hidden parameter for parameter memory-->
                         <!-- ParameterRefRef BASE_DefaultLedFunc ''-->
                         <ParameterRefRef RefId="M-00FA_A-A11E-74-0000_UP-1000029_R-100002902" />
                         <!-- Show Func Table-->
@@ -1697,13 +1698,13 @@ function sendWifiSettings(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\74" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C74-ets.2Epng">
-          <FileInfo TimeInfo="2026-02-24T19:15:02.3182424Z" />
+          <FileInfo TimeInfo="2026-02-25T06:28:21.1357398Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\74" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C74-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2026-02-24T19:15:02.5153790Z" />
+          <FileInfo TimeInfo="2026-02-25T06:28:21.4320564Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\74" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C74-Icons.2Ezip">
-          <FileInfo TimeInfo="2026-02-24T19:15:02.7295081Z" />
+          <FileInfo TimeInfo="2026-02-25T06:28:21.8062552Z" />
         </Baggage>
       </Baggages>
       <Hardware>

@@ -3,5 +3,5 @@ b50301e v1dev-router lib/knx https://github.com/OpenKNX/knx.git
 178f186 v1 lib/OFM-FileTransferModule https://github.com/OpenKNX/OFM-FileTransferModule.git
 3052857 v1 lib/OFM-Network https://github.com/OpenKNX/OFM-Network.git
 55119fc v1 lib/OFM-UsbExchange https://github.com/OpenKNX/OFM-UsbExchange.git
-e721bd6 v1-1.7.1rc lib/OGM-Common https://github.com/OpenKNX/OGM-Common.git
+7a925dc v1-1.7.1rc lib/OGM-Common https://github.com/OpenKNX/OGM-Common.git
 2af139a v1 lib/OGM-HardwareConfig https://github.com/OpenKNX/OGM-HardwareConfig.git

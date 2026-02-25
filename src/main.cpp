@@ -17,9 +17,9 @@ bool core1_separate_stack = true;
 
 void setup()
 {
-    const uint8_t firmwareRevision = 0;
+    const uint8_t firmwareRevision = 1;
     openknx.init(firmwareRevision);
-    
+
     openknx.addModule(6, openknxIPRouterModule);
     openknx.addModule(7, openknxNetwork);
     #ifdef ARDUINO_ARCH_RP2040

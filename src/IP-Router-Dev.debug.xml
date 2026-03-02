@@ -1698,13 +1698,13 @@ function sendWifiSettings(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\74" Name="ets.png" Id="M-00FA_BG-A1.5C1E.5C74-ets.2Epng">
-          <FileInfo TimeInfo="2026-02-26T13:45:22.4883590Z" />
+          <FileInfo TimeInfo="2026-03-02T13:11:47.1470028Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\74" Name="Help_de.zip" Id="M-00FA_BG-A1.5C1E.5C74-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2026-02-26T13:45:23.6644651Z" />
+          <FileInfo TimeInfo="2026-03-02T13:11:48.2453994Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\74" Name="Icons.zip" Id="M-00FA_BG-A1.5C1E.5C74-Icons.2Ezip">
-          <FileInfo TimeInfo="2026-02-26T13:45:25.3045927Z" />
+          <FileInfo TimeInfo="2026-03-02T13:11:49.4456428Z" />
         </Baggage>
       </Baggages>
       <Hardware>

@@ -36,7 +36,7 @@
           />
 
   <op:define prefix="BASE" ModuleType="10" >
-    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.6" />
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.7" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
     <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.5" />

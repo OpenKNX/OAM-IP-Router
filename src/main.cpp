@@ -6,8 +6,12 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "UsbExchangeModule.h"
 #include "FileTransferModule.h"
-#pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR 
+#pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
+#endif
+
+#if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
+#include "esp_heap_caps.h" // only the optional periodic heap log (loop) uses heap_caps_*
 #endif
 
 
@@ -17,8 +21,12 @@ bool core1_separate_stack = true;
 
 void setup()
 {
+#ifdef FIRMWARE_REVISION
+    openknx.init(); // OGM-Common 7.5+: revision via FIRMWARE_REVISION flag, 0-arg init()
+#else
     const uint8_t firmwareRevision = 0;
     openknx.init(firmwareRevision);
+#endif
 
     openknx.addModule(6, openknxIPRouterModule);
     openknx.addModule(7, openknxNetwork);
@@ -36,17 +44,32 @@ void setup()
     openknx.setup();
 }
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
 uint32_t _showMem = 0;
+#endif
 
 void loop()
 {
     openknx.loop();
 
-    if (delayCheck(_showMem, 1000))
+#if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
+    // Periodic heap trend -- opt-in via its own switch OPENKNX_DEBUG_HEAP_LOG (ESP32 only).
+    // The same numbers are always available on demand via the console 'mem'/'info' command
+    // (OGM-Common, all ESP32 nodes). 'largest' is the contiguous block the EMAC RX buffer
+    // needs; a steady drop = leak.
+    if (delayCheck(_showMem, 10000))
     {
-        //openknx.console.showMemory();
+        openknx.logger.logWithPrefixAndValues("HEAP",
+            "free=%u min=%u largest=%u | dma_free=%u dma_min=%u dma_largest=%u",
+            (unsigned)heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
+            (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT),
+            (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT),
+            (unsigned)heap_caps_get_free_size(MALLOC_CAP_DMA),
+            (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_DMA),
+            (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
         _showMem = millis();
     }
+#endif
 }
 
 
@@ -72,7 +95,6 @@ ToDos:
 
 BUGS
 -------
-- memleak apdu 3da 3db (??)
 
 
 IMPROVEMENTS

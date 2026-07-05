@@ -15,13 +15,14 @@
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 117
+#define MAIN_ApplicationVersion 118
+#define MAIN_FirmwareRevision 1
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 189
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "OpenKnxIPRouter"
-#define BASE_ModuleVersion 23
-#define NET_ModuleVersion 5
+#define BASE_ModuleVersion 24
+#define NET_ModuleVersion 6
 // Parameter with single occurrence
 
 
@@ -232,16 +233,7 @@
 #define ParamROUTE_OptTunnel                           ((knx.paramByte(ROUTE_ParamCalcIndex(ROUTE_OptTunnel)) & ROUTE_OptTunnelMask) >> ROUTE_OptTunnelShift)
 
 
-
-// Header generation for Module 'BASE_KommentarModule'
-
-#define BASE_KommentarModuleCount 0
-#define BASE_KommentarModuleModuleParamSize 0
-#define BASE_KommentarModuleSubmodulesParamSize 0
-#define BASE_KommentarModuleParamSize 0
-#define BASE_KommentarModuleParamOffset 189
-#define BASE_KommentarModuleCalcIndex(index, m1) (index + BASE_KommentarModuleParamOffset + _channelIndex * BASE_KommentarModuleCount * BASE_KommentarModuleParamSize + m1 * BASE_KommentarModuleParamSize)
-
+// enumeration types
 
 
 #ifdef MAIN_FirmwareRevision

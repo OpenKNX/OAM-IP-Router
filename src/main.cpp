@@ -10,6 +10,15 @@
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 #endif
 
+// REG2 Device Display (buttons use OGM-Common native openknx.gpio, no OFM-GPIOModule)
+#ifdef DEVICE_DISPLAY_MODULE
+#include "DeviceDisplay.h"
+#include "DisplayWidgets/WidgetIPRouter.h"
+#endif
+#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+#include "SDCardModule.h"
+#endif
+
 #if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
 #include "esp_heap_caps.h" // only the optional periodic heap log (loop) uses heap_caps_*
 #endif
@@ -34,6 +43,12 @@ void setup()
     openknx.addModule(8, openknxUsbExchangeModule);
     openknx.addModule(9, openknxFileTransferModule);
     #endif
+#ifdef DEVICE_DISPLAY_MODULE
+    openknx.addModule(10, openknxDisplayModule);
+#endif
+#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+    openknx.addModule(30, sdCardModule);
+#endif
 
     if(!knx.configured())
     {
@@ -42,6 +57,12 @@ void setup()
     }
     
     openknx.setup();
+
+#ifdef DEVICE_DISPLAY_MODULE
+    // Setup the IP Router widget after the display module is ready
+    WidgetIPRouter* ipRouterWidget = new WidgetIPRouter(15000, WidgetFlags::DefaultWidget);
+    openknxDisplayModule.getWidgetManager()->addWidget(ipRouterWidget);
+#endif
 }
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)

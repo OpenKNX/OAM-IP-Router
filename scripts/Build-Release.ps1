@@ -42,23 +42,14 @@ if (!$?) { exit 1 }
  if (!$?) { exit 1 }
 
 # REG2 Releases (Display + SD-Card variants; GPIO via OGM-Common native)
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ETH firmware-IP-Router-REG2-Pico-Eth rp2040-ip
- if (!$?) { exit 1 }
  ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ETH_DD firmware-IP-Router-REG2-Pico-Eth-DD rp2040-ip
  if (!$?) { exit 1 }
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_W_ETH firmware-IP-Router-REG2-PicoW-Eth rp2040-ip
- if (!$?) { exit 1 }
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_W_ETH_DD firmware-IP-Router-REG2-PicoW-Eth-DD rp2040-ip
- if (!$?) { exit 1 }
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO2_ETH firmware-IP-Router-REG2-Pico2-Eth rp2040-ip
- if (!$?) { exit 1 }
+ #../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_W_ETH_DD firmware-IP-Router-REG2-PicoW-Eth-DD rp2040-ip
+ #if (!$?) { exit 1 }
  ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO2_ETH_DD firmware-IP-Router-REG2-Pico2-Eth-DD rp2040-ip
- if (!$?) { exit 1 }
- ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ESP_ETH firmware-IP-Router-REG2-Pico-Esp-Eth esp32-ip
  if (!$?) { exit 1 }
  ../OGM-Common/scripts/setup/reusable/Build-Step.ps1 release_REG2_PICO_ESP_ETH_DD firmware-IP-Router-REG2-Pico-Esp-Eth-DD esp32-ip
  if (!$?) { exit 1 }
-
 
 # execute generic post-build steps
 lib/OGM-Common/scripts/setup/reusable/Build-Release-Postprocess.ps1 $args[0]

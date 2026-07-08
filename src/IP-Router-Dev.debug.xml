@@ -9,7 +9,7 @@
         </CatalogSection>
       </Catalog>
       <ApplicationPrograms>
-        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="118" ReplacesVersions="117 116 115 114 113 112 111 110 109 108 107 106 105 104 103 102 101 100 99 98 97 96 95 94 93 92 91 90 89 88 87 86 85 84 83 82 81 80 79 78 77 76 75 74 73 72 71 70 69 68 67 66 65 64 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42" ApplicationRevision="0" FirmwareRevision="0" -->
+        <!-- OpenKnxId="0xA1" ApplicationNumber="30" ApplicationVersion="118" ReplacesVersions="117 116 115 114 113 112 111 110 109 108 107 106 105 104 103 102 101 100 99 98 97 96 95 94 93 92 91 90 89 88 87 86 85 84 83 82 81 80 79 78 77 76 75 74 73 72 71 70 69 68 67 66 65 64 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42" ApplicationRevision="0" FirmwareRevision="1" -->
         <ApplicationProgram Id="M-00FA_A-A11E-76-0000" ProgramType="ApplicationProgram" MaskVersion="MV-091A" Name="IP-Router-Dev" LoadProcedureStyle="MergedProcedure" PeiType="0" DefaultLanguage="de-DE" DynamicTableManagement="false" Linkable="false" MinEtsVersion="5.0" ContextHelpFile="M-00FA_BG-A1.2F1E.2F76-Help.5Fde.2Ezip" IconFile="M-00FA_BG-A1.2F1E.2F76-Icons.2Ezip" ApplicationNumber="41246" ApplicationVersion="118" ReplacesVersions="117 116 115 114 113 112 111 110 109 108 107 106 105 104 103 102 101 100 99 98 97 96 95 94 93 92 91 90 89 88 87 86 85 84 83 82 81 80 79 78 77 76 75 74 73 72 71 70 69 68 67 66 65 64 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42" AdditionalAddressesCount="16" MaxTunnelingUserEntries="16">
           <Static>
             <Code>
@@ -1769,13 +1769,13 @@ function sendWifiSettings(device, online, progress, context) {
       </ApplicationPrograms>
       <Baggages>
         <Baggage TargetPath="A1\1E\76" Name="ets.png" Id="M-00FA_BG-A1.2F1E.2F76-ets.2Epng">
-          <FileInfo TimeInfo="2026-07-08T18:52:59.3110830Z" />
+          <FileInfo TimeInfo="2026-07-08T19:12:08.5017480Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\76" Name="Help_de.zip" Id="M-00FA_BG-A1.2F1E.2F76-Help.5Fde.2Ezip">
-          <FileInfo TimeInfo="2026-07-08T18:52:59.3935783Z" />
+          <FileInfo TimeInfo="2026-07-08T19:12:08.5846095Z" />
         </Baggage>
         <Baggage TargetPath="A1\1E\76" Name="Icons.zip" Id="M-00FA_BG-A1.2F1E.2F76-Icons.2Ezip">
-          <FileInfo TimeInfo="2026-07-08T18:52:59.4274810Z" />
+          <FileInfo TimeInfo="2026-07-08T19:12:08.6178985Z" />
         </Baggage>
       </Baggages>
       <Hardware>

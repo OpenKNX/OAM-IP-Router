@@ -92,6 +92,8 @@ param(
     [int]$Count   = 0,
     [string]$Sub  = "search",
     [string]$Ga   = "31/7/255",
+    [string]$Pa   = "",
+    [int]$ApduBytes = 0,
     [switch]$Yes,
     [switch]$Loop
 )
@@ -731,27 +733,47 @@ function Invoke-Info([string]$ip) {
     else { Write-Host "  INFO FAIL: no properties returned." -ForegroundColor Red; exit 1 }
 }
 
-# SAFE test suite - extend this list to add a test to `all`.
-$SafeSuite = @('selftest', 'health', 'discover', 'info', 'tunnel', 'robust')
+# SAFE + hardening suite. Each entry: @{ m='name'; args=@(...) }. Extend to add a test to `all`.
+# tunnel = S1 tunnel-slot reaper · robust = cEMI OOB/runt guards · leak = cEMI heap-leak negative path.
+$SuiteBase = @(
+    @{ m = 'selftest' }
+    @{ m = 'health' }
+    @{ m = 'discover' }
+    @{ m = 'info' }
+    @{ m = 'tunnel' }                                            # hardening: S1 tunnel-slot reaper / slot leak
+    @{ m = 'robust' }                                            # hardening: cEMI OOB / runt-frame guards
+    @{ m = 'leak'; args = @('-Seconds', '20', '-Rate', '10') }   # hardening: cEMI heap-leak negative path (bounded)
+)
 
-function Invoke-Suite([string]$ip, [bool]$loop) {
+function Invoke-Suite([string]$ip, [bool]$loop, [string]$pa, [int]$apduBytes) {
     Show-Logo
     $exe = 'powershell'; if ($PSVersionTable.PSEdition -eq 'Core') { $exe = 'pwsh' }
+    $suite = @($SuiteBase)
+    # connection-oriented programming-path hardening (threshold) - only if a target device is given
+    if (-not [string]::IsNullOrWhiteSpace($pa)) {
+        $pargs = @('-Pa', $pa, '-Count', '20')
+        if ($apduBytes -gt 0) { $pargs += @('-ApduBytes', "$apduBytes") }
+        $suite += @{ m = 'prog'; args = $pargs }                 # hardening: connection-oriented / rx-threshold
+    }
+    $names = ($suite | ForEach-Object { $_.m }) -join ', '
     $tail = ''; if ($loop) { $tail = '  (loop - Ctrl-C to stop)' }
-    Write-Host ("suite: SAFE tests [" + ($SafeSuite -join ', ') + "] on $ip$tail") -ForegroundColor Cyan
+    Write-Host ("suite: [$names] on $ip$tail") -ForegroundColor Cyan
+    if ([string]::IsNullOrWhiteSpace($pa)) { Write-Host "  (add -Pa x.y.z to also loop the connection-oriented 'prog' hardening)" -ForegroundColor DarkGray }
     $round = 0; $exitCode = 0
     do {
         $round++
         Write-Host ""; Write-Host ("========== run #$round ==========") -ForegroundColor Cyan
         $pass = 0; $failed = @()
-        foreach ($m in $SafeSuite) {
+        foreach ($entry in $suite) {
+            $m = $entry.m
             Write-Host ""; Write-Host ("----- $m -----") -ForegroundColor DarkCyan
-            & $exe -NoProfile -File $PSCommandPath $ip $m
+            if ($entry.args) { $ea = $entry.args; & $exe -NoProfile -File $PSCommandPath $ip $m @ea }
+            else { & $exe -NoProfile -File $PSCommandPath $ip $m }
             if ($LASTEXITCODE -eq 0) { $pass++ } else { $failed += $m }
         }
         Write-Host ""
-        if ($failed.Count -eq 0) { Write-Host ("  RUN #${round}:ALL $pass SAFE tests PASS") -ForegroundColor Green }
-        else { $exitCode = 1; Write-Host ("  RUN #${round}:$($failed.Count) FAILED ($($failed -join ', ')), $pass passed") -ForegroundColor Red }
+        if ($failed.Count -eq 0) { Write-Host ("  RUN #${round}: ALL $pass tests PASS") -ForegroundColor Green }
+        else { $exitCode = 1; Write-Host ("  RUN #${round}: $($failed.Count) FAILED ($($failed -join ', ')), $pass passed") -ForegroundColor Red }
         if ($loop) { Start-Sleep -Seconds 3 }
     } while ($loop)
     exit $exitCode
@@ -954,6 +976,150 @@ function Invoke-Speed([string]$ip, [int]$count) {
     else { Write-Host "  SPEED FAIL: no responses (device busy/unreachable?)." -ForegroundColor Red; exit 1 }
 }
 
+# ─── prog: connection-oriented "programming-like" handshake to a REAL TP device ──
+# ETS starts every download with T_Connect -> A_DeviceDescriptor_Read; that is the
+# connection-oriented, per-telegram-L_ACK path the rx-threshold-80 bug broke. This
+# reproduces exactly that handshake over a tunnel, READ-ONLY (no memory is written),
+# in a loop. PASS = the device's DeviceDescriptor came back = the path is healthy.
+function ConvertTo-PaInt([string]$pa) {
+    $p = $pa -split '\.'
+    if ($p.Count -lt 3) { return -1 }
+    return (([int]$p[0] -shl 12) -bor ([int]$p[1] -shl 8) -bor [int]$p[2])
+}
+function New-Tunneling([byte]$ch, [int]$seq, [byte[]]$cemi) {
+    # TUNNELING_REQUEST (0x0420): conn-header 04 <ch> <seq> 00 + cEMI
+    return New-KnxFrame 0x0420 ([byte[]](@(0x04, $ch, ($seq -band 0xFF), 0x00) + $cemi))
+}
+function New-LDataReqCo([int]$dst, [byte[]]$tpdu) {
+    # cEMI L_Data.req to an INDIVIDUAL address; src 0.0.0 (router substitutes the tunnel PA).
+    # ctrl1 0xBC, ctrl2 0x60 (AT=individual, hops=6). KNX length octet = TPDU octets - 1.
+    $len = $tpdu.Length - 1
+    return [byte[]](@(0x11, 0x00, 0xBC, 0x60, 0x00, 0x00, (($dst -shr 8) -band 0xFF), ($dst -band 0xFF), ($len -band 0xFF)) + $tpdu)
+}
+# Drain inbound frames up to $ms ms; auto-ACK every TUNNELING_REQUEST; return its cEMIs.
+# Returns EARLY as soon as the awaited frame arrives: $stopMc matches a cEMI message code
+# (e.g. 0x2E L_Data.con), $stopApci matches an L_Data.ind APCI (e.g. 0x340 descriptor resp).
+function Receive-TunnelCemi($sock, [byte]$ch, [int]$ms, [int]$stopApci = -1, [int]$stopMc = -1) {
+    $out = New-Object System.Collections.Generic.List[object]
+    $buf = New-Object byte[] 1024
+    $sender = [System.Net.EndPoint]([System.Net.IPEndPoint]::new([System.Net.IPAddress]::Any, 0))
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($sw.Elapsed.TotalMilliseconds -lt $ms) {
+        if ($sock.Available -le 0) { Start-Sleep -Milliseconds 2; continue }
+        $rn = $sock.ReceiveFrom($buf, [ref]$sender)
+        if ($rn -lt 6) { continue }
+        $svc = ([int]$buf[2] -shl 8) -bor $buf[3]
+        if ($svc -ne 0x0420) { continue }            # only inbound TUNNELING_REQUEST
+        $null = $sock.SendTo((New-KnxFrame 0x0421 ([byte[]]@(0x04, $ch, $buf[8], 0x00))), $sender)   # ACK it
+        if ($rn -le 10) { continue }
+        $c = New-Object byte[] ($rn - 10); [Array]::Copy($buf, 10, $c, 0, $rn - 10); $out.Add($c)
+        if ($stopMc -ge 0 -and $c[0] -eq $stopMc) { break }
+        if ($stopApci -ge 0 -and $c.Length -ge 11 -and $c[0] -eq 0x29 -and (($c[9] -band 0xC0) -eq 0x40)) {
+            $apci = (((([int]$c[9]) -band 0x03) -shl 8) -bor [int]$c[10])
+            if (($apci -band 0xFC0) -eq $stopApci) { break }
+        }
+    }
+    return $out
+}
+function Invoke-Prog([string]$ip, [string]$pa, [int]$count, [int]$seconds, [int]$apduBytes) {
+    Show-Logo
+    $dst = ConvertTo-PaInt $pa
+    if ($dst -lt 0) {
+        Write-Host "  prog needs a target device: -Pa x.y.z  (a REAL TP device, e.g. 2.0.100)" -ForegroundColor Red
+        Write-Host "  read-only DeviceDescriptor_Read over a tunnel = ETS programming's connect phase." -ForegroundColor DarkGray
+        Write-Host "  add -ApduBytes N (1..63) to also A_Memory_Read N bytes/cycle = large-APDU traversal." -ForegroundColor DarkGray
+        exit 1
+    }
+    if ($count -le 0) { $count = 20 }
+    if ($apduBytes -gt 63) { $apduBytes = 63 }       # A_Memory_Read byte-count field is 6-bit
+    if ($apduBytes -lt 0) { $apduBytes = 0 }
+    Write-Host "prog: connection-oriented handshake to $pa over a tunnel (read-only, ETS-like connect phase)" -ForegroundColor Cyan
+    if ($apduBytes -gt 0) { Write-Host ("  + A_Memory_Read of {0} bytes/cycle (large-APDU traversal test, read-only)" -f $apduBytes) -ForegroundColor DarkGray }
+    $t = Open-Tunnel $ip
+    if ($null -eq $t) { Write-Host "  tunnel CONNECT: no response (wait 120s/reboot?)" -ForegroundColor Red; exit 1 }
+    if ($t.Status -ne 0) { Write-Host ("  tunnel CONNECT failed status=0x{0:X2} (no free slot?)" -f $t.Status) -ForegroundColor Red; $t.Sock.Close(); exit 1 }
+    $sock = $t.Sock; $ch = $t.Ch
+    Write-Host ("  tunnel ch=0x{0:X2}  our PA={1}  -> target {2}" -f $ch, $t.Pa, $pa) -ForegroundColor Gray
+    $tSeq = 0; $ok = 0; $fail = 0; $lat = @(); $i = 0
+    $txB = 0; $rxB = 0; $apduOk = 0; $apduMax = 0
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    try {
+        while ($true) {
+            if ($seconds -gt 0) { if ($sw.Elapsed.TotalSeconds -ge $seconds) { break } }
+            elseif ($i -ge $count) { break }
+            $i++
+            $cyc = [System.Diagnostics.Stopwatch]::StartNew()
+            # 1) T_Connect (TPCI 0x80) - return as soon as the L_Data.con (MC 0x2E) of our request is in
+            $f = New-LDataReqCo $dst @(0x80); $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+            $null = Receive-TunnelCemi $sock $ch 1000 (-1) 0x2E
+            # 2) A_DeviceDescriptor_Read(0), transport seq 0 (TPDU 0x43 0x00); stop on response APCI 0x340 -> REAL latency
+            $f = New-LDataReqCo $dst @(0x43, 0x00); $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+            $resps = Receive-TunnelCemi $sock $ch 3000 0x340 (-1)
+            $gotDesc = $false; $devSeq = 0
+            foreach ($c in $resps) {
+                if ($c[0] -eq 0x29) { $rxB += $c.Length }      # device -> us bytes on the bus
+                # cEMI L_Data.ind (MC 0x29): [0]MC [2]ctrl1 [3]ctrl2 [4..5]src [6..7]dst [8]len [9]tpci [10]apci
+                if ($c.Length -ge 11 -and $c[0] -eq 0x29 -and (($c[9] -band 0xC0) -eq 0x40)) {
+                    $apci = (((([int]$c[9]) -band 0x03) -shl 8) -bor [int]$c[10])
+                    if (($apci -band 0xFC0) -eq 0x340) { $gotDesc = $true; $devSeq = (([int]$c[9] -shr 2) -band 0x0F) }
+                }
+            }
+            if ($gotDesc) {
+                # T_ACK the descriptor response (TPCI 0xC2 | devSeq<<2)
+                $tack = [byte](0xC2 -bor (($devSeq -band 0x0F) -shl 2))
+                $f = New-LDataReqCo $dst @($tack); $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+                $ok++; $lat += $cyc.Elapsed.TotalMilliseconds
+                if ($apduBytes -gt 0) {
+                    # A_Memory_Read N bytes @ 0x0000, transport seq 1: TPDU 0x46 <N> 00 00  (read-only)
+                    $f = New-LDataReqCo $dst @(0x46, ($apduBytes -band 0x3F), 0x00, 0x00)
+                    $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+                    $mresps = Receive-TunnelCemi $sock $ch 3000 0x240 (-1)
+                    $gotMem = $false; $mSeq2 = 0; $mlen = 0
+                    foreach ($c in $mresps) {
+                        if ($c[0] -eq 0x29) { $rxB += $c.Length }
+                        if ($c.Length -ge 13 -and $c[0] -eq 0x29 -and (($c[9] -band 0xC0) -eq 0x40)) {
+                            $apci2 = (((([int]$c[9]) -band 0x03) -shl 8) -bor [int]$c[10])
+                            if (($apci2 -band 0xFC0) -eq 0x240) { $gotMem = $true; $mSeq2 = (([int]$c[9] -shr 2) -band 0x0F); $mlen = $c.Length - 13 }
+                        }
+                    }
+                    if ($gotMem) {
+                        $tack2 = [byte](0xC2 -bor (($mSeq2 -band 0x0F) -shl 2))
+                        $f = New-LDataReqCo $dst @($tack2); $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+                        $apduOk++; if ($mlen -gt $apduMax) { $apduMax = $mlen }
+                    }
+                }
+            } else { $fail++ }
+            # 3) T_Disconnect (TPCI 0x81) - clean up the connection either way
+            $f = New-LDataReqCo $dst @(0x81); $null = $sock.SendTo((New-Tunneling $ch $tSeq $f), $t.Dst); $txB += $f.Length; $tSeq = ($tSeq + 1) -band 0xFF
+            $null = Receive-TunnelCemi $sock $ch 150
+            if ($i % 10 -eq 0) { Write-Host ("  cycles={0} ok={1} fail={2}" -f $i, $ok, $fail) -ForegroundColor DarkGray }
+        }
+    }
+    finally {
+        try { $null = $sock.SendTo((New-KnxFrame 0x0209 ([byte[]](@($ch, 0x00) + $t.Hpai))), $t.Dst) } catch {}
+        try { $sock.Close() } catch {}
+    }
+    $wall = $sw.Elapsed.TotalSeconds
+    Write-Host ""
+    Write-Host ("  cycles={0}  ok={1}  fail={2}" -f $i, $ok, $fail) -ForegroundColor Cyan
+    if ($ok -gt 0) {
+        $min = [math]::Round(($lat | Measure-Object -Minimum).Minimum, 1)
+        $avg = [math]::Round(($lat | Measure-Object -Average).Average, 1)
+        $max = [math]::Round(($lat | Measure-Object -Maximum).Maximum, 1)
+        Write-Host ("  connect+descriptor latency (ms): min {0}  avg {1}  max {2}" -f $min, $avg, $max) -ForegroundColor Green
+        $hz = 0; if ($wall -gt 0) { $hz = [math]::Round($ok / $wall, 1) }
+        Write-Host ("  throughput: {0} handshakes/s (connection-oriented round-trips over the TP bus)" -f $hz) -ForegroundColor Green
+        $txBps = 0; $rxBps = 0; if ($wall -gt 0) { $txBps = [math]::Round($txB / $wall, 0); $rxBps = [math]::Round($rxB / $wall, 0) }
+        Write-Host ("  bus bytes: sent {0} B ({1} B/s) / received {2} B ({3} B/s)  [cEMI on the bus, rough]" -f $txB, $txBps, $rxB, $rxBps) -ForegroundColor Green
+        if ($apduBytes -gt 0) {
+            Write-Host ("  APDU read-back: {0}/{1} ok  (max {2} data bytes per single APDU, requested {3})" -f $apduOk, $ok, $apduMax, $apduBytes) -ForegroundColor Green
+        }
+    }
+    if ($ok -gt 0 -and $fail -eq 0) { Write-Host "  => PASS: every connection-oriented handshake completed (programming path healthy)" -ForegroundColor Green; exit 0 }
+    elseif ($ok -gt 0) { Write-Host "  => PARTIAL: some handshakes failed - check bus / target online / threshold" -ForegroundColor Yellow; exit 1 }
+    else { Write-Host "  => FAIL: no descriptor returned (target offline? or connection-oriented path broken)" -ForegroundColor Red; exit 1 }
+}
+
 function Show-Help {
     Show-Logo
     Write-Host "USAGE" -ForegroundColor Yellow
@@ -976,7 +1142,8 @@ function Show-Help {
     Write-Host ("  {0,-10}{1,-52}" -f "mdns",     "OpenKNX-only mDNS TXT (configured/version/...)") -NoNewline; Write-Host "SAFE"     -ForegroundColor Green
     Write-Host ("  {0,-10}{1,-52}" -f "diag",     "router + IP config & diagnostics (M_PropRead)") -NoNewline; Write-Host "SAFE"     -ForegroundColor Green
     Write-Host ("  {0,-10}{1,-52}" -f "speed",    "max APDU + round-trip latency/throughput benchmark") -NoNewline; Write-Host "SAFE"     -ForegroundColor Green
-    Write-Host ("  {0,-10}{1,-52}" -f "all",      "run all SAFE tests in sequence (-Loop to repeat)") -NoNewline; Write-Host "SAFE"     -ForegroundColor Green
+    Write-Host ("  {0,-10}{1,-52}" -f "prog",     "ETS-like connect+descriptor (-Pa x.y.z [-ApduBytes N])") -NoNewline; Write-Host "MODERATE" -ForegroundColor DarkYellow
+    Write-Host ("  {0,-10}{1,-52}" -f "all",      "SAFE + hardening tests (-Loop; -Pa x.y.z adds prog)") -NoNewline; Write-Host "SAFE"     -ForegroundColor Green
     Write-Host ""
     Write-Host "EXAMPLES" -ForegroundColor Yellow
     Write-Host "  ./Test-KnxRouter.ps1 selftest"
@@ -994,7 +1161,10 @@ function Show-Help {
     Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 mdns"
     Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 diag"
     Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 speed    -Count 100"
-    Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 all      -Loop"
+    Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 prog     -Pa 2.0.100 -Count 50               # simulate ETS programming connect"
+    Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 prog     -Pa 2.0.100 -Count 50 -ApduBytes 50  # + large-APDU read-back"
+    Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 all      -Loop                          # SAFE+hardening watchdog"
+    Write-Host "  ./Test-KnxRouter.ps1 11.11.0.210 all      -Loop -Pa 2.0.50 -ApduBytes 50  # + connection-oriented prog"
     Write-Host "  ./Test-KnxRouter.ps1 health              # IP omitted -> default 11.11.0.210" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "TIP: leak check -> run 'soak', then type 'mem' on the device console:" -ForegroundColor DarkGray
@@ -1020,7 +1190,9 @@ switch ($Test.ToLower()) {
     'mdns'     { Invoke-Mdns $Ip }
     'diag'     { Invoke-Diag $Ip }
     'speed'    { Invoke-Speed $Ip $Count }
-    'all'      { Invoke-Suite $Ip ([bool]$Loop) }
-    'suite'    { Invoke-Suite $Ip ([bool]$Loop) }
+    'prog'     { Invoke-Prog $Ip $Pa $Count $Seconds $ApduBytes }
+    'program'  { Invoke-Prog $Ip $Pa $Count $Seconds $ApduBytes }
+    'all'      { Invoke-Suite $Ip ([bool]$Loop) $Pa $ApduBytes }
+    'suite'    { Invoke-Suite $Ip ([bool]$Loop) $Pa $ApduBytes }
     default    { Show-Help }
 }

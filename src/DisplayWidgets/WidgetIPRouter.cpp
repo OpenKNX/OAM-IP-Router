@@ -1,5 +1,6 @@
 #ifdef DEVICE_DISPLAY_MODULE
 #include "WidgetIPRouter.h"
+#include "DeviceDisplay.h"
 #include "NetworkModule.h"
 #include "OpenKNX.h"
 #include <WiFi.h>
@@ -102,27 +103,33 @@ void WidgetIPRouter::drawIPInfo()
     const uint16_t CENTER_X = SCREEN_WIDTH / 2;
 
     String firmwareVersion = String(_name.c_str()) + " (v" + String(openknx.info.humanFirmwareVersion().c_str()) + ")";
-    // String firmwareVersion = String(_name.c_str()) + " " + String(openknx.info.humanFirmwareVersion().c_str()) + "";
     _display->display->setTextSize(1);
     _display->display->setCursor((SCREEN_WIDTH - (firmwareVersion.length() * 6)) / 2, 0);
     _display->display->print(firmwareVersion.c_str());
 
-    uint32_t elapsedMillis = millis() - _duration_timerStart;
-    uint32_t remainingMillis = (_displayTime > elapsedMillis) ? (_displayTime - elapsedMillis) : 0;
-    if (remainingMillis == 0)
+    // Hide the rotation-progress dot while paused: WidgetsManager draws the shared
+    // pause glyph instead, and a running dot here would contradict that indication.
+    bool rotationPaused = false;
+    if (openknxDisplayModule.getWidgetManager())
+        rotationPaused = openknxDisplayModule.getWidgetManager()->isRotationPaused();
+
+    if (!rotationPaused && _displayTime > 0)
     {
-        _duration_timerStart = millis();
-        remainingMillis = _displayTime; // Reset to initial time
+        uint32_t elapsedMillis = millis() - _duration_timerStart;
+        if (elapsedMillis >= _displayTime)
+        {
+            _duration_timerStart = millis();
+            elapsedMillis = 0;
+        }
+        uint16_t circlePosition = (uint32_t)SCREEN_WIDTH * elapsedMillis / _displayTime;
+        _display->display->fillCircle(circlePosition, 10, 2, WHITE);
+        _display->display->drawCircle(circlePosition, 10, 2, BLACK);
     }
-    uint16_t circlePosition = (SCREEN_WIDTH * elapsedMillis) / _displayTime;
-    _display->display->fillCircle(circlePosition, 10, 2, WHITE);
-    _display->display->drawCircle(circlePosition, 10, 2, BLACK);
 
     _display->display->drawLine(0, 10, SCREEN_WIDTH, 10, WHITE);
 
     if (openknxNetwork.established())
     {
-        // IP, Gateway & DNS
         String ip = "IP: " + openknxNetwork.localIP().toString();
         String gw = "GW: " + openknxNetwork.gatewayIP().toString();
         String dns = "DNS: " + openknxNetwork.nameServerIP().toString();
@@ -135,16 +142,9 @@ void WidgetIPRouter::drawIPInfo()
 
         _display->display->setCursor((SCREEN_WIDTH - (dns.length() * 6)) / 2, 40);
         _display->display->print(dns.c_str());
-
-        // Hostname
-        // char _hostName[25] = {}; memcpy(_hostName, ParamNET_HostName, 24);
-        // String hostname = String("H:") + String(_hostName);
-        //_display->display->setCursor((SCREEN_WIDTH - (hostname.length() * 6)) / 2, 50);
-        //_display->display->print(hostname.c_str());
     }
     else
     {
-        // Kein Netzwerk (X-Icon zentriert)
         _display->display->drawBitmap(CENTER_X - 4, 20, x_icon, 8, 8, WHITE);
         _display->display->setCursor(CENTER_X - 30, 36);
         _display->display->print("DISCONNECTED");

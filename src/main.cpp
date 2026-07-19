@@ -17,6 +17,9 @@
 #ifdef OPENKNX_SD_CARD_MODULE_ENABLE
 #include "SDCardModule.h"
 #endif
+#ifdef OPENKNX_FTC
+#include "FileTransferClient.h"
+#endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
 #include "esp_heap_caps.h" // only the optional periodic heap log (loop) uses heap_caps_*
@@ -38,6 +41,9 @@ void setup()
 #ifdef ARDUINO_ARCH_RP2040
     openknx.addModule(8, openknxUsbExchangeModule);
     openknx.addModule(9, openknxFileTransferModule);
+#endif
+#ifdef OPENKNX_FTC
+    openknx.addModule(11, openknxFileTransferClient);
 #endif
 #ifdef DEVICE_DISPLAY_MODULE
     openknx.addModule(10, openknxDisplayModule);

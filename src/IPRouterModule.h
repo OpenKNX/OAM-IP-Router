@@ -1,8 +1,6 @@
 #pragma once
 #include "OpenKNX.h"
 
-
-
 class IPRouterModule : public OpenKNX::Module
 {
 

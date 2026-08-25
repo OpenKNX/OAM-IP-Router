@@ -11,6 +11,8 @@ class IPRouterModule : public OpenKNX::Module
     const std::string version() override;
     static IPRouterModule *instance();
     bool processCommand(const std::string cmd, bool diagnoseKo) override;
+    void showHelp() override;
+    void setup(bool configured) override; // registers the tunnel status page (webserver builds only)
 
   private:
     static IPRouterModule *_instance;

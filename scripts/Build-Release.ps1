@@ -1,4 +1,4 @@
-# This script is just a template and has to be copied and modified per project
+﻿# This script is just a template and has to be copied and modified per project
 # This script should be called from .vscode/tasks.json with
 #
 #   scripts/Build-Release.ps1            - for Beta builds

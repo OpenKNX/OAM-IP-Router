@@ -11,3 +11,10 @@ release/*
 src/*.baggages
 extensions.json
 /release
+
+# Generated conformance / hardening reports
+scripts/Test/Reports/
+scripts/Hardening/Reports/
+include/webassets.h
+include/buildtime.h
+scripts/Test/.last-run.json

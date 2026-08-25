@@ -2,8 +2,8 @@
 
 #include "IPRouterModule.h"
 #include "NetworkModule.h"
-#ifdef ARDUINO_ARCH_RP2040
 #include "FileTransferModule.h"
+#ifdef ARDUINO_ARCH_RP2040
 #include "UsbExchangeModule.h"
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
@@ -17,7 +17,7 @@
 #ifdef OPENKNX_SD_CARD_MODULE_ENABLE
 #include "SDCardModule.h"
 #endif
-#ifdef OPENKNX_FTC
+#ifdef OPENKNX_FTC_CLIENT
 #include "FileTransferClient.h"
 #endif
 
@@ -40,9 +40,9 @@ void setup()
     openknx.addModule(7, openknxNetwork);
 #ifdef ARDUINO_ARCH_RP2040
     openknx.addModule(8, openknxUsbExchangeModule);
-    openknx.addModule(9, openknxFileTransferModule);
 #endif
-#ifdef OPENKNX_FTC
+    openknx.addModule(9, openknxFileTransferModule);
+#ifdef OPENKNX_FTC_CLIENT
     openknx.addModule(11, openknxFileTransferClient);
 #endif
 #ifdef DEVICE_DISPLAY_MODULE

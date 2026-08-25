@@ -14,7 +14,7 @@
 #include "DeviceDisplay.h"
 #include "DisplayWidgets/WidgetIPRouter.h"
 #endif
-#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+#ifdef OPENKNX_SDCARD
 #include "SDCardModule.h"
 #endif
 #ifdef OPENKNX_FTC_CLIENT
@@ -48,7 +48,7 @@ void setup()
 #ifdef DEVICE_DISPLAY_MODULE
     openknx.addModule(10, openknxDisplayModule);
 #endif
-#ifdef OPENKNX_SD_CARD_MODULE_ENABLE
+#ifdef OPENKNX_SDCARD
     openknx.addModule(30, sdCardModule);
 #endif
 

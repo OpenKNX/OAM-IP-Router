@@ -19,7 +19,9 @@ static const char *tunTypeName(uint8_t t)
 {
     switch (t)
     {
+#ifdef OPENKNX_HW_BUSMON // only a device with the HW busmonitor can ever report this
         case IpTunnelServer::TUN_BUSMON: return "Busmonitor";
+#endif
         case IpTunnelServer::TUN_CONFIG: return "Device-Mgmt";
         case IpTunnelServer::TUN_OTHER: return "unbekannt";
         default: return "Tunnel";
@@ -42,7 +44,9 @@ static const char *tunReasonName(uint8_t r)
     switch (r)
     {
         case IpTunnelServer::END_TIMEOUT: return "Timeout";
+#ifdef OPENKNX_HW_BUSMON // set by ip_tunnel_server only under this switch -- dead on a router
         case IpTunnelServer::END_BUSMON: return "Busmon";
+#endif
         case IpTunnelServer::END_CLOSED: return "Closed";
         case IpTunnelServer::END_REJ_TYPE: return "Abgelehnt: Typ";
         case IpTunnelServer::END_REJ_LAYER: return "Abgelehnt: Layer";

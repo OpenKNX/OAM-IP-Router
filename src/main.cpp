@@ -4,7 +4,6 @@
 #include "NetworkModule.h"
 #include "FileTransferModule.h"
 #ifdef ARDUINO_ARCH_RP2040
-#include "UsbExchangeModule.h"
 #pragma message "Pico Core Version: " ARDUINO_PICO_VERSION_STR
 #pragma message "ARDUINO VARIANT: " ARDUINO_VARIANT
 #endif
@@ -39,7 +38,6 @@ void setup()
     openknx.addModule(6, openknxIPRouterModule);
     openknx.addModule(7, openknxNetwork);
 #ifdef ARDUINO_ARCH_RP2040
-    openknx.addModule(8, openknxUsbExchangeModule);
 #endif
     openknx.addModule(9, openknxFileTransferModule);
 #ifdef OPENKNX_FTC_CLIENT

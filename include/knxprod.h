@@ -11,18 +11,19 @@
 #define ETS_ModuleId_NONE 0
 #define ETS_ModuleId_BASE 1
 #define ETS_ModuleId_NET 2
-#define ETS_ModuleId_ROUTE 3
+#define ETS_ModuleId_FTM 3
+#define ETS_ModuleId_ROUTE 4
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 118
-#define MAIN_FirmwareRevision 2
+#define MAIN_ApplicationVersion 120
+#define MAIN_FirmwareRevision 0
 #define MAIN_ApplicationEncoding iso-8859-15
-#define MAIN_ParameterSize 189
+#define MAIN_ParameterSize 295
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "OpenKnxIPRouter"
-#define BASE_ModuleVersion 24
-#define NET_ModuleVersion 6
+#define BASE_ModuleVersion 25
+#define NET_ModuleVersion 8
 // Parameter with single occurrence
 
 
@@ -64,7 +65,7 @@
 #define ParamBASE_StartupDelayTimeMS                  (paramDelay(knx.paramWord(BASE_StartupDelayTime)))
 // Watchdog aktivieren
 #define ParamBASE_Watchdog                            ((bool)(knx.paramByte(BASE_Watchdog) & BASE_WatchdogMask))
-// Info1 (N/A)
+// Info1 (KNX-IP)
 #define ParamBASE_Info1LedFunc                        (knx.paramWord(BASE_Info1LedFunc))
 // Info2 (IP)
 #define ParamBASE_Info2LedFunc                        (knx.paramWord(BASE_Info2LedFunc))
@@ -106,6 +107,9 @@
 #define NET_OTAUpdate                           95      // 2 Bits, Bit 4-3
 #define     NET_OTAUpdateMask 0x18
 #define     NET_OTAUpdateShift 3
+#define NET_MQTT                                95      // 1 Bit, Bit 2
+#define     NET_MQTTMask 0x04
+#define     NET_MQTTShift 2
 #define NET_HostName                            96      // char*, 24 Byte
 #define     NET_HostNameLength 24
 #define NET_LanMode                             137      // 4 Bits, Bit 7-4
@@ -113,6 +117,21 @@
 #define     NET_LanModeShift 4
 #define NET_NTPServer                           138      // char*, 50 Byte
 #define     NET_NTPServerLength 50
+#define NET_MQTTServer                          189      // char*, 20 Byte
+#define     NET_MQTTServerLength 20
+#define NET_MQTTUsername                        210      // char*, 20 Byte
+#define     NET_MQTTUsernameLength 20
+#define NET_MQTTPassword                        231      // char*, 20 Byte
+#define     NET_MQTTPasswordLength 20
+#define NET_MQTTPrefix                          252      // char*, 20 Byte
+#define     NET_MQTTPrefixLength 20
+#define NET_MQTTPort                            273      // uint16_t
+#define NET_MQTTTPRawData                       275      // 1 Bit, Bit 7
+#define     NET_MQTTTPRawDataMask 0x80
+#define     NET_MQTTTPRawDataShift 7
+#define NET_MQTTMode                            275      // 1 Bit, Bit 6
+#define     NET_MQTTModeMask 0x40
+#define     NET_MQTTModeShift 6
 
 // IP-Adresse
 #define ParamNET_HostAddress                         (knx.paramInt(NET_HostAddress))
@@ -134,6 +153,8 @@
 #define ParamNET_NTP                                 ((bool)(knx.paramByte(NET_NTP) & NET_NTPMask))
 // OTA-Update
 #define ParamNET_OTAUpdate                           ((knx.paramByte(NET_OTAUpdate) & NET_OTAUpdateMask) >> NET_OTAUpdateShift)
+// MQTT
+#define ParamNET_MQTT                                ((bool)(knx.paramByte(NET_MQTT) & NET_MQTTMask))
 // Hostname
 #define ParamNET_HostName                            (knx.paramData(NET_HostName))
 #define ParamNET_HostNameStr                         (knx.paramString(NET_HostName, NET_HostNameLength))
@@ -142,6 +163,37 @@
 // Zeitserver
 #define ParamNET_NTPServer                           (knx.paramData(NET_NTPServer))
 #define ParamNET_NTPServerStr                        (knx.paramString(NET_NTPServer, NET_NTPServerLength))
+// Server
+#define ParamNET_MQTTServer                          (knx.paramData(NET_MQTTServer))
+#define ParamNET_MQTTServerStr                       (knx.paramString(NET_MQTTServer, NET_MQTTServerLength))
+// Benutzer
+#define ParamNET_MQTTUsername                        (knx.paramData(NET_MQTTUsername))
+#define ParamNET_MQTTUsernameStr                     (knx.paramString(NET_MQTTUsername, NET_MQTTUsernameLength))
+// Passwort
+#define ParamNET_MQTTPassword                        (knx.paramData(NET_MQTTPassword))
+#define ParamNET_MQTTPasswordStr                     (knx.paramString(NET_MQTTPassword, NET_MQTTPasswordLength))
+// Prefix
+#define ParamNET_MQTTPrefix                          (knx.paramData(NET_MQTTPrefix))
+#define ParamNET_MQTTPrefixStr                       (knx.paramString(NET_MQTTPrefix, NET_MQTTPrefixLength))
+// Port
+#define ParamNET_MQTTPort                            (knx.paramWord(NET_MQTTPort))
+// Sende KNX TP Rohdaten
+#define ParamNET_MQTTTPRawData                       ((bool)(knx.paramByte(NET_MQTTTPRawData) & NET_MQTTTPRawDataMask))
+// Modus
+#define ParamNET_MQTTMode                            ((bool)(knx.paramByte(NET_MQTTMode) & NET_MQTTModeMask))
+
+#define FTM_Security                            276      // 8 Bits, Bit 7-0
+#define FTM_Password                            277      // char*, 16 Byte
+#define     FTM_PasswordLength 16
+#define FTM_AuthTimeout                         293      // uint16_t
+
+// Zugriff
+#define ParamFTM_Security                            (knx.paramByte(FTM_Security))
+// Passwort
+#define ParamFTM_Password                            (knx.paramData(FTM_Password))
+#define ParamFTM_PasswordStr                         (knx.paramString(FTM_Password, FTM_PasswordLength))
+// Abmeldung bei Leerlauf
+#define ParamFTM_AuthTimeout                         (knx.paramWord(FTM_AuthTimeout))
 
 #define ROUTE_AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6
 #define     ROUTE_AckOfPhysTelSubMainMask 0xC0

@@ -75,12 +75,22 @@
             <op:includetemplate href="%templ%" xpath="//ApplicationProgram/ModuleDefs/*" type="template" prefix="%prefix%" />
           </ModuleDefs>
           <Dynamic>
-            <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/*" prefix="BASE" />
+            <!-- BASE "OpenKNX" channel rebuilt in place so the FTM ExtendedInject folds into Erweitert. Sourced
+                 from Common.Router.share.xml (0 ComObjects) -> router stays KO-free. Mirrors TemplateInterface.xml,
+                 only the source differs. -->
+            <Channel Id="%AID%_CH-BASE" Number="BASE" Name="Main" Text="OpenKNX" Icon="openknx" HelpContext="BASE-OpenKNX">
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Dynamic/Channel/ParameterBlock[@Name='Basic']" prefix="BASE" />
+              <ParameterBlock Id="%AID%_PB-nnn" Name="Extended" Text="Erweitert" Icon="format-list-text" HelpContext="BASE-OpenKNX">
+                <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Dynamic/Channel/ParameterBlock[@Name='Extended']/*" IsInner="true" prefix="BASE" />
+                <op:include href="../lib/OFM-FileTransferModule/src/FileTransfer.share.xml" xpath="//Dynamic/Channel/ParameterBlock/*" IsInner="true" prefix="FTM" />
+              </ParameterBlock>
+              <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Dynamic/Channel/*[not(self::ParameterBlock[@Name='Basic']) and not(self::ParameterBlock[@Name='Extended'])]" prefix="BASE" />
+            </Channel>
             <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
             <op:include href="IP-Router.share.xml" xpath="//Dynamic/*" prefix="ROUTE" />
             <!--
             <ChannelIndependentBlock>
-               <op:include href="../lib/OFM-Network/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
+               <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='General']" prefix="BASE" />
                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
                <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Routing']" prefix="ROUTE" />
                <op:include href="IP-Router.share.xml" xpath="//Dynamic/ChannelIndependentBlock/ParameterBlock[@Name='Tunnel']" prefix="ROUTE" />

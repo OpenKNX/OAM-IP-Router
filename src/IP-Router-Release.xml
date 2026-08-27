@@ -5,6 +5,8 @@
   <op:config name="%NET_IPConfigTool%" value="1" />
   <op:config name="%Tunnelcount%" value="16" />
   <op:config name="%NET_ServiceNTP%" value="1" />
+  <op:config name="%NET_ServiceHTTP%" value="1" />
+  <op:config name="%NET_LanMode%" value="1" />
 
   <op:config name="%BASE_Info1LedLabel%" value=" (N/A)"></op:config>
   <op:config name="%BASE_Info2LedLabel%" value=" (IP)"></op:config>
@@ -36,11 +38,14 @@
           />
 
   <op:define prefix="BASE" ModuleType="10" >
-    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.8" />
+    <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="1.9" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
-    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.6" />
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.8" />
   </op:define>
+  <!-- FTC access-control config. Pulled because this product builds with -D OPENKNX_FTC_SECURITY; the share
+       carries 0 ComObjects, so the router stays KO-free. ModuleType 13 (10/11/99 taken). -->
+  <op:define prefix="FTM" ModuleType="13" share="../lib/OFM-FileTransferModule/src/FileTransfer.share.xml" />
   <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.templ.xml" />
 
   <generate base="TemplateRouter.xml"/>

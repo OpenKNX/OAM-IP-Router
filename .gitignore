@@ -6,6 +6,10 @@
 .vscode/ipch
 **/*.knxprod
 **/*copy.xml
+doc/
+/.claude/
+src/*.debug.xml
+src/*.appl.debug.xml
 release/*
 /include/versions.h
 src/*.baggages

@@ -61,6 +61,10 @@ with OpenKNXproducer 4.3.12.
 * Change: conformance evidence, the deliberate exceptions and a warranty disclaimer instead of certification wording
 * Doc: the original author is credited and this branch's contribution named
 * Fix: the `ipro` help line said "data load" while the command prints "Bus load"
+* Doc: the README gains the test suite -- stages with scope and duration, how to run it, and what PASS, FAIL, SKIP and N-A mean, with skipped and non-applicable cases counted and named rather than folded into a pass
+* Fix: the README claimed 95 test cases; those were call sites in the sources, the conformance stage covers 117 cases
+* Doc: the last full run against hardware is recorded, which passed every stage with no failures
+* Doc: the example addresses are marked as an isolated lab VLAN, with the note that 11.0.0.0/8 is publicly allocated space rather than an RFC 1918 range
 
 ### Libraries
 

@@ -55,6 +55,13 @@ with OpenKNXproducer 4.3.12.
 * OFM-DeviceDisplay: busmon badge and rotation state in the manager corner, and local time instead of UTC
 * OFM-FileTransferModule: the dead device error-code read is gone, which cost 800 ms on every device-info query
 
+### Documentation
+* Doc: the README replaces a two-line placeholder -- routing and the filter table, the counters that make a blocking filter table visible, tunnelling, the web interface, what the REG2 display and SD card add, and a diagram showing that both directions pass the filter table
+* Doc: the ETS identity, the absence of group objects and which environment runs on which MCU are stated
+* Change: conformance evidence, the deliberate exceptions and a warranty disclaimer instead of certification wording
+* Doc: the original author is credited and this branch's contribution named
+* Fix: the `ipro` help line said "data load" while the command prints "Bus load"
+
 ### Libraries
 
 The commits below are pinned in `dependencies.txt`. Each library carries its own CHANGELOG with the full

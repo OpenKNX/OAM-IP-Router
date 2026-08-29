@@ -177,6 +177,28 @@ function Invoke-KnxSuiteDevMgmt {
         finally { [void](Close-KnxConnection -Connection $conn) }
     }
 
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'DLC-1' -Title 'Download Counter (PID_DOWNLOAD_COUNTER)' -Clause '03_05_01 Resources 4.2.30 (PID = 30, Device Object)' -Body {
+        # The Download Counter is a read-only uint16 on the Device Object (OT 0). It must be present
+        # (registered) and readable - the old firmware never registered it, so this guards that regression.
+        # A bare read must NOT change it: the counter is armed by a read and only spent by a download, so
+        # reading twice in a row returns the same value. On this router the counter is RAM-backed (not
+        # persisted), so its +1-per-download behaviour is verified by hand after an ETS download.
+        $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+        Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
+        try {
+            $r1 = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.DOWNLOAD_COUNTER
+            Assert-KnxTrue ($null -ne $r1 -and $r1.Length -ge 2) 'PID_DOWNLOAD_COUNTER (device object) not readable - property missing?'
+            $c1 = Get-Uint16 -Bytes $r1 -Offset 0
+            Add-KnxEvidence -Note "download counter = $c1"
+
+            $r2 = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.DOWNLOAD_COUNTER
+            Assert-KnxTrue ($null -ne $r2 -and $r2.Length -ge 2) 'PID_DOWNLOAD_COUNTER second read failed'
+            $c2 = Get-Uint16 -Bytes $r2 -Offset 0
+            Assert-KnxEqual $c1 $c2 'a bare read must not change the download counter'
+        }
+        finally { [void](Close-KnxConnection -Connection $conn) }
+    }
+
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.3' -Title 'Write to read-only device property' -Clause 'TSSH 4.2.3, p.30 (fn 20203)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case attempts a property write' }
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1

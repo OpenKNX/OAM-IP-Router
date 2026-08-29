@@ -201,6 +201,7 @@ $script:KnxPid = @{
     PROG_MODE                      = 54   # device object (OT 0); on OT 11 the same number is CURRENT_IP_ASSIGNMENT_METHOD
     ORDER_INFO                     = 15
     VERSION                        = 25
+    DOWNLOAD_COUNTER               = 30   # device object (OT 0); +1 per download session, read re-arms
     ROUTING_COUNT                  = 51
     MAX_APDU_LENGTH                = 56
     SUBNET_ADDR                    = 57

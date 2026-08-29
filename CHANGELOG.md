@@ -60,7 +60,7 @@ with OpenKNXproducer 4.3.12.
 The commits below are pinned in `dependencies.txt`. Each library carries its own CHANGELOG with the full
 list; this is what matters for this product.
 
-**knx** `b8b6931` -> `22501d2` (tag `ec/v2.5.0-beta.1`)
+**knx** `b8b6931` -> `e75b123` (tag `ec/v2.5.0-beta.1`)
 * Memory-safety pass over the paths the router runs on: `CemiFrame::valid()` out-of-bounds read, truncated `M_PropRead`/`M_PropWrite` frames, the `TpUart sendFrame` malloc guard, the LC-config property pointer in `isAckRequired`, and two memory leaks (TPUart frames on discarded TP frames, cEMI `M_PropRead` on a negative response)
 * Tunnel-slot exhaustion fixed: all expired slots are reaped, not just the first occupied one, and the dangling `addresses` pointer in `HandleConnectRequest` is gone
 * Inbound routing cEMI is validated before it is forwarded to TP, and a frame dropped by the routing send limit produces a negative `L_Data.con`
@@ -69,6 +69,8 @@ list; this is what matters for this product.
 * Per-tunnel FIFO for server-to-client requests, so a burst of communication objects is never dropped; session history and read-only introspection
 * Local Transport Layer over cEMI (`T_Data_Individual`/`T_Data_Connected`, AN118)
 * **Breaking:** `OPENKNX_FTC` is now `OPENKNX_FTC_CLIENT`
+
+* Fix: the counter header is included outside the architecture guards -- an ESP32 target without `KNX_TUNNELING` did not compile; this product was never affected, its builds carry tunnelling
 
 **OFM-FileTransferModule** `178f186` -> `a3b2153` (tag `ec/v0.2.0-beta.1`)
 * The whole FTC feature set arrives in this product: file transfer, firmware update, console tunnel and access control over cEMI/KNX, with one shared client core driving both the on-device `ftc` command and the desktop `ftc-cli`

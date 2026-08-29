@@ -1,5 +1,5 @@
 ------- Built with -------
-22501d2 ec/v1dev-ec lib/knx https://github.com/OpenKNX/knx.git
+e75b123 ec/v1dev-ec lib/knx https://github.com/OpenKNX/knx.git
 f90faca v1 lib/OFM-DeviceDisplay https://github.com/OpenKNX/OFM-DeviceDisplay.git
 a3b2153 ec/v1dev lib/OFM-FileTransferModule https://github.com/OpenKNX/OFM-FileTransferModule.git
 1f95c5d ec/v1dev-ec lib/OFM-Network https://github.com/OpenKNX/OFM-Network.git

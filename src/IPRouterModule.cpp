@@ -129,6 +129,20 @@ const std::string IPRouterModule::version()
     return "";
 }
 
+
+// Router = device part 0; line part 0 means backbone coupler (x.0.0), else line coupler (x.y.0).
+static void formatCouplerRole(uint16_t pa, char *buf, size_t len)
+{
+    const uint8_t area = (uint8_t)(pa >> 12);
+    const uint8_t line = (uint8_t)((pa >> 8) & 0x0F);
+    if ((pa & 0x00FF) != 0)
+        snprintf(buf, len, "NO ROUTER - address %u.%u.%u has a device part", area, line, (unsigned)(pa & 0xFF));
+    else if (line == 0)
+        snprintf(buf, len, "Backbone coupler   IP <-> main line %u.0", area);
+    else
+        snprintf(buf, len, "Line coupler       IP <-> line %u.%u", area, line);
+}
+
 bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
 {
     if (diagnoseKo)
@@ -163,6 +177,68 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
             openknx.logger.logWithPrefixAndValues("Set APDU", "PID_MAX_APDU_LENGTH_ROUTER set to %i", apdu);
             return true;
         }
+    }
+
+    if (cmd == "ipro reset")
+    {
+        openknx.busLoad.reset();
+        logInfoP("Bus load history, average and peak cleared");
+        return true;
+    }
+    if (cmd == "ipro ?")
+    {
+        showHelp();
+        return true;
+    }
+    if (cmd == "ipro")
+    {
+        char buf[64];
+        const uint16_t pa = knx.individualAddress();
+        formatCouplerRole(pa, buf, sizeof(buf));
+        logInfoP("Role       %s", buf);
+        logInfoP("PA         %u.%u.%u", (unsigned)(pa >> 12), (unsigned)((pa >> 8) & 0x0F), (unsigned)(pa & 0xFF));
+
+        uint8_t *pv = nullptr;
+        uint32_t plen = 0;
+        uint8_t cnt = 1;
+        knx.bau().propertyValueRead(OT_IP_PARAMETER, 0, PID_ROUTING_MULTICAST_ADDRESS, cnt, 1, &pv, plen);
+        char mcs[16] = "-";
+        if (pv != nullptr && plen >= 4)
+            snprintf(mcs, sizeof(mcs), "%u.%u.%u.%u", pv[0], pv[1], pv[2], pv[3]);
+        delete[] pv;
+
+        pv = nullptr;
+        plen = 0;
+        cnt = 1;
+        knx.bau().propertyValueRead(OT_IP_PARAMETER, 0, PID_TTL, cnt, 1, &pv, plen);
+        const uint8_t ttl = (pv != nullptr && plen >= 1) ? pv[0] : 0;
+        delete[] pv;
+        logInfoP("Multicast  %-15s TTL %u", mcs, ttl);
+
+#ifdef KNX_TUNNELING
+        IpTunnelServer &ts = knx.bau().getIpTunnelServer();
+        logInfoP("Tunnels    %u / %u active", ts.tunnelCount(), ts.tunnelMax());
+#endif
+
+        // Ours: what the routing decision did. Filtered telegrams are dropped by design, not lost.
+        KnxIpCounters &c = knx.bau().getCounters();
+        logInfoP("Routed     ->IP %lu   ->TP %lu", (unsigned long)c.routedToIp(), (unsigned long)c.routedToKnx());
+        logInfoP("Filtered   ->IP %lu   ->TP %lu", (unsigned long)c.filteredToIp(), (unsigned long)c.filteredToKnx());
+        // 03_08_03: ->IP counts EVERY KNXnet/IP datagram, tunnelling and ACKs included.
+        logInfoP("Telegrams  ->IP %lu   ->TP %lu   (PID 74/75)",
+                 (unsigned long)c.transmitToIp(), (unsigned long)c.transmitToKnx());
+        logInfoP("Lost       ->IP %u    ->TP %u    (PID 72/73, queue overflow)",
+                 c.overflowToIp(), c.overflowToKnx());
+
+        // Shared 1 Hz sampler; 100% = the line is full (03_02_02 line time, not a byte rate).
+        const uint16_t now10 = openknx.busLoad.currentPermille();
+        const uint16_t avg10 = openknx.busLoad.averagePermille();
+        const uint16_t pk10 = openknx.busLoad.peakPermille();
+        logInfoP("Bus load   %u.%u%% now   %u.%u%% avg/%us   %u.%u%% peak   (%u B/s)",
+                 now10 / 10, now10 % 10, avg10 / 10, avg10 % 10,
+                 (unsigned)openknx.busLoad.historyCount(), pk10 / 10, pk10 % 10,
+                 (unsigned)openknx.busLoad.currentBytesPerSec());
+        return true;
     }
 
 #ifdef KNX_TUNNELING
@@ -220,6 +296,8 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
 
 void IPRouterModule::showHelp()
 {
+    openknx.console.printHelpLine("ipro reset", "Clear the bus load history, average and peak");
+    openknx.console.printHelpLine("ipro", "Router status: coupler role/line, multicast, routing + KNXnet/IP counters, data load");
 #ifdef KNX_TUNNELING
     openknx.console.printHelpLine("tun", "Tunnel list (active + type) and last-32 connect/disconnect history");
 #endif

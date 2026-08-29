@@ -113,9 +113,9 @@ REG1 build:
 
 ## KNX conformance
 
-The implementation follows the KNX specification, and that is checked rather than assumed.
-`scripts/Test/Suites/` holds **95 test cases** in seven suites — Core, Device Management, Tunnelling,
-Routing, Remote Diagnosis, IP Medium and a device suite — and every case names the clause it verifies:
+The implementation follows the KNX specification, and that is checked rather than assumed. The
+conformance stage covers **117 cases against TSSH §3–§8**, split into suites for Core, Device Management,
+Tunnelling, Routing, Remote Diagnosis, IP Medium and TP devices. Every case names the clause it verifies:
 
 | Clause | What it covers here |
 |---|---|
@@ -131,6 +131,19 @@ Routing, Remote Diagnosis, IP Medium and a device suite — and every case names
 Two deliberate exceptions, both marked as such where they appear: the FTC **fast** and **forget** upload
 modes trade protocol silence for speed and step outside the specification. They are experimental, off by
 default, and work only between OpenKNX devices.
+
+The last full run against hardware, 2026-08-24:
+
+| Stage | PASS | FAIL | SKIP | N-A |
+|---|---:|---:|---:|---:|
+| Conformance | 66 | **0** | 9 | 42 |
+| Features | 10 | **0** | 1 | 0 |
+| Busmonitor | 13 | **0** | 1 | 0 |
+| Devices | 38 | **0** | 2 | 0 |
+| Hardening | 31 | **0** | 13 | 7 |
+
+SKIP means the setup for that case was not present, N-A that the clause does not apply to this product —
+neither is a silent pass. The reports are kept as markdown and JSON under `scripts/Test/Reports/`.
 
 **Open source, and what that means here.** The behaviour was evaluated against the specification with the
 scripted suites above, driving a real device, each case naming the clause it verifies. Where a measurement
@@ -198,10 +211,44 @@ from — a plain `pio run` does not refresh it.
 | Version | **Dev `7.8.0`** · **Release `0.7`** |
 | Group objects | none — the product is a coupler |
 
+## Test suite
+
+`scripts/Test/` holds a suite-based test framework that drives a **real device** — no mocks. One entry
+point, `Run-Tests.ps1`, runs stages against the device under test and writes a markdown and a JSON report
+per run.
+
+| Stage | Scope | Duration |
+|---|---|---|
+| **Self-test** | 54 offline vectors — runs before any verdict, so a broken harness cannot fail the device | 1 s |
+| **Conformance** | TSSH §3–§8, 117 cases | ~4 min |
+| **Features** | product behaviour with no specification template | ~30 s |
+| **Busmonitor** | 14 edge cases including hostile input | ~4 min |
+| **Devices** | TP devices against Volume 3, 20 cases per device | ~1 min/device |
+| **Hardening** | file transfer and console, adversarial — needs the device console | ~5 min |
+| **Stress** | load, leaks, misbehaving clients | ~8 min |
+| **Legacy** | the older standalone scripts | ~3 min |
+
+```powershell
+pwsh scripts/Test/Run-Tests.ps1 -What All -Ip 11.11.0.126 -BdutPa 5.0.10
+pwsh scripts/Test/Run-Tests.ps1 -What Conformance -Ip 11.11.0.126
+pwsh scripts/Test/Run-Tests.ps1 -What Devices -DeviceTargets 5.0.3,5.0.11
+```
+
+> **The addresses in this document are examples.** Every `11.11.0.x` shown here comes from the author's own
+> test installation — an isolated VLAN with no route to the internet and no bearing on any production
+> network. Note that `11.0.0.0/8` is publicly allocated space, not an RFC 1918 range: that is a deliberate
+> and known choice for this lab, not a recommendation. Use your own addressing.
+
+A case reports **PASS**, **FAIL**, **SKIP** (the setup for it was not present) or **N-A** (the clause does
+not apply to this product). Skips and non-applicable cases are counted and named, never folded into a pass.
+
+The suite documentation — test setup, what each stage covers, how the busmonitor cases work and why a case
+skips — is in [`scripts/Test/README.md`](scripts/Test/README.md).
+
 ## Documentation
 
 - [`CHANGELOG.md`](CHANGELOG.md) — release history back to the first published generation.
-- `scripts/Test/` — the suite-based test framework driven by `Run-Tests`.
+- [`scripts/Test/README.md`](scripts/Test/README.md) — the test suite: setup, stages, and why a case skips.
 
 ## Status
 

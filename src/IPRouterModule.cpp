@@ -297,7 +297,7 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
 void IPRouterModule::showHelp()
 {
     openknx.console.printHelpLine("ipro reset", "Clear the bus load history, average and peak");
-    openknx.console.printHelpLine("ipro", "Router status: coupler role/line, multicast, routing + KNXnet/IP counters, data load");
+    openknx.console.printHelpLine("ipro", "Router status: coupler role/line, multicast, routing + KNXnet/IP counters, bus load");
 #ifdef KNX_TUNNELING
     openknx.console.printHelpLine("tun", "Tunnel list (active + type) and last-32 connect/disconnect history");
 #endif

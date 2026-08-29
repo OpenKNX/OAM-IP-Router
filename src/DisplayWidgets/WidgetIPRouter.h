@@ -2,7 +2,6 @@
 
 #pragma once
 #include "Widget.h"
-#include <vector>
 
 class WidgetIPRouter : public Widget
 {
@@ -37,18 +36,17 @@ class WidgetIPRouter : public Widget
     uint32_t _displayTime;
     WidgetFlags _action;
     i2cDisplay *_display;
+
+    static constexpr uint32_t REDRAW_INTERVAL_MS = 500;
+    uint32_t _lastDraw = 0;
     std::string _name = "IP-Router";
     uint32_t _duration_timerStart = 0;
 
-    std::vector<uint16_t> rxTrafficHistory;
-    std::vector<uint16_t> txTrafficHistory;
+
     uint16_t lastRxBytes = 0;
     uint16_t lastTxBytes = 0;
 
     void drawIPInfo();
-    void drawTrafficGraph();
-    uint16_t getRxBytes();
-    uint16_t getTxBytes();
 };
 
 #endif // DEVICE_DISPLAY_MODULE

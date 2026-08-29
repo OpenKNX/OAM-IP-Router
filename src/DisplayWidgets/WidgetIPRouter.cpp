@@ -8,8 +8,6 @@
 WidgetIPRouter::WidgetIPRouter(uint32_t displayTime, WidgetFlags action)
     : _displayTime(displayTime), _action(action), _state(WidgetState::STOPPED), _display(nullptr)
 {
-    rxTrafficHistory.resize(20, 0);
-    txTrafficHistory.resize(20, 0);
 }
 
 void WidgetIPRouter::setup()
@@ -66,8 +64,14 @@ void WidgetIPRouter::loop()
     if (_state != WidgetState::RUNNING || !_display)
         return;
 
+    // Rebuild at most every REDRAW_INTERVAL_MS: a full frame plus displayBuff() on every loop pass
+    // is wasted work, and the interface widget has had this throttle all along.
+    const uint32_t now = millis();
+    if (now - _lastDraw < REDRAW_INTERVAL_MS)
+        return;
+    _lastDraw = now;
+
     drawIPInfo();
-    // drawTrafficGraph();
 }
 
 uint32_t WidgetIPRouter::getDisplayTime() const
@@ -104,16 +108,11 @@ void WidgetIPRouter::drawIPInfo()
 
     String firmwareVersion = String(_name.c_str()) + " (v" + String(openknx.info.humanFirmwareVersion().c_str()) + ")";
     _display->display->setTextSize(1);
-    _display->display->setCursor((SCREEN_WIDTH - (firmwareVersion.length() * 6)) / 2, 0);
+    _display->display->setCursor(0, 0); // title left -- same as every other widget
     _display->display->print(firmwareVersion.c_str());
 
-    // Hide the rotation-progress dot while paused: WidgetsManager draws the shared
-    // pause glyph instead, and a running dot here would contradict that indication.
-    bool rotationPaused = false;
-    if (openknxDisplayModule.getWidgetManager())
-        rotationPaused = openknxDisplayModule.getWidgetManager()->isRotationPaused();
-
-    if (!rotationPaused && _displayTime > 0)
+    // Dwell marker on the divider -- drawn here, inside the rebuild, so it leaves no trail.
+    if (_displayTime > 0)
     {
         uint32_t elapsedMillis = millis() - _duration_timerStart;
         if (elapsedMillis >= _displayTime)
@@ -121,11 +120,10 @@ void WidgetIPRouter::drawIPInfo()
             _duration_timerStart = millis();
             elapsedMillis = 0;
         }
-        uint16_t circlePosition = (uint32_t)SCREEN_WIDTH * elapsedMillis / _displayTime;
+        const uint16_t circlePosition = (uint32_t)SCREEN_WIDTH * elapsedMillis / _displayTime;
         _display->display->fillCircle(circlePosition, 10, 2, WHITE);
         _display->display->drawCircle(circlePosition, 10, 2, BLACK);
     }
-
     _display->display->drawLine(0, 10, SCREEN_WIDTH, 10, WHITE);
 
     if (openknxNetwork.established())
@@ -146,65 +144,17 @@ void WidgetIPRouter::drawIPInfo()
     else
     {
         _display->display->drawBitmap(CENTER_X - 4, 20, x_icon, 8, 8, WHITE);
-        _display->display->setCursor(CENTER_X - 30, 36);
+        // 12 and 15 glyphs at 6 px -> half widths are 36 and 45, not 30 and 42
+        _display->display->setCursor(CENTER_X - 36, 36);
         _display->display->print("DISCONNECTED");
-        _display->display->setCursor(CENTER_X - 42, 50);
+        _display->display->setCursor(CENTER_X - 45, 50);
         _display->display->print("Check LAN Cable");
     }
 
     _display->displayBuff();
 }
 
-void WidgetIPRouter::drawTrafficGraph()
-{
-    if (!_display)
-        return;
 
-    rxTrafficHistory.erase(rxTrafficHistory.begin());
-    txTrafficHistory.erase(txTrafficHistory.begin());
 
-    uint16_t rxBytes = getRxBytes();
-    uint16_t txBytes = getTxBytes();
-
-    rxTrafficHistory.push_back(rxBytes);
-    txTrafficHistory.push_back(txBytes);
-
-    const int graphX = 0;
-    const int graphY = 40;
-    const int graphWidth = 128;
-    const int graphHeight = 20;
-    const int barWidth = graphWidth / rxTrafficHistory.size();
-
-    _display->display->drawRect(graphX, graphY, graphWidth, graphHeight, WHITE);
-
-    for (size_t i = 0; i < rxTrafficHistory.size(); i++)
-    {
-        int rxHeight = map(rxTrafficHistory[i], 0, 5000, 0, graphHeight);
-        int txHeight = map(txTrafficHistory[i], 0, 5000, 0, graphHeight);
-
-        _display->display->drawLine(graphX + i * barWidth, graphY + graphHeight - rxHeight,
-                                    graphX + i * barWidth, graphY + graphHeight, WHITE);
-        _display->display->drawLine(graphX + i * barWidth + 1, graphY + graphHeight - txHeight,
-                                    graphX + i * barWidth + 1, graphY + graphHeight, WHITE);
-    }
-
-    _display->displayBuff();
-}
-
-uint16_t WidgetIPRouter::getRxBytes()
-{
-    uint16_t bytes = random(1000, 5000);
-    uint16_t delta = (bytes > lastRxBytes) ? bytes - lastRxBytes : 0;
-    lastRxBytes = bytes;
-    return delta;
-}
-
-uint16_t WidgetIPRouter::getTxBytes()
-{
-    uint16_t bytes = random(1000, 5000);
-    uint16_t delta = (bytes > lastTxBytes) ? bytes - lastTxBytes : 0;
-    lastTxBytes = bytes;
-    return delta;
-}
 
 #endif // DEVICE_DISPLAY_MODULE

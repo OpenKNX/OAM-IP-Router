@@ -8,6 +8,10 @@ covering everything since `6c1a294` (v7.6.0). All six release environments build
 with OpenKNXproducer 4.3.12.
 
 ### ETS product
+* Fix: the product has its own hardware identity now -- both products declared `SerialNumber="1"`, so ETS derived the same Hardware Id and merged them into one hardware
+* Fix: `SerialNumber` follows the convention NeoPixel already uses, OpenKnxId plus variant: `0xA101` dev, `0xA100` release
+* Fix: the order number is `IP-Router` -- the device carries it in `PID_ORDER_INFO` as `PDT_GENERIC_10`, ten bytes, where `OpenKnxIPRouter` arrived truncated as `OpenKnxIPR`
+* Change: the release application name loses the `-Beta`, which duplicated the program version beside it
 * Feature: FTC access protection reaches ETS — `FileTransfer.share.xml` is pulled as ModuleType 13 and folds into "Erweitert". The share carries no ComObjects, so the router stays KO-free
 * Feature: HTTP service and LAN mode enabled; Info1 is driven as "(KNX-IP)" with function 11
 * Change: the BASE channel is rebuilt in `TemplateRouter.xml` so the FTM block sits inside "Erweitert" instead of beside it, mirroring the interface template

@@ -21,6 +21,12 @@
   <op:nowarn id="1" regex="%BASE_" />
   <op:nowarn id="3" regex="BASE_getUnsupportedEtsModules" />
 
+  <!-- OrderNumber: the XSD allows 50 characters, but the DEVICE carries it in PID_ORDER_INFO, which is
+       PDT_GENERIC_10, so exactly 10 bytes. Anything longer is silently truncated there, and `ftc info`
+       then shows something else than ETS: "OpenKnxIPRouter" arrives as "OpenKnxIPR",
+       "OpenKnxRaumController" as "OpenKnxRau". Keep it at 10 or fewer and spend those characters on the
+       product name; manufacturer and OpenKnxId are already carried by PID_MANUFACTURER_ID and
+       PID_HARDWARE_TYPE. -->
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="30" 
           ApplicationVersion="7.8.0"
@@ -29,8 +35,8 @@
           ProductName="IP-Router" 
           BuildSuffixText=" (Dev)"
           BuildSuffix="-Dev"
-          SerialNumber="1"
-          OrderNumber="OpenKnxIPRouter"
+          SerialNumber="0xA101"
+          OrderNumber="IP-Router"
           ApplicationName="IP-Router"
           IsRailMounted="true"
           BusCurrent="30"

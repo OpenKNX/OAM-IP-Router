@@ -21,7 +21,7 @@
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 295
 #define MAIN_MaxKoNumber 0
-#define MAIN_OrderNumber "OpenKnxIPRouter"
+#define MAIN_OrderNumber "IP-Router"
 #define BASE_ModuleVersion 25
 #define NET_ModuleVersion 8
 // Parameter with single occurrence

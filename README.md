@@ -50,7 +50,6 @@ Ethernet. Shares the common OpenKNX libraries (`knx`, `TPUart`, `OGM-*`, `OFM-*`
 - **Bus load** — TP1 line occupancy per second, reconstructed from the 03_02_02 frame timings (character,
   ACK window, bus-free time), so a saturated line reads 100 % whatever the telegram length. Kept with a
   one-minute average and a peak.
-- **Download counter** — `PID_DOWNLOAD_COUNTER` on the device object.
 - **`ipro` console command** — coupler role and coupled line, routing multicast and TTL, open tunnels, the
   routing counters per direction, the KNXnet/IP telegram counters and bus load. `ipro reset` clears the
   bus-load history before a measurement.
@@ -124,7 +123,7 @@ Tunnelling, Routing, Remote Diagnosis, IP Medium and TP devices. Every case name
 | **03_08_04 §2.6.1**, **03_08_03** | tunnelling and device-configuration retransmit timing (1 s / 1 repeat for data, 10 s / 3 for configuration) |
 | **03_08_03 §2.5.23-2.5.26** | the KNXnet/IP telegram counters, saturating instead of wrapping as the standard demands |
 | **03_03_04** Transport Layer | connection timeout, invalid PDUs, the event and action state machine |
-| **03_05_01** Resources | the device-object properties ETS reads, including the download counter |
+| **03_05_01** Resources | the device-object properties ETS reads |
 | **03_02_02** Communication Medium TP1 | the character, ACK and bus-free timings the bus-load figure is built on |
 | **AN189** | a hop count of 7 no longer bypasses the filter table |
 

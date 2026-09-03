@@ -1,6 +1,19 @@
 # Changes
 
 
+## unreleased
+
+### Product
+* Change: the `DLC-1` test case and the `DOWNLOAD_COUNTER` property id are out of the test suite, and the README no longer lists the counter -- the knx stack does not expose PID 30 any more. This product kept the counter in RAM and never persisted it, so nothing changes at runtime
+
+**Inherited from the libraries** (arrives with the module update, no product change)
+* tpuart: a parity error on the host UART no longer counts as a receive overflow -- the NCN encodes a bus-side bit error in that parity bit, so a single disturbed telegram marked the receiver desynchronised and the device stopped transmitting for 20 s
+* knx: the ETS writability probe on `PID_DEVICE_ADDR` and `PID_SUBNET_ADDR` is answered instead of refused with `Read_Only`, which ETS reported as a failed write to the memory area
+* knx: the management path is bounded against the cEMI frame buffer, the association-table lookup terminates when the first group object is unassigned, and negative values encode on the signed datapoint types
+* knx: `PID_DOWNLOAD_COUNTER` is removed from the device object
+* OGM-Common: the download counter is gone from the device information, and the console refuses the flash, memory and bcu commands over the diagnose group object
+
+
 ## ec/ALPHA-DEV-v7.8.0: 2026-08-29
 
 ETS product **7.8** (`IP-Router-Dev-v7.8.knxprod`), release variant **0.7**. Alpha dev build for testers,

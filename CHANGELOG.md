@@ -1,24 +1,17 @@
 # Changes
 
 
-## unreleased
-
-### Product
-* Change: the `DLC-1` test case and the `DOWNLOAD_COUNTER` property id are out of the test suite, and the README no longer lists the counter -- the knx stack does not expose PID 30 any more. This product kept the counter in RAM and never persisted it, so nothing changes at runtime
-
-**Inherited from the libraries** (arrives with the module update, no product change)
-* tpuart: a parity error on the host UART no longer counts as a receive overflow -- the NCN encodes a bus-side bit error in that parity bit, so a single disturbed telegram marked the receiver desynchronised and the device stopped transmitting for 20 s
-* knx: the ETS writability probe on `PID_DEVICE_ADDR` and `PID_SUBNET_ADDR` is answered instead of refused with `Read_Only`, which ETS reported as a failed write to the memory area
-* knx: the management path is bounded against the cEMI frame buffer, the association-table lookup terminates when the first group object is unassigned, and negative values encode on the signed datapoint types
-* knx: `PID_DOWNLOAD_COUNTER` is removed from the device object
-* OGM-Common: the download counter is gone from the device information, and the console refuses the flash, memory and bcu commands over the diagnose group object
-
-
-## ec/ALPHA-DEV-v7.8.0: 2026-08-29
+## ec/ALPHA-DEV-v7.8.0: 2026-09-05
 
 ETS product **7.8** (`IP-Router-Dev-v7.8.knxprod`), release variant **0.7**. Alpha dev build for testers,
 covering everything since `6c1a294` (v7.6.0). All six release environments build; both knxprods generate
 with OpenKNXproducer 4.3.12.
+
+### Product
+* Feature: the tunnel page becomes `/ipro`, a device and routing view -- role, multicast, routed/filtered/lost counters and bus load, the tunnel list with its connect and disconnect history, the routing decisions (last 32 with hop count, the most frequent group addresses, the filter table as ranges), and bus and NCN diagnostics in a collapsed section. The status bar carries a refresh control (2/5/10/30 s or off) and an arrow that reloads once; bus, routing and history are fetched only while their section or tab is open
+* Feature: the tunnel list names the assignment when tunnels are reserved in ETS -- on its reserved slot, on a fallback because that slot was busy, or handed out freely -- and a tab lists every slot with its reservation and state. A slot reserved without an IP address can be reached by no client and is also out of the free pool, which the list states per slot
+* Change: the filter table is read in slices. Scanning the 8 kB bitfield took ~22 ms inside the HTTP handler, a quarter of the loop-time warning, every two seconds while its tab was open; it is scanned under `freeLoopTime()` and kept as a finished fragment, so a request costs the transfer and nothing else. Measured on the RP2040, the routing document with the filter table drops from 58 ms to 39 ms
+* Change: the `DLC-1` test case and the `DOWNLOAD_COUNTER` property id are out of the test suite, and the README no longer lists the counter -- the knx stack does not expose PID 30 any more. This product kept the counter in RAM and never persisted it, so nothing changes at runtime
 
 ### ETS product
 * Fix: the product has its own hardware identity now -- both products declared `SerialNumber="1"`, so ETS derived the same Hardware Id and merged them into one hardware
@@ -62,6 +55,12 @@ with OpenKNXproducer 4.3.12.
 
 
 **Inherited from the libraries** (arrives with the module update, no product change)
+* knx: a tunnel connect that is turned away is recorded -- three of the four reject paths wrote a history entry, the one for "no slot free" and for a reserved slot configured to decline left no trace at all
+* tpuart: a parity error on the host UART no longer counts as a receive overflow -- the NCN encodes a bus-side bit error in that parity bit, so a single disturbed telegram marked the receiver desynchronised and the device stopped transmitting for 20 s
+* knx: the ETS writability probe on `PID_DEVICE_ADDR` and `PID_SUBNET_ADDR` is answered instead of refused with `Read_Only`, which ETS reported as a failed write to the memory area
+* knx: the management path is bounded against the cEMI frame buffer, the association-table lookup terminates when the first group object is unassigned, and negative values encode on the signed datapoint types
+* knx: `PID_DOWNLOAD_COUNTER` is removed from the device object
+* OGM-Common: the download counter is gone from the device information, and the console refuses the flash, memory and bcu commands over the diagnose group object
 * knx: the four KNXnet/IP telegram counters of 03_08_03 (PID 72-75) exist for the first time and are answered by this product as a routing device -- they were enum values no code ever used, so ETS could not read them at all
 * knx: the coupler counts its routing decision per direction, which is where the `ipro` routed and filtered figures come from
 * knx: `PID_DOWNLOAD_COUNTER` on the device object
@@ -88,7 +87,7 @@ with OpenKNXproducer 4.3.12.
 The commits below are pinned in `dependencies.txt`. Each library carries its own CHANGELOG with the full
 list; this is what matters for this product.
 
-**knx** `b8b6931` -> `e75b123` (tag `ec/v2.5.0-beta.1`)
+**knx** `b8b6931` -> `0776420` (tag `ec/v2.5.0-beta.1`)
 * Memory-safety pass over the paths the router runs on: `CemiFrame::valid()` out-of-bounds read, truncated `M_PropRead`/`M_PropWrite` frames, the `TpUart sendFrame` malloc guard, the LC-config property pointer in `isAckRequired`, and two memory leaks (TPUart frames on discarded TP frames, cEMI `M_PropRead` on a negative response)
 * Tunnel-slot exhaustion fixed: all expired slots are reaped, not just the first occupied one, and the dangling `addresses` pointer in `HandleConnectRequest` is gone
 * Inbound routing cEMI is validated before it is forwarded to TP, and a frame dropped by the routing send limit produces a negative `L_Data.con`
@@ -99,39 +98,47 @@ list; this is what matters for this product.
 * **Breaking:** `OPENKNX_FTC` is now `OPENKNX_FTC_CLIENT`
 
 * Fix: the counter header is included outside the architecture guards -- an ESP32 target without `KNX_TUNNELING` did not compile; this product was never affected, its builds carry tunnelling
+* Since `e75b123`: the coupler records its routing decisions and counts telegrams dropped for hop count 0; the filter table is exposed for diagnostics; the bus monitor is refused on a routing device; a tunnel reports which slot it holds and which one is reserved for it, and a connect that is turned away is recorded
 
-**OFM-FileTransferModule** `178f186` -> `a3b2153` (tag `ec/v0.2.0-beta.1`)
+**OFM-FileTransferModule** `178f186` -> `a72f160` (tag `ec/v0.2.0-beta.1`)
 * The whole FTC feature set arrives in this product: file transfer, firmware update, console tunnel and access control over cEMI/KNX, with one shared client core driving both the on-device `ftc` command and the desktop `ftc-cli`
 * Access control with password login, gated from ETS; reads stay open except in the blocked stage
 * Firmware update as a difference to the running image (`.okd`) — about 2 min instead of 78 min for a 1.8 MB image
 * `fast` and `safe` transfer modes, SD and external-flash backends, non-blocking CRC, knxOTA
 * The German documents are replaced by an English set
+* Since `9e1c03d`: knxOTA names the devices a scan finds and merges start and cancel into one button; the installer copies the binary with a plain read/write loop; the ETS download counter is out of the device profile
 
-**TPUart** (new pin, tag `ec/1.2.0-beta.1` at `80210c8`)
+**TPUart** (new pin, tag `ec/1.3.0-beta.1` at `42a59c6`)
 * Proven behaviours are the default now: BCU auto-reconnect, sticky TX data offset, fast TX and RX drain on ESP32, BCU health counters and the lost-CON backstop. This is why nine switches could be dropped from the ini
 * Three signed-char bugs that only hit ESP32: a `0xFF` UART byte was dropped, any octet `>= 0x80` corrupted CRC and addresses, and the receiver control-byte comparisons were dead code
 * Medium-access priority honoured on TP egress, so an ETS system-priority frame does not queue behind a low-priority backlog
 * A control byte is never interpreted while the receiver is desynced; a `0x2703` CRC low byte was once taken for a chip reset and dropped the whole transmit queue
 * The line time every received frame occupied is counted in bit times per 03_02_02, including the ACK only when one was actually on the line -- this is what the bus load figure is built on
 * `busOperational()` for the tunnel heartbeat — the host-to-chip link stays up on an externally powered NCN when the bus voltage drops
+* Since `80210c8` (`ec/1.2.0-beta.1` -> `ec/1.3.0-beta.1`): the volatile counters are no longer incremented with `++`/`--`; the NCN chip identity is read in a receiver-off window; a switch for the chip's own acknowledge; a blocked acknowledge is parked instead of losing its window; a dropped frame is reported only when one was in flight; the probed baud rate is verified before it is accepted; the UART byte status is split into framing, parity, break and overrun
 
-**OFM-Network** `876598e` -> `1f95c5d`
+**OFM-Network** `876598e` -> `547d544`
 * Webserver, web console, file manager (internal / SD / external flash), group monitor, MQTT client and broker, HTTP(S) client, ping
 * KNX-IP status LED, IP capabilities reported per 03_08_03, multicast rebind on IP change, the RP2040 W5500 robustness layer restored
 * Link mode from ETS instead of from flash, whole-interface packet counters, TLS chain validated against a root certificate, file download from a URL straight onto the device
 * OTA stays open while the device is unconfigured — an unconfigured device used to evaluate erased parameter memory and could lock itself out of OTA
+* Since `1f95c5d`: `net phy` reads the W5500 over SPI (register read at a chosen clock, timed RSTn pulse, 1 Hz square wave); the self-heal no longer spends 62 ms of `delay()` in one loop pass every 5 s while the chip is down, which starved the TPUart receive path; mDNS announces product, KNX order number and board
 
-**OGM-Common** `c703d7b` -> `420d94c`
+**OGM-Common** `c703d7b` -> `9c08f0b`
 * Build-time flash and knxOTA reporting, unified reports that also work on Windows, `Prepare-Firmware.ps1` with a real file browser, module release hooks by convention
 * Web assets are generated from `web/assets/` into `webassets.h` at build time, so modules no longer hand-minify into C++ string literals
 * PSRAM helpers, `pausePeriodicSave()`, uptime rollover and unreadable bus counters fixed
 * **Breaking:** the trace filter was reworked — `OPENKNX_TRACE1..5` are replaced by a single `OPENKNX_TRACE`, and the regex dependency (about 80 kB flash when tracing was on) is gone
+* Since `420d94c`: the OTA upload names the product and refuses a mismatched target; identity and provenance are written next to the firmware; `InternalTime` moves out of the aliased parameter bit; `bcu stat` gives the NCN chip its own row and shows it only when a register answered; the busmonitor console command is refused on a routing device; device commands stay off the diagnose object
 
 **OFM-DeviceDisplay** `0838614` -> `f90faca`
 * The widget manager owns the top-right corner: a blinking busmon badge and the rotation state, so both are visible whatever widget is on screen
 * Clock, console header and system-info widget show local time instead of UTC
 
-**OFM-SDCard**, **OGM-HardwareConfig** — pinned unchanged, see `dependencies.txt`.
+**OGM-HardwareConfig** `51dc43e` -> `0f59ba5`
+* Datasheets for the REG board components
+
+**OFM-SDCard** — pinned unchanged, see `dependencies.txt`.
 
 **OFM-UsbExchange** — removed from this product.
 

@@ -1,9 +1,9 @@
 # Changes
 
 
-## ec/ALPHA-DEV-v7.8.0: 2026-09-05
+## ec/ALPHA-DEV-v8.0.0: 2026-09-05
 
-ETS product **7.8** (`IP-Router-Dev-v7.8.knxprod`), release variant **0.7**. Alpha dev build for testers,
+ETS product **8.0** (`IP-Router-Dev-v8.0.knxprod`), release variant **0.8**. Alpha dev build for testers,
 covering everything since `6c1a294` (v7.6.0). All six release environments build; both knxprods generate
 with OpenKNXproducer 4.3.12.
 
@@ -22,7 +22,7 @@ with OpenKNXproducer 4.3.12.
 * Feature: HTTP service and LAN mode enabled; Info1 is driven as "(KNX-IP)" with function 11
 * Change: the BASE channel is rebuilt in `TemplateRouter.xml` so the FTM block sits inside "Erweitert" instead of beside it, mirroring the interface template
 * Change: `Common.Router.share.xml` is taken from `lib/OGM-Common` instead of `lib/OFM-Network` — this requires an OGM-Common that carries the file
-* Change: product 7.6.0 -> 7.6.1 -> 7.6.2 -> 7.8.0; `op:verify` floors raised to OGM-Common 1.9 and OFM-Network 0.8
+* Change: product 7.6.0 -> 7.6.1 -> 7.6.2 -> 8.0.0; `op:verify` floors raised to OGM-Common 1.9 and OFM-Network 0.8
 
 ### Device
 * Feature: the FileTransferClient module is registered as object 11 — PA to PA firmware push over the bus, with SD and external-flash storage backends

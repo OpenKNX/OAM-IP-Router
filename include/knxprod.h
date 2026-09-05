@@ -16,7 +16,7 @@
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 120
+#define MAIN_ApplicationVersion 128
 #define MAIN_FirmwareRevision 0
 #define MAIN_ApplicationEncoding iso-8859-15
 #define MAIN_ParameterSize 295
@@ -36,6 +36,9 @@
 #define BASE_Watchdog                             5      // 1 Bit, Bit 6
 #define     BASE_WatchdogMask 0x40
 #define     BASE_WatchdogShift 6
+#define BASE_InternalTime                         5      // 1 Bit, Bit 7
+#define     BASE_InternalTimeMask 0x80
+#define     BASE_InternalTimeShift 7
 #define BASE_Info1LedFunc                         6      // 16 Bits, Bit 15-0
 #define BASE_Info2LedFunc                         8      // 16 Bits, Bit 15-0
 #define BASE_Info3LedFunc                        10      // 16 Bits, Bit 15-0
@@ -51,9 +54,6 @@
 #define BASE_SummertimeAll                       13      // 2 Bits, Bit 1-0
 #define     BASE_SummertimeAllMask 0x03
 #define     BASE_SummertimeAllShift 0
-#define BASE_InternalTime                        13      // 1 Bit, Bit 0
-#define     BASE_InternalTimeMask 0x01
-#define     BASE_InternalTimeShift 0
 #define BASE_TimezoneCustom                      14      // char*, 63 Byte
 #define     BASE_TimezoneCustomLength 63
 
@@ -65,6 +65,8 @@
 #define ParamBASE_StartupDelayTimeMS                  (paramDelay(knx.paramWord(BASE_StartupDelayTime)))
 // Watchdog aktivieren
 #define ParamBASE_Watchdog                            ((bool)(knx.paramByte(BASE_Watchdog) & BASE_WatchdogMask))
+// InternalTime
+#define ParamBASE_InternalTime                        ((bool)(knx.paramByte(BASE_InternalTime) & BASE_InternalTimeMask))
 // Info1 (KNX-IP)
 #define ParamBASE_Info1LedFunc                        (knx.paramWord(BASE_Info1LedFunc))
 // Info2 (IP)
@@ -79,8 +81,6 @@
 #define ParamBASE_CombinedTimeDate                    ((bool)(knx.paramByte(BASE_CombinedTimeDate) & BASE_CombinedTimeDateMask))
 // Sommerzeit ermitteln durch
 #define ParamBASE_SummertimeAll                       (knx.paramByte(BASE_SummertimeAll) & BASE_SummertimeAllMask)
-// InternalTime
-#define ParamBASE_InternalTime                        ((bool)(knx.paramByte(BASE_InternalTime) & BASE_InternalTimeMask))
 // POSIX TZ-String
 #define ParamBASE_TimezoneCustom                      (knx.paramData(BASE_TimezoneCustom))
 #define ParamBASE_TimezoneCustomStr                   (knx.paramString(BASE_TimezoneCustom, BASE_TimezoneCustomLength))

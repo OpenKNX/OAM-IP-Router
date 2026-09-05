@@ -207,7 +207,7 @@ from — a plain `pio run` does not refresh it.
 | Mask version | `MV-091A` |
 | OpenKnxId | `0xA1` |
 | ApplicationNumber | `30` (Dev) · `31` (Release) |
-| Version | **Dev `7.8.0`** · **Release `0.7`** |
+| Version | **Dev `8.0.0`** · **Release `0.8`** |
 | Group objects | none — the product is a coupler |
 
 ## Test suite

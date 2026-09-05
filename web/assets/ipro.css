@@ -1,0 +1,87 @@
+/* Global stylesheet - only this page's own elements. Tables, headings, .gray and .meta come from base.css,
+   the tab strip from tunnels.css. Dense console-like rows, no tile grid. */
+
+/* Tab strip (was tunnels.css, which this page replaced). */
+.tn-tabs { display: flex; gap: 4px; margin: 1.2em 0 14px; border-bottom: 1px solid #d0d0d0 }
+.tn-tab { padding: 7px 16px; color: #555; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 4px 4px 0 0; margin-bottom: -1px }
+.tn-tab:hover { background: #f0f0f0 }
+.tn-tab.active { color: #222; background: #fff; border-color: #d0d0d0; border-bottom: 1px solid #fff; font-weight: 600 }
+
+
+/* A pane switched off with [hidden] must stay off: .ii-grid's display would otherwise win over the
+   browser's [hidden] rule and the panel stays visible in every tab. Scoped to this page's own panes -
+   the stylesheet is registered globally and must not override [hidden] anywhere else. */
+.ii-grid[hidden], .ii-tblwrap[hidden], .ii-sec[hidden], #ii-rp-filt[hidden] { display: none !important }
+
+/* Status line: one row, wraps only on a phone. */
+.ii-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; padding: 8px 12px; border: 1px solid #e2e2e2; border-left: 3px solid #449841; background: #fafafa; font-size: .85em; margin-bottom: .5em }
+.ii-bar.warn { border-left-color: #e0a800 }
+.ii-bar.bad { border-left-color: #c0392b }
+.ii-b { display: flex; align-items: baseline; gap: 5px; white-space: nowrap }
+.ii-b span { color: #888; font-size: .85em }
+.ii-b b { font-weight: 600; font-variant-numeric: tabular-nums }
+
+/* Two-column list of dense rows; one row is 22 px high. */
+.ii-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px }
+.ii-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f2f2f2; font-size: .85em; line-height: 1.35 }
+.ii-row > i { font-style: normal; color: #888; flex: 0 0 10.5em }
+.ii-row > b { font-weight: 400; font-variant-numeric: tabular-nums }
+.ii-row.wide { grid-column: 1 / -1 }
+.ii-row .ii-sub { color: #888; font-size: .9em }
+.ii-ok { color: #449841 }
+.ii-warn { color: #b07800 }
+.ii-bad { color: #c0392b; font-weight: 600 }
+
+/* A value the firmware does not collect: never a zero that reads like a measurement. */
+.ii-na { color: #999; font-style: italic }
+.ii-na::before { content: "\2014\00a0" }
+
+/* A stale value must look stale, not just gray. */
+.ii-stale { background: repeating-linear-gradient(135deg, #fffaf0, #fffaf0 6px, #fff5e0 6px, #fff5e0 12px); border: 1px solid #e8cf9a; padding: 6px 10px }
+.ii-stale .ii-row > b { color: #8a6d3b }
+.ii-stalehead { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; color: #8a6d3b; font-size: .8em; font-weight: 600; margin-bottom: 4px }
+.ii-stalehead em { font-style: normal; font-weight: 400 }
+
+/* One-sentence explanation on an expert value; the row itself is the summary. */
+details.ii-rowd > summary { cursor: help; list-style: none }
+details.ii-rowd > summary::-webkit-details-marker { display: none }
+details.ii-rowd > summary em { font-style: normal; color: #449841; font-size: .8em; margin-left: auto; padding: 0 5px; border: 1px solid #cfe3ce; border-radius: 50% }
+details.ii-rowd > summary:hover em { color: #5ab857 }
+details.ii-rowd[open] > summary em { color: #888; border-color: #ddd }
+details.ii-rowd { border-bottom: 1px solid #f2f2f2 }
+details.ii-rowd > summary.ii-row { border-bottom: none }
+.ii-row-wide { grid-column: 1 / -1 } /* also used on a <p>, so no element qualifier */
+.ii-p { color: #555; font-size: .8em; line-height: 1.5; padding: 0 0 7px 11.5em }
+
+/* Collapsible section. */
+details.ii-sec { border-top: 1px solid #eee; margin-top: 1.2em }
+details.ii-sec > summary { cursor: pointer; padding: 8px 0; font-size: .95em; font-weight: 600; color: #449841; text-transform: uppercase; letter-spacing: .08em; list-style: none; display: flex; align-items: baseline; gap: 8px }
+details.ii-sec > summary::-webkit-details-marker { display: none }
+details.ii-sec > summary::before { content: "\25B8"; color: #888; font-size: .9em }
+details.ii-sec[open] > summary::before { content: "\25BE" }
+details.ii-sec > summary em { font-style: normal; font-weight: 400; text-transform: none; letter-spacing: 0; color: #888; font-size: .85em }
+.ii-sub-h { font-size: .75em; color: #888; text-transform: uppercase; letter-spacing: .08em; margin: 10px 0 2px; grid-column: 1 / -1 }
+
+/* Bus-load history inline in its row, not as a separate block. */
+.ii-spark { vertical-align: -2px; margin: 0 4px }
+.ii-spark polyline { fill: none; stroke: #449841; stroke-width: 1.2 }
+.ii-spark rect { fill: #f4f4f4 }
+.ii-btn { padding: 2px 8px; font-size: .95em; background: #eee; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; color: #333 }
+.ii-btn:hover { background: #e2e2e2 }
+
+/* A 19-row tunnel table is wider than the content column on a small window, too. */
+.ii-tblwrap { overflow-x: auto }
+
+@media (max-width: 760px) {
+    .ii-grid { grid-template-columns: 1fr }
+    .ii-row > i { flex: 0 0 8.5em }
+    .ii-p { padding-left: 0 }
+}
+
+/* Refresh control, right end of the status bar. The items span keeps the bar's flex layout unchanged. */
+#ii-bar-items { display: contents }
+#ii-poll { margin-left: auto; display: flex; align-items: center; gap: 6px }
+.ii-rf { width: 22px; height: 22px; padding: 0; font-size: 1.1em; line-height: 1; background: #eee; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; color: #555 }
+.ii-rf:hover { background: #e2e2e2; color: #449841 }
+.ii-rf:active { transform: rotate(90deg) }
+.ii-rfs { font-size: .95em; padding: 1px 2px; background: #fff; border: 1px solid #ccc; border-radius: 3px; color: #333; font-variant-numeric: tabular-nums }

@@ -83,7 +83,7 @@ extra tool. The menu is assembled by the modules that are compiled in:
 | **Dateimanager** `/filemanager` | browse, upload, download, delete and rename files on the device flash, create folders, and fetch a file straight from a URL onto the device |
 | **knxOTA** `/knxota` | push a firmware image to *another* device over the KNX bus, as a whole image or as a difference |
 | **Gerätekonsole** `/console` | the full device console in the browser over a WebSocket — the same commands as on the serial line |
-| **Tunnel** `/tunnels` | the open tunnel connections with type, client address and uptime, plus the recent connect and disconnect history with the reason |
+| **IP-Router** `/ipro` | role, multicast, tunnels, routed/filtered/lost counters and bus load; the tunnel list with its connect/disconnect history; the routing decisions (last 32 with hop count, the most frequent group addresses, the filter table); bus and NCN diagnostics in a collapsed section |
 | **Gruppenmonitor** `/groupmonitor` | live group telegrams, without ETS |
 | **Display** `/display` | a live image of the OLED, the joystick as buttons, and editors for the widgets and display settings |
 

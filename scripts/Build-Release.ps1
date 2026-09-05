@@ -141,15 +141,16 @@ if ($isClean) {
 # Standard targets = tested hardware
 $standardTargets = @(
     @{ Env = "release_REG1_LAN_TP_BASE";     Name = "firmware-IP-Router-REG1-LAN-TP-Base";     Ext = "esp32-ip"  }
-    @{ Env = "release_REG2_PICO2_ETH_DD";    Name = "firmware-IP-Router-REG2-Pico2-Eth-DD";    Ext = "rp2040-ip" }
-    @{ Env = "release_REG2_PICO_ESP_ETH_DD"; Name = "firmware-IP-Router-REG2-Pico-Esp-Eth-DD"; Ext = "esp32-ip"  }
+    @{ Env = "release_REG2_PICO_ETH_DD";     Name = "firmware-IP-Router-REG2-Pico-Eth-DD";     Ext = "rp2040-ip" }
 )
 
 # Full targets = additional / not yet tested
 $fullTargets = @(
     @{ Env = "release_REG1_ETH";             Name = "firmware-IP-Router-REG1-Eth";             Ext = "rp2040-ip" }
     @{ Env = "release_REG2_PICO_W_ETH_DD";   Name = "firmware-IP-Router-REG2-PicoW-Eth-DD";    Ext = "rp2040-ip" }
-    @{ Env = "release_REG2_PICO_ETH_DD";     Name = "firmware-IP-Router-REG2-Pico-Eth-DD";     Ext = "rp2040-ip" }
+    @{ Env = "release_REG2_PICO2_ETH_DD";    Name = "firmware-IP-Router-REG2-Pico2-Eth-DD";    Ext = "rp2040-ip" }
+    @{ Env = "release_REG2_PICO_ESP_ETH_DD"; Name = "firmware-IP-Router-REG2-Pico-Esp-Eth-DD"; Ext = "esp32-ip"  }
+    
 )
 
 $buildParam = if ($isDev) { "Dev" } else { "Release" }

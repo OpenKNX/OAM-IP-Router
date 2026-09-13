@@ -6,7 +6,10 @@
 .tn-tab { padding: 7px 16px; color: #555; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 4px 4px 0 0; margin-bottom: -1px }
 .tn-tab:hover { background: #f0f0f0 }
 .tn-tab.active { color: #222; background: #fff; border-color: #d0d0d0; border-bottom: 1px solid #fff; font-weight: 600 }
-
+/* The severe-banner style. Named after its first use; it also carries "device not programmed" and
+   "no tunnel address", which is all it does on a router -- that product has no bus monitor and will not
+   get one. Both stylesheets are kept byte-identical, so the rule stays in both. */
+.tn-busmon { color: #c0392b; font-weight: 600 }
 
 /* A pane switched off with [hidden] must stay off: .ii-grid's display would otherwise win over the
    browser's [hidden] rule and the panel stays visible in every tab. Scoped to this page's own panes -
@@ -85,3 +88,38 @@ details.ii-sec > summary em { font-style: normal; font-weight: 400; text-transfo
 .ii-rf:hover { background: #e2e2e2; color: #449841 }
 .ii-rf:active { transform: rotate(90deg) }
 .ii-rfs { font-size: .95em; padding: 1px 2px; background: #fff; border: 1px solid #ccc; border-radius: 3px; color: #333; font-variant-numeric: tabular-nums }
+
+/* Expandable tunnel rows: the overview stays narrow, the counters live one row below. */
+.tn-c { width: 1px; padding-right: 0 !important; color: #999 }
+tr.tn-r { cursor: pointer }
+tr.tn-r:hover { background: #f6f6f6 }
+tr.tn-r:focus-visible { outline: 2px solid #449841; outline-offset: -2px }
+tr.tn-r.open { background: #f6f6f6 }
+.tn-cv { display: inline-block; transition: transform .12s }
+tr.tn-r.open .tn-cv { transform: rotate(90deg); color: #449841 }
+@media (prefers-reduced-motion: reduce) { .tn-cv { transition: none } }
+tr.tn-d > td { background: #f6f6f6; border-top: 0; padding: 0 12px 10px 30px }
+.tn-kv { display: flex; flex-wrap: wrap; gap: 6px 26px }
+.tn-kv dl { margin: 0 }
+.tn-kv dt { font-size: .72em; color: #888; text-transform: uppercase; letter-spacing: .06em }
+.tn-kv dd { margin: 0; font-variant-numeric: tabular-nums; font-size: .9em }
+/* A counter that is not zero carries its own severity HERE - the Zustand column only counts them. */
+.tn-kv dl.warn dt, .tn-kv dl.warn dd { color: #b07800 }
+.tn-kv dl.bad dt, .tn-kv dl.bad dd { color: #c0392b }
+.tn-kv dl.warn dd, .tn-kv dl.bad dd { font-weight: 600 }
+.tn-p { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: .75rem; font-weight: 600; white-space: nowrap } /* rem: the legend nests it in .meta, a relative size would shrink it there */
+.tn-p.ok { background: #eaf3e6; color: #449841 }
+.tn-p.warn { background: #f8f0dd; color: #b07800 }
+.tn-p.bad { background: #f8e4e0; color: #c0392b }
+.tn-p.idle { background: #eee; color: #666 } /* no verdict: free or waiting, not a fault */
+
+/* The disconnect button in an expanded row: sits under the counters, not in the summary. */
+.tn-act { margin-top: .5em }
+
+/* The "?" inside an expanded tunnel row: same control as the overview rows, but it sits right after
+   the values instead of at the far edge of the table. */
+.tn-why { border-bottom: none !important }
+.tn-why > summary { display: flex; align-items: baseline; gap: 12px; padding: 0 }
+.tn-why > summary em { margin-left: 0 !important }
+tr.tn-d .ii-p { padding: 5px 0 2px; max-width: none }
+.tn-why b { color: #333; font-weight: 600 }

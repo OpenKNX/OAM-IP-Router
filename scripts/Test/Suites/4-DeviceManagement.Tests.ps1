@@ -69,6 +69,9 @@ function Invoke-KnxSuiteDevMgmt {
     param([Parameter(Mandatory)]$Ctx, [string]$SuiteTitle = '4 Device Management')
 
     $K = Get-KnxConstants
+    # Set-StrictMode rejects reading a script variable that was never assigned, so the capability cache
+    # is created here rather than on first use.
+    $script:CemiTransportServed = $null
     $ip = $Ctx.BdutIp
     $port = $Ctx.Port
     $DMGMT = $K.ConnType.DEVICE_MGMT_CONNECTION
@@ -98,7 +101,7 @@ function Invoke-KnxSuiteDevMgmt {
 
     # ── 4.2 Device Configuration Request ────────────────────────────────────────
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.1' -Title 'Device Configuration Request - Standard Case' -Clause 'TSSH 4.2.1, p.25 (fn 20201)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.1' -Title 'Device Configuration Request - Standard Case' -Clause 'TSSH 4.2.1, p.25 (fn 20203)' -Body {
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
         try {
@@ -116,7 +119,7 @@ function Invoke-KnxSuiteDevMgmt {
         finally { [void](Close-KnxConnection -Connection $conn) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.2' -Title 'Read mandatory device properties' -Clause 'TSSH 4.2.2, p.27 (fn 20202)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.2' -Title 'Read mandatory device properties' -Clause 'TSSH 4.2.2, p.27 (fn 20204)' -Body {
         $desc = Get-KnxDescription -Ip $ip -Port $port
         Assert-KnxTrue ($null -ne $desc -and $null -ne $desc.Device) 'no DEVICE_INFO DIB to compare the properties against'
 
@@ -171,13 +174,34 @@ function Invoke-KnxSuiteDevMgmt {
                 if ($snProp -ne $desc.Device.SerialNumber) { $problems += "serial number property $snProp differs from DIB $($desc.Device.SerialNumber)" }
             }
 
+            # The five properties above are the ones TSSH 4.2.2 compares against the DIB. They are NOT the
+            # whole test: its first sentence says "reads ALL mandatory properties from the KNXnet/IP
+            # parameter object". Checking only the comparable ones is how this case stayed green while the
+            # KNXA tool reported PID_IP_ADDRESS, PID_SUBNET_MASK, PID_DEFAULT_GATEWAY and
+            # PID_KNXNETIP_DEVICE_STATE as missing. A property that answers Void_DP is indistinguishable
+            # from an absent one to a management client, so "readable at all" is the assertion here - the
+            # VALUE of the configured IP config is 0.0.0.0 while the address comes from DHCP, which is a
+            # legal value and not an absent element (03_08_03 2.5.11-2.5.13 p.12).
+            $alsoMandatory = @(
+                @{ Pid = $K.Pid.IP_ADDRESS;            Name = 'PID_IP_ADDRESS';            Len = 4 },
+                @{ Pid = $K.Pid.SUBNET_MASK;           Name = 'PID_SUBNET_MASK';           Len = 4 },
+                @{ Pid = $K.Pid.DEFAULT_GATEWAY;       Name = 'PID_DEFAULT_GATEWAY';       Len = 4 },
+                # 03_08_03 2.5.20 p.14: "shall be implemented by any KNXnet/IP Server".
+                @{ Pid = $K.Pid.KNXNETIP_DEVICE_STATE; Name = 'PID_KNXNETIP_DEVICE_STATE'; Len = 1 }
+            )
+            foreach ($m in $alsoMandatory) {
+                $v = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $m.Pid
+                if ($null -eq $v -or $v.Length -lt $m.Len) { $problems += "$($m.Name) missing (read returned no element)" }
+                else { Add-KnxEvidence -Note "$($m.Name) = $(ConvertTo-HexString -Bytes ([byte[]]$v))" }
+            }
+
             foreach ($p in $problems) { Add-KnxEvidence -Note $p }
             Assert-KnxTrue ($problems.Count -eq 0) ("mandatory properties inconsistent or missing: " + ($problems -join '; '))
         }
         finally { [void](Close-KnxConnection -Connection $conn) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.3' -Title 'Write to read-only device property' -Clause 'TSSH 4.2.3, p.30 (fn 20203)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.3' -Title 'Write to read-only device property' -Clause 'TSSH 4.2.3, p.30 (fn 20205)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case attempts a property write' }
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
@@ -202,7 +226,7 @@ function Invoke-KnxSuiteDevMgmt {
         finally { [void](Close-KnxConnection -Connection $conn) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.4' -Title 'Read nonexisting device property' -Clause 'TSSH 4.2.4, p.31 (fn 20204)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.4' -Title 'Read nonexisting device property' -Clause 'TSSH 4.2.4, p.31 (fn 20206)' -Body {
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
         try {
@@ -361,7 +385,151 @@ function Invoke-KnxSuiteDevMgmt {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.9' -Title 'Device Configuration Request - Invalid Endpoint' -Clause 'TSSH 4.2.9, p.37 (fn 20205)' -Body {
+    # Does this device serve the cEMI Transport Layer at all? 03_08_03 4.2.5 p.23 marks the T_Data_*
+    # services X at Device Management v1 and M only at v2, and 2.6.1.2 p.18 tells a server without them to
+    # acknowledge and stay silent. Probed once and cached, so a device that does not have them reports the
+    # dependent cases N-A instead of failing them.
+    function Test-KnxCemiTransportServed {
+        param([string]$Ip, [int]$Port, [int]$ConnType)
+        if ($null -ne $script:CemiTransportServed) { return $script:CemiTransportServed }
+        $script:CemiTransportServed = $false
+        $probe = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $ConnType -Layer -1
+        if ($probe.Ok) {
+            $cemi = New-CemiTransport -MessageCode 0x4A -Tpdu (New-TpduPropertyValueRead)
+            $r = Send-KnxDeviceConfiguration -Connection $probe -Cemi $cemi -TimeoutMs 3000
+            $script:CemiTransportServed = ($null -ne $r.Cemi)
+            [void](Close-KnxConnection -Connection $probe)
+            # With a single management slot (KNX_TUNNELING_DEVMGMT=1) the server needs a moment to reap the
+            # channel; opening the next one too fast is answered E_NO_MORE_CONNECTIONS and the case that
+            # follows fails for the probe's sake.
+            Start-Sleep -Milliseconds 500
+        }
+        return $script:CemiTransportServed
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.13' -Title 'Device Object address properties report the device address' -Clause 'TSSH 4.2.7/4.2.8, p.36-37 (fn 20209/20210)' -Body {
+        # Both tool cases set the individual address and then read, over a DEVICE MANAGEMENT connection,
+        # OT 0 PID_SUBNET_ADDR and PID_DEVICE_ADDR expecting the two octets of the address they just set
+        # (0x1200 -> 0x12 / 0x00). Changing the address is invasive, needs programming mode and a restart,
+        # so this reads the CURRENT address instead and holds the two octets against it - the part that
+        # actually failed, without touching the device.
+        #
+        # 03_06_03 4.2.2.2 Table 15 p.114 puts the address of the cEMI SERVER DEVICE on these two, and
+        # Vol.6 Profiles A.3.2 fn.79 p.153 says they denote the address of the end device hosting the
+        # interface; fn.77/78 make them mandatory for a cEMI server with its own address on TP1. The cEMI
+        # CLIENT address lives on the cEMI Server Object instead (PID_CLIENT_SNA / PID_CLIENT_DEVICE_ADDRESS,
+        # 03_06_03 Table 16 p.115). Handing the client address out here reads as 0x0000 to a tool.
+        $desc = Get-KnxDescription -Ip $ip -Port $port
+        Assert-KnxTrue ($null -ne $desc -and $null -ne $desc.Device) 'no DEVICE_INFO DIB to compare against'
+
+        $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+        Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
+        try {
+            $ia = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $K.Pid.KNX_INDIVIDUAL_ADDRESS
+            Assert-KnxTrue ($null -ne $ia -and $ia.Length -ge 2) 'PID_KNX_INDIVIDUAL_ADDRESS not readable'
+            $raw = Get-Uint16 -Bytes $ia -Offset 0
+
+            $sub = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.SUBNET_ADDR
+            $dev = Get-PropertyBytes -Connection $conn -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.DEVICE_ADDR
+            Assert-KnxTrue ($null -ne $sub -and $sub.Length -ge 1) 'PID_SUBNET_ADDR (device object) not readable'
+            Assert-KnxTrue ($null -ne $dev -and $dev.Length -ge 1) 'PID_DEVICE_ADDR (device object) not readable'
+
+            $expSub = ($raw -shr 8) -band 0xFF
+            $expDev = $raw -band 0xFF
+            Add-KnxEvidence -Note ("individual address {0} -> expect subnet 0x{1:X2}, device 0x{2:X2}; read 0x{3:X2} / 0x{4:X2}" -f `
+                                   (ConvertFrom-KnxPa -Raw $raw), $expSub, $expDev, $sub[0], $dev[0])
+            Assert-KnxEqual $expSub $sub[0] 'PID_SUBNET_ADDR does not carry the high octet of the device individual address'
+            Assert-KnxEqual $expDev $dev[0] 'PID_DEVICE_ADDR does not carry the low octet of the device individual address'
+        }
+        finally { [void](Close-KnxConnection -Connection $conn) }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.14' -Title 'cEMI Transport Layer mode - T_Connect refused while a DM connection is open' -Clause 'TSSH 8.3.2, p.158 (fn 60202); 03_08_03 2.6.1.2 p.18' -Body {
+        # 03_08_03 2.6.1.2 p.18: an established device management connection switches the transport layer to
+        # cEMI Transport Layer mode "for the duration of the connection", and 2.6.1.6 p.19 leaves it again on
+        # close. What a peer sees is that a T_Connect is refused with T_Disconnect while the mode is active.
+        #
+        # Both halves are asserted, and the FIRST one is the important one: without an open device
+        # management connection a T_Connect must still be accepted silently. That is the path ETS uses to
+        # program this device, and a mode implemented as "hold the layer" would break it.
+        if (-not $Ctx.BdutPa) { Set-KnxTestSkip 'BDUT individual address unknown (-BdutPa)' }
+        if (-not (Test-KnxCemiTransportServed -Ip $ip -Port $port -ConnType $DMGMT)) {
+            Set-KnxTestNotApplicable 'device does not serve the cEMI Transport Layer (03_08_03 4.2.5 p.23: X at Device Management v1), so there is no mode to enter'
+        }
+        $tun = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer 0x02
+        Assert-KnxTrue $tun.Ok "could not open a tunnelling connection ($($tun.StatusName))"
+        $dm = $null
+        try {
+            $target = ConvertTo-KnxPa -Address $Ctx.BdutPa
+            $connectCemi    = New-CemiLData -MessageCode 0x11 -Source 0 -Destination $target -Tpdu (New-TpduConnect)    -Priority 0
+            $disconnectCemi = New-CemiLData -MessageCode 0x11 -Source 0 -Destination $target -Tpdu (New-TpduDisconnect) -Priority 0
+
+            # --- no device management connection: the connect must be accepted (no T_Disconnect back) ---
+            [void](Send-KnxTunnelCemi -Connection $tun -Cemi $connectCemi)
+            $refusedWhenIdle = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -TimeoutMs 2000
+            [void](Send-KnxTunnelCemi -Connection $tun -Cemi $disconnectCemi)
+            Add-KnxEvidence -Note "without a device management connection the T_Connect was $(if ($null -ne $refusedWhenIdle) { 'REFUSED' } else { 'accepted' })"
+            Assert-KnxTrue ($null -eq $refusedWhenIdle) 'a T_Connect was refused although no device management connection was open - connection-oriented access to the device is broken'
+
+            # --- device management connection open: the connect must be refused ---
+            $dm = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+            Assert-KnxTrue $dm.Ok "could not open a device management connection ($($dm.StatusName))"
+            Start-Sleep -Milliseconds 700   # the device picks the mode up in its next loop pass
+
+            [void](Send-KnxTunnelCemi -Connection $tun -Cemi $connectCemi)
+            $refusedInMode = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -TimeoutMs 3000
+            Add-KnxEvidence -Note "with a device management connection open the T_Connect was $(if ($null -ne $refusedInMode) { 'refused with T_Disconnect' } else { 'ACCEPTED' })"
+            Assert-KnxTrue ($null -ne $refusedInMode) 'no T_Disconnect while a device management connection holds the transport layer (03_08_03 2.6.1.2 p.18)'
+        }
+        finally {
+            if ($null -ne $dm -and $dm.Ok) { [void](Close-KnxConnection -Connection $dm) }
+            [void](Close-KnxConnection -Connection $tun)
+        }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.15' -Title 'Device management refused while a transport connection is open' -Clause 'TSSH 8.3.2, p.158 (fn 60202) part 2; 03_08_03 2.6.1.2 p.18' -Body {
+        # Part 2 of the same tool case: a transport connection is opened FIRST, then a device management
+        # connection is requested. Opening one switches the Transport Layer into cEMI Transport Layer mode
+        # (03_08_03 2.6.1.2 p.18), which a layer that already carries a connection cannot do, so the request
+        # must be answered with E_NO_MORE_CONNECTIONS rather than silently serving two transport peers.
+        if (-not $Ctx.BdutPa) { Set-KnxTestSkip 'BDUT individual address unknown (-BdutPa)' }
+        if (-not (Test-KnxCemiTransportServed -Ip $ip -Port $port -ConnType $DMGMT)) {
+            Set-KnxTestNotApplicable 'device does not serve the cEMI Transport Layer (03_08_03 4.2.5 p.23: X at Device Management v1), so a management connection never takes the transport layer'
+        }
+
+        # A management connection must be available to begin with, otherwise the case proves nothing.
+        $probe = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+        Assert-KnxTrue $probe.Ok "no device management connection available before the test ($($probe.StatusName))"
+        [void](Close-KnxConnection -Connection $probe)
+        Start-Sleep -Milliseconds 300
+
+        $tun = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer 0x02
+        Assert-KnxTrue $tun.Ok "could not open a tunnelling connection ($($tun.StatusName))"
+        $connected = $false
+        try {
+            $target = ConvertTo-KnxPa -Address $Ctx.BdutPa
+            $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination $target -Tpdu (New-TpduConnect) -Priority 0
+            [void](Send-KnxTunnelCemi -Connection $tun -Cemi $cemi)
+            $connected = $true
+            Start-Sleep -Milliseconds 400   # the device picks the state up in its next loop pass
+
+            $dm = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+            if ($null -ne $dm.Response) { Add-KnxEvidence -Received $dm.Response }
+            Add-KnxEvidence -Note "device management connect while a transport connection is open -> $(if ($dm.Ok) { "ACCEPTED on channel $($dm.Channel)" } else { $dm.StatusName })"
+            if ($dm.Ok) { [void](Close-KnxConnection -Connection $dm) }
+            Assert-KnxTrue (-not $dm.Ok) 'the device accepted a device management connection although its transport layer already carried a connection (08_TSSH 8.3.2 p.158)'
+            Assert-KnxStatus $K.Error.E_NO_MORE_CONNECTIONS $dm.Status 'wrong status when the transport layer is occupied'
+        }
+        finally {
+            if ($connected) {
+                $d = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination (ConvertTo-KnxPa -Address $Ctx.BdutPa) -Tpdu (New-TpduDisconnect) -Priority 0
+                [void](Send-KnxTunnelCemi -Connection $tun -Cemi $d -TimeoutMs 2000)
+            }
+            [void](Close-KnxConnection -Connection $tun)
+        }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.9' -Title 'Device Configuration Request - Invalid Endpoint' -Clause 'TSSH 4.2.9, p.37 (fn 20201)' -Body {
         # Default parameter: port 1.
         $cemi = New-CemiMPropRead -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.OBJECT_TYPE
         $r = Send-RawDeviceConfiguration -Ip $ip -Port 1 -Cemi $cemi
@@ -371,7 +539,7 @@ function Invoke-KnxSuiteDevMgmt {
         Assert-KnxTrue (Test-KnxAlive -Ip $ip -Port $port) 'device stopped answering after the invalid-endpoint frame'
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.10' -Title 'Device Configuration Request - Unconnected Endpoint' -Clause 'TSSH 4.2.10, p.38 (fn 20206)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.10' -Title 'Device Configuration Request - Unconnected Endpoint' -Clause 'TSSH 4.2.10, p.38 (fn 20202)' -Body {
         # Two shapes, because they can fail independently: channel 0 is never allocated and
         # may be special-cased, while a NON-ZERO channel that was simply never granted has to
         # be rejected by an actual lookup. A guard that only rejects 0 leaves that second door
@@ -541,7 +709,14 @@ function Invoke-KnxSuiteDevMgmt {
                     Assert-KnxTrue ($null -eq $r.Cemi) 'device answered an .ind with a further request - only the ACK is allowed'
                 }
                 else {
-                    Assert-KnxTrue ($null -ne $r.Cemi) 'device acknowledged but sent no responding request'
+                    # 03_08_03 2.6.1.2 p.18, "General exception handling": a cEMI Server that does NOT
+                    # support the cEMI Transport Layer mode shall ignore a T_Data_Individual.req /
+                    # T_Data_Connected.req and confirm only with a DEVICE_CONFIGURATION_ACK. Acked but
+                    # silent is therefore the conformant answer of a device without the service, not a
+                    # defect - and it is indistinguishable on the wire from a broken implementation.
+                    if ($null -eq $r.Cemi) {
+                        Set-KnxTestNotApplicable "device acknowledged and stayed silent - the prescribed behaviour of a cEMI server without the cEMI Transport Layer mode (03_08_03 2.6.1.2 p.18). The service is optional at Device Management v1 (03_08_03 4.2.5 p.23)"
+                    }
                     Add-KnxEvidence -Received $r.Cemi
                     Assert-KnxEqual ('0x{0:X2}' -f $expectMc) ('0x{0:X2}' -f $r.Cemi[0]) 'responding request carries the wrong cEMI message code'
                     $ld = Read-CemiLData -Cemi $r.Cemi

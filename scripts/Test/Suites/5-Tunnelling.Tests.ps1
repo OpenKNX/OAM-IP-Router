@@ -65,7 +65,7 @@ function Open-TunnelRaw {
     return [pscustomobject]@{
         Ok = $true; Status = $cr.Status; StatusName = $cr.StatusName; Channel = $cr.Channel
         Socket = $sock; Ip = $Ip; Port = $Port; SeqSend = 0; SeqRecv = 0; TunnelPa = $cr.TunnelPa
-        LocalIp = $HpaiIp; LocalPort = (Get-SocketLocalPort -Socket $sock)
+        LocalIp = $HpaiIp; LocalPort = (Get-SocketLocalPort -Socket $sock); Parsed = $cr
         Request = $frame; Response = $rsp.Packet.Bytes
     }
 }
@@ -196,14 +196,22 @@ function Invoke-KnxSuiteTunnelling {
             Add-KnxEvidence -Note "$($r.Open.Count) tunnel(s) granted, then $(Get-KnxErrorName -Status $r.RefusalStatus)"
             Assert-KnxTrue ($r.Open.Count -ge 1) 'device granted no tunnel connection at all'
             Assert-KnxTrue ($r.RefusalStatus -ge 0) "device accepted $($r.Open.Count) tunnels without ever refusing"
-            Assert-KnxStatus $K.Error.E_NO_MORE_CONNECTIONS $r.RefusalStatus 'wrong status when the tunnel pool is exhausted'
+            # This case only drives the device to ITS limit - it does not set up which limit that
+            # is. Demanding 0x24 fails a device that ran out of unique addresses first, and the
+            # reverse fails one whose slots went first; the server answers 0x24 on paths where a
+            # slot is still free, so the rig cannot tell them apart from outside either. Which
+            # limit was hit is what H-5.3.4 and H-5.3.5 set up and separate. Here: accept both,
+            # record which one came, so a change of answer still shows up in the report.
+            Assert-KnxStatusAny -Accept @($K.Error.E_NO_MORE_CONNECTIONS, $K.Error.E_NO_MORE_UNIQUE_CONNECTIONS) `
+                                -Actual $r.RefusalStatus `
+                                -Message 'refusal is neither E_NO_MORE_CONNECTIONS nor E_NO_MORE_UNIQUE_CONNECTIONS'
         }
         finally { Close-AllTunnels -Connections $r.Open }
     }
 
     foreach ($case in @(
-            @{ Id = 'H-5.1.3'; Title = 'cEMI Raw Mode tunnelling connection';    Clause = 'TSSH 5.1.3, p.64 (fn 30103)'; Layer = 0x04 },
-            @{ Id = 'H-5.1.4'; Title = 'KNX Busmonitor Mode tunnelling connection'; Clause = 'TSSH 5.1.4, p.65 (fn 30104)'; Layer = 0x80 })) {
+            @{ Id = 'H-5.1.3'; Title = 'cEMI Raw Mode tunnelling connection';    Clause = 'TSSH 5.1.3, p.64 (fn 30105)'; Layer = 0x04 },
+            @{ Id = 'H-5.1.4'; Title = 'KNX Busmonitor Mode tunnelling connection'; Clause = 'TSSH 5.1.4, p.65 (fn 30107)'; Layer = 0x80 })) {
         $layer = $case.Layer
         Invoke-KnxTestCase -Suite $SuiteTitle -Id $case.Id -Title $case.Title -Clause $case.Clause -Body {
             # Either the mode is supported and the connection opens, or the device must
@@ -234,7 +242,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.1.5' -Title 'Invalid KNX layer code' -Clause 'TSSH 5.1.5, p.66 (fn 30105)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.1.5' -Title 'Invalid KNX layer code' -Clause 'TSSH 5.1.5, p.66 (fn 30108)' -Body {
         # Default parameter: 3 retries with random invalid layer codes. 0x02/0x04/0x80 are
         # the defined ones, so anything else must be refused with E_CONNECTION_OPTION.
         $bad = @(0x00, 0x01, 0x03, 0x7F, 0x81, 0xFF)
@@ -258,7 +266,7 @@ function Invoke-KnxSuiteTunnelling {
 
     # ── 5.2 Tunnelling Request ──────────────────────────────────────────────────
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.1' -Title 'Standard Case - Tunnelling to KNX' -Clause 'TSSH 5.2.1, p.67 (fn 30201)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.1' -Title 'Standard Case - Tunnelling to KNX' -Clause 'TSSH 5.2.1, p.67 (fn 30204)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes a group telegram to the bus' }
         $c = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $TUN -Layer $K.Layer.TUNNEL_LINKLAYER
         Assert-KnxTrue $c.Ok "could not open a tunnel ($($c.StatusName))"
@@ -303,7 +311,7 @@ function Invoke-KnxSuiteTunnelling {
         finally { [void](Close-KnxConnection -Connection $c) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.2' -Title 'Standard Case - Tunnelling from KNX' -Clause 'TSSH 5.2.2, p.68 (fn 30202)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.2' -Title 'Standard Case - Tunnelling from KNX' -Clause 'TSSH 5.2.2, p.68 (fn 30205)' -Body {
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to put a telegram on the bus' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes a group telegram to the bus' }
 
@@ -334,7 +342,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.3' -Title 'Not increased Sequence Counter' -Clause 'TSSH 5.2.3, p.69 (fn 30203)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.3' -Title 'Not increased Sequence Counter' -Clause 'TSSH 5.2.3, p.69 (fn 30206)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
         $c = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $TUN -Layer $K.Layer.TUNNEL_LINKLAYER
         Assert-KnxTrue $c.Ok "could not open a tunnel ($($c.StatusName))"
@@ -358,7 +366,7 @@ function Invoke-KnxSuiteTunnelling {
         finally { [void](Close-KnxConnection -Connection $c) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.4' -Title 'Sequence Counter increased by two' -Clause 'TSSH 5.2.4, p.71 (fn 30204)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.4' -Title 'Sequence Counter increased by two' -Clause 'TSSH 5.2.4, p.71 (fn 30207)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
         $c = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $TUN -Layer $K.Layer.TUNNEL_LINKLAYER
         Assert-KnxTrue $c.Ok "could not open a tunnel ($($c.StatusName))"
@@ -379,7 +387,7 @@ function Invoke-KnxSuiteTunnelling {
         finally { [void](Close-KnxConnection -Connection $c) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.5' -Title 'Busmonitor indication tunnelled from KNX' -Clause 'TSSH 5.2.5, p.73 (fn 30205)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.5' -Title 'Busmonitor indication tunnelled from KNX' -Clause 'TSSH 5.2.5, p.73 (fn 30208)' -Body {
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to generate bus traffic' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
 
@@ -418,7 +426,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.6' -Title 'Raw mode indication tunnelled from KNX' -Clause 'TSSH 5.2.6, p.74 (fn 30206)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.6' -Title 'Raw mode indication tunnelled from KNX' -Clause 'TSSH 5.2.6, p.74 (fn 30209)' -Body {
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to generate bus traffic' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
 
@@ -450,7 +458,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.7' -Title 'Repeat and timeout after missing ACK' -Clause 'TSSH 5.2.7, p.75 (fn 30207)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.7' -Title 'Repeat and timeout after missing ACK' -Clause 'TSSH 5.2.7, p.75 (fn 30210)' -Body {
         if ($Ctx.SkipSlow) { Set-KnxTestSkip 'measures a repetition timeout - excluded by -SkipSlow' }
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to make the device send on the tunnel' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
@@ -507,7 +515,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.8' -Title 'Broadcast telegram tunnelled to KNX' -Clause 'TSSH 5.2.8, p.76 (fn 30208)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.8' -Title 'Broadcast telegram tunnelled to KNX' -Clause 'TSSH 5.2.8, p.76 (fn 30211)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes a broadcast to the bus' }
         $c = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $TUN -Layer $K.Layer.TUNNEL_LINKLAYER
         Assert-KnxTrue $c.Ok "could not open a tunnel ($($c.StatusName))"
@@ -525,7 +533,7 @@ function Invoke-KnxSuiteTunnelling {
         finally { [void](Close-KnxConnection -Connection $c) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.9' -Title 'Broadcast telegram tunnelled from KNX' -Clause 'TSSH 5.2.9, p.77 (fn 30209)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.9' -Title 'Broadcast telegram tunnelled from KNX' -Clause 'TSSH 5.2.9, p.77 (fn 30212)' -Body {
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to put a broadcast on the bus' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes a broadcast to the bus' }
 
@@ -556,7 +564,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.10' -Title 'Point-to-point telegram tunnelled to KNX and back' -Clause 'TSSH 5.2.10, p.78 (fn 30210)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.10' -Title 'Point-to-point telegram tunnelled to KNX and back' -Clause 'TSSH 5.2.10, p.78 (fn 30213)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case addresses a device on the bus' }
         # TSSH addresses the load switch here; any device that answers on the test line
         # proves the same thing, so -P2pTarget is accepted and preferred.
@@ -604,7 +612,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.11' -Title 'Group address telegram tunnelled to KNX' -Clause 'TSSH 5.2.11, p.81 (fn 30211)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.11' -Title 'Group address telegram tunnelled to KNX' -Clause 'TSSH 5.2.11, p.81 (fn 30215)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes a group telegram to the bus' }
         $c = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $TUN -Layer $K.Layer.TUNNEL_LINKLAYER
         Assert-KnxTrue $c.Ok "could not open a tunnel ($($c.StatusName))"
@@ -636,7 +644,7 @@ function Invoke-KnxSuiteTunnelling {
         finally { [void](Close-KnxConnection -Connection $c) }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.12' -Title 'Group address telegram tunnelled from KNX' -Clause 'TSSH 5.2.12, p.82 (fn 30212)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.2.12' -Title 'Group address telegram tunnelled from KNX' -Clause 'TSSH 5.2.12, p.82 (fn 30216)' -Body {
         if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to put a telegram on the bus' }
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes to the bus' }
 
@@ -672,7 +680,7 @@ function Invoke-KnxSuiteTunnelling {
     # restores the original list in its finally block - leaving a device with a test
     # address list would silently break every later run.
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.1' -Title 'Tunnel Addresses - Standard Case' -Clause 'TSSH 5.3.1, p.83 (fn 30301)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.1' -Title 'Tunnel Addresses - Standard Case' -Clause 'TSSH 5.3.1, p.83 (fn 30110)' -Body {
         if (-not $Ctx.AllowDestructive) { Set-KnxTestSkip 'rewrites PID_ADDITIONAL_INDIVIDUAL_ADDRESSES - needs -IncludeDestructive with profile Full' }
 
         $mgmt = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1
@@ -716,7 +724,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.2' -Title 'Tunnel Addresses - Uniqueness' -Clause 'TSSH 5.3.2, p.84 (fn 30302)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.2' -Title 'Tunnel Addresses - Uniqueness' -Clause 'TSSH 5.3.2, p.84 (fn 30111)' -Body {
         if (-not $Ctx.AllowDestructive) { Set-KnxTestSkip 'rewrites PID_ADDITIONAL_INDIVIDUAL_ADDRESSES - needs -IncludeDestructive with profile Full' }
 
         $mgmt = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1
@@ -748,7 +756,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.3' -Title 'Tunnel Addresses - Assignment Method' -Clause 'TSSH 5.3.3, p.85 (fn 30303)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.3' -Title 'Tunnel Addresses - Assignment Method' -Clause 'TSSH 5.3.3, p.85 (fn 30112)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - opens and closes tunnels on a production device' }
         # Open A, open B, close A, open C. C must get A's address back: the device always
         # returns the FIRST FREE entry of its list. This is the case that catches a device
@@ -780,7 +788,7 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
-    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.4' -Title 'Tunnel E_NO_MORE_CONNECTIONS' -Clause 'TSSH 5.3.4, p.85 (fn 30304)' -Body {
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-5.3.4' -Title 'Tunnel E_NO_MORE_CONNECTIONS' -Clause 'TSSH 5.3.4, p.85 (fn 30113)' -Body {
         if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - exhausting the tunnel pool locks out other clients' }
         $r = Open-AllTunnels -Ip $ip -Port $port -Layer $K.Layer.TUNNEL_LINKLAYER
         try {
@@ -816,8 +824,8 @@ function Invoke-KnxSuiteTunnelling {
     }
 
     foreach ($case in @(
-            @{ Id = 'H-5.3.5'; Title = 'Tunnel E_NO_MORE_UNIQUE_CONNECTIONS - Case 1'; Clause = 'TSSH 5.3.5, p.88 (fn 30305)'; UseOwn = $false },
-            @{ Id = 'H-5.3.6'; Title = 'Tunnel E_NO_MORE_UNIQUE_CONNECTIONS - Case 2'; Clause = 'TSSH 5.3.6, p.90 (fn 30306)'; UseOwn = $true })) {
+            @{ Id = 'H-5.3.5'; Title = 'Tunnel E_NO_MORE_UNIQUE_CONNECTIONS - Case 1'; Clause = 'TSSH 5.3.5, p.88 (fn 30114)'; UseOwn = $false },
+            @{ Id = 'H-5.3.6'; Title = 'Tunnel E_NO_MORE_UNIQUE_CONNECTIONS - Case 2'; Clause = 'TSSH 5.3.6, p.90 (fn 30115)'; UseOwn = $true })) {
         $useOwn = $case.UseOwn
         Invoke-KnxTestCase -Suite $SuiteTitle -Id $case.Id -Title $case.Title -Clause $case.Clause -Body {
             if (-not $Ctx.AllowDestructive) { Set-KnxTestSkip 'rewrites PID_ADDITIONAL_INDIVIDUAL_ADDRESSES - needs -IncludeDestructive with profile Full' }
@@ -873,6 +881,27 @@ function Invoke-KnxSuiteTunnelling {
         }
     }
 
+    # 08_TSSH 5.4.1 p.93 / 5.4.4 p.98 pin the CONNECT_RESPONSE for a route-back request and show its data
+    # endpoint HPAI as 00000000h : 0000h - the server must not push an address at a client that told it,
+    # by sending an all-zero HPAI, that it cannot use one (03_08_02 8.6.2.2 p.49; the same symmetry is
+    # written out for TCP in 8.4.3.4.3 p.45). A half-zero HPAI is NOT a route-back request - 8.6.2.2
+    # declares it invalid - so there the real address is correct and only its presence is checked.
+    function Assert-KnxRouteBackHpai {
+        param($Parsed, [bool]$RouteBack)
+        if ($null -eq $Parsed -or $null -eq $Parsed.DataHpaiIp) { return }
+        $got = "$($Parsed.DataHpaiIp):$($Parsed.DataHpaiPort)"
+        Add-KnxEvidence -Note "CONNECT_RESPONSE data endpoint HPAI = $got"
+        if ($RouteBack) {
+            Assert-KnxTrue ($Parsed.DataHpaiIp -eq '0.0.0.0' -and $Parsed.DataHpaiPort -eq 0) `
+                "route-back request answered with HPAI $got - it must be 0.0.0.0:0 (08_TSSH 5.4.1 p.93)"
+        }
+        # Nothing is asserted for a half-zero HPAI. There is no clause that says what to answer to one:
+        # 8.6.2.2 p.49 declares it invalid, and 08_TSSH 5.4.2/5.4.3 shows an all-zero response for it
+        # anyway. Measured 2026-09-06 on the certified MDT SCN-IP000.03: it answers those with port 0 too,
+        # i.e. it treats them as route back. An assertion demanding the real address here failed the
+        # reference device - which makes it a defect of the test, not of any device under test.
+    }
+
     # ── 5.4 NAT Compatibility ───────────────────────────────────────────────────
     #
     # A NAT-compatible client sends 0.0.0.0:0 in its HPAI ("route back"): the server must
@@ -880,9 +909,9 @@ function Invoke-KnxSuiteTunnelling {
     # variants additionally set only the IP or only the port, which must not change that.
 
     $natCases = @(
-        @{ Id = 'H-5.4.1'; Title = 'NAT compatible tunnelling to KNX - Standard Case'; Clause = 'TSSH 5.4.1, p.91 (fn 30401)'; SetIp = $false; SetPort = $false },
-        @{ Id = 'H-5.4.2'; Title = 'NAT compatible tunnelling to KNX - IP address set'; Clause = 'TSSH 5.4.2, p.95 (fn 30402)'; SetIp = $true;  SetPort = $false },
-        @{ Id = 'H-5.4.3'; Title = 'NAT compatible tunnelling to KNX - port number set'; Clause = 'TSSH 5.4.3, p.96 (fn 30403)'; SetIp = $false; SetPort = $true }
+        @{ Id = 'H-5.4.1'; Title = 'NAT compatible tunnelling to KNX - Standard Case'; Clause = 'TSSH 5.4.1, p.91 (fn 30301)'; SetIp = $false; SetPort = $false },
+        @{ Id = 'H-5.4.2'; Title = 'NAT compatible tunnelling to KNX - IP address set'; Clause = 'TSSH 5.4.2, p.95 (fn 30302)'; SetIp = $true;  SetPort = $false },
+        @{ Id = 'H-5.4.3'; Title = 'NAT compatible tunnelling to KNX - port number set'; Clause = 'TSSH 5.4.3, p.96 (fn 30303)'; SetIp = $false; SetPort = $true }
     )
     foreach ($case in $natCases) {
         $setIp = $case.SetIp; $setPort = $case.SetPort
@@ -894,6 +923,7 @@ function Invoke-KnxSuiteTunnelling {
             Add-KnxEvidence -Sent $c.Request
             if ($null -ne $c.Response) { Add-KnxEvidence -Received $c.Response }
             Assert-KnxTrue $c.Ok "device refused a NAT-compatible connect request ($($c.StatusName)) - it must answer to the UDP source endpoint"
+            Assert-KnxRouteBackHpai -Parsed $c.Parsed -RouteBack (-not $setIp -and -not $setPort)
             try {
                 $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination (ConvertTo-KnxGa -Address '0/0/13') -IsGroup -Tpdu (New-TpduGroupValueWrite -Value 0)
                 $r = Send-KnxTunnelCemi -Connection $c -Cemi $cemi -TimeoutMs 3000
@@ -905,9 +935,9 @@ function Invoke-KnxSuiteTunnelling {
     }
 
     $natFrom = @(
-        @{ Id = 'H-5.4.4'; Title = 'NAT compatible tunnelling from KNX - Standard Case'; Clause = 'TSSH 5.4.4, p.98 (fn 30404)'; SetIp = $false; SetPort = $false },
-        @{ Id = 'H-5.4.5'; Title = 'NAT compatible tunnelling from KNX - IP address set'; Clause = 'TSSH 5.4.5, p.99 (fn 30405)'; SetIp = $true;  SetPort = $false },
-        @{ Id = 'H-5.4.6'; Title = 'NAT compatible tunnelling from KNX - port number set'; Clause = 'TSSH 5.4.6, p.100 (fn 30406)'; SetIp = $false; SetPort = $true }
+        @{ Id = 'H-5.4.4'; Title = 'NAT compatible tunnelling from KNX - Standard Case'; Clause = 'TSSH 5.4.4, p.98 (fn 30304)'; SetIp = $false; SetPort = $false },
+        @{ Id = 'H-5.4.5'; Title = 'NAT compatible tunnelling from KNX - IP address set'; Clause = 'TSSH 5.4.5, p.99 (fn 30305)'; SetIp = $true;  SetPort = $false },
+        @{ Id = 'H-5.4.6'; Title = 'NAT compatible tunnelling from KNX - port number set'; Clause = 'TSSH 5.4.6, p.100 (fn 30306)'; SetIp = $false; SetPort = $true }
     )
     foreach ($case in $natFrom) {
         $setIp = $case.SetIp; $setPort = $case.SetPort
@@ -920,6 +950,7 @@ function Invoke-KnxSuiteTunnelling {
             $c = Open-TunnelRaw -Ip $ip -Port $port -HpaiIp $hIp -HpaiPort 0 -UseRealPort:$setPort -Layer $K.Layer.TUNNEL_LINKLAYER
             Add-KnxEvidence -Sent $c.Request
             Assert-KnxTrue $c.Ok "device refused a NAT-compatible connect request ($($c.StatusName))"
+            Assert-KnxRouteBackHpai -Parsed $c.Parsed -RouteBack (-not $setIp -and -not $setPort)
 
             $src = Get-KnxTrafficConnection -Ip $Ctx.TrafficIp -Port $port
             try {
@@ -928,6 +959,10 @@ function Invoke-KnxSuiteTunnelling {
                 $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination $ga -IsGroup -Tpdu (New-TpduGroupValueWrite -Value 1)
                 [void](Send-KnxTunnelCemi -Connection $src -Cemi $cemi -TimeoutMs 3000)
 
+                # Receive on the DEVICE tunnel FIRST. The device starts sending the indication immediately
+                # and expects a TUNNELLING_ACK: waiting on the traffic tunnel first would leave it unacked,
+                # the device repeats it after 1 s and then disconnects (03_08_04 2.6.1 p.9) - and the case
+                # would report "never arrived" for a device that in fact sent it twice.
                 $seen = $null
                 $deadline = [DateTime]::UtcNow.AddSeconds(6)
                 while ([DateTime]::UtcNow -lt $deadline) {
@@ -937,6 +972,24 @@ function Invoke-KnxSuiteTunnelling {
                     if ($null -eq $ld) { continue }
                     if ($ld.MessageCode -eq $K.Cemi.L_DATA_IND -and $ld.Destination -eq $ga) { $seen = $in; break }
                 }
+
+                # Only if nothing arrived: did the telegram reach the BUS at all? The TUNNELLING_ACK of the
+                # traffic interface only says it accepted the request, the L_Data.con says it transmitted.
+                # Asking now - and not before - keeps a rig that did not send from being charged to the
+                # device under test, without disturbing the measurement itself.
+                if ($null -eq $seen) {
+                    $onBus = $false
+                    $conDeadline = [DateTime]::UtcNow.AddSeconds(3)
+                    while ([DateTime]::UtcNow -lt $conDeadline -and -not $onBus) {
+                        $cf = Receive-KnxTunnelCemi -Connection $src -TimeoutMs 1000
+                        if ($null -eq $cf) { continue }
+                        $cl = Read-CemiLData -Cemi $cf.Cemi
+                        if ($null -ne $cl -and $cl.MessageCode -eq $K.Cemi.L_DATA_CON -and $cl.Destination -eq $ga) { $onBus = $true }
+                    }
+                    Add-KnxEvidence -Note "traffic interface confirmed the telegram on the bus: $onBus"
+                    Assert-KnxTrue $onBus 'the traffic interface never confirmed the telegram on the bus (L_Data.con) - this is a rig fault, not a verdict about the device under test'
+                }
+
                 Assert-KnxTrue ($null -ne $seen) 'the bus telegram never arrived on the NAT-compatible tunnel - the device is not answering to the UDP source endpoint'
                 Add-KnxEvidence -Received $seen.Cemi
             }

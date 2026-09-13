@@ -224,6 +224,9 @@ $script:KnxPid = @{
     ROUTING_MULTICAST_ADDRESS      = 66
     TTL                            = 67
     KNXNETIP_DEVICE_CAPABILITIES   = 68
+    # 69, verified against knx/src/knx/property.h - the evented device state
+    # (03_08_03 2.5.20 p.14). The tool calls it PID_EIBNETIP_DEVICE_STATE.
+    KNXNETIP_DEVICE_STATE          = 69
     FRIENDLY_NAME                  = 76
     # 74/75, verified against property.h. 71 is PID_IO_LIST and 72 is
     # PID_QUEUE_OVERFLOW_TO_IP - the earlier values addressed unrelated properties.
@@ -720,6 +723,23 @@ function New-TpduPropertyValueResponse {
     ) + $Data)
 }
 
+function New-TpduPropertyValueWrite {
+    <#
+    .SYNOPSIS
+        Builds an A_PropertyValue_Write TPDU (APCI 0x3D7).
+    .PARAMETER ObjectIndex
+        Interface object INDEX, not the object type - property access by index here.
+    #>
+    param([int]$ObjectIndex = 0, [int]$PropertyId = 1, [int]$ElementCount = 1, [int]$StartIndex = 1, [byte[]]$Data = @(0x00))
+    return , ([byte[]]@(
+        0x03, 0xD7,
+        ($ObjectIndex -band 0xFF),
+        ($PropertyId -band 0xFF),
+        (((($ElementCount -band 0x0F) -shl 4)) -bor (($StartIndex -shr 8) -band 0x0F)),
+        ($StartIndex -band 0xFF)
+    ) + $Data)
+}
+
 function New-TpduMemoryRead {
     <#
     .SYNOPSIS
@@ -1121,8 +1141,15 @@ function Read-KnxConnectResponse {
         IsError     = ($Body[1] -ne 0x00)
         Crd         = [byte[]]@()
         TunnelPa    = $null
+        # Data endpoint HPAI the server selected. Needed to judge route back: 08_TSSH 5.4.1 p.93 expects it
+        # all zero when the request carried a route-back HPAI. Get-Uint16 does the port - a bare
+        # "$b[6] -shl 8" would be evaluated in byte width and silently yield 0.
+        DataHpaiIp   = $null
+        DataHpaiPort = $null
     }
     if ($res.IsError -or $Body.Length -lt 12) { return $res }
+    $res.DataHpaiIp = '{0}.{1}.{2}.{3}' -f $Body[4], $Body[5], $Body[6], $Body[7]
+    $res.DataHpaiPort = Get-Uint16 -Bytes $Body -Offset 8
     # 2 octets header + 8 octets data HPAI, then the CRD.
     $res.Crd = [byte[]]$Body[10..($Body.Length - 1)]
     if ($res.Crd.Length -ge 4 -and $res.Crd[1] -eq $script:KnxConnType.TUNNEL_CONNECTION) {
@@ -1554,6 +1581,36 @@ function Send-KnxDeviceConfiguration {
     }
 }
 
+function Wait-KnxTpduFromTunnel {
+    <#
+    .SYNOPSIS
+        Waits for an inbound L_Data on a tunnel whose TPDU starts with a given TPCI octet.
+    .DESCRIPTION
+        Used to see a T_Disconnect (0x81) the device sends back. L_Data.con is skipped: that is
+        the confirmation of our own send, it carries the TPDU we just sent and would match.
+        Returns the parsed L_Data, or $null on timeout.
+    #>
+    param(
+        [Parameter(Mandatory)]$Connection,
+        [Parameter(Mandatory)][int]$Tpci,
+        [int]$TimeoutMs = 3000,
+        [int]$Source = -1
+    )
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
+        $in = Receive-KnxTunnelCemi -Connection $Connection -TimeoutMs $left
+        if ($null -eq $in) { continue }
+        $ld = Read-CemiLData -Cemi $in.Cemi
+        if ($null -eq $ld) { continue }
+        if ($ld.MessageCode -eq 0x2E) { continue }   # L_Data.con - our own frame coming back
+        if ($ld.Tpdu.Length -lt 1) { continue }
+        if ($Source -ge 0 -and $ld.Source -ne $Source) { continue }
+        if (($ld.Tpdu[0] -band 0xFF) -eq ($Tpci -band 0xFF)) { return $ld }
+    }
+    return $null
+}
+
 function Wait-KnxPropInfo {
     <#
     .SYNOPSIS
@@ -1645,9 +1702,6 @@ function Get-KnxTunnelPool {
     finally { [void](Close-KnxConnection -Connection $conn) }
     return , $entries
 }
-
-
-# ─── Rig helpers ────────────────────────────────────────────────────────────────
 
 function Test-KnxAlive {
     <#
@@ -1910,6 +1964,27 @@ function Assert-KnxStatus {
         Add-KnxEvidence -Note "expected $e (0x$($Expected.ToString('X2'))), got $a (0x$($Actual.ToString('X2')))"
         throw "KNXTEST_FAIL::$Message - expected $e, got $a"
     }
+}
+
+function Assert-KnxStatusAny {
+    <#
+    .SYNOPSIS
+        Fails unless a KNXnet/IP status byte is one of the accepted values, recording which came.
+    .DESCRIPTION
+        For the places where the standard allows more than one answer, or where the rig cannot
+        prove which limit the device hit. Why is written to the report either way, so a passing
+        run still says WHICH code the device sent and on what grounds it was accepted.
+    #>
+    param([Parameter(Mandatory)][int[]]$Accept, [Parameter(Mandatory)][int]$Actual,
+          [string]$Why = '', [string]$Message = 'unexpected status code')
+    $names = (@($Accept) | ForEach-Object { Get-KnxErrorName -Status $_ }) -join ' or '
+    $got = Get-KnxErrorName -Status $Actual
+    if ($Why) { Add-KnxEvidence -Note "expecting $names because $Why" }
+    if (@($Accept) -notcontains $Actual) {
+        Add-KnxEvidence -Note "expected $names, got $got (0x$($Actual.ToString('X2')))"
+        throw "KNXTEST_FAIL::$Message - expected $names, got $got"
+    }
+    Add-KnxEvidence -Note "device answered $got (0x$($Actual.ToString('X2')))"
 }
 
 function Set-KnxTestSkip {

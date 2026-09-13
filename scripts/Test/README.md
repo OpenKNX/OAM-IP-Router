@@ -202,9 +202,12 @@ Generator → sendende Schnittstelle → TP → Monitor; ein einheitlicher Wert 
 **sendenden** Seite stammen. Der Fall protokolliert die Beobachtung als Evidenz, statt sie dem
 Monitor anzulasten.
 
-**Betriebshinweis:** Ein abgestürzter Busmonitor-Client blockiert den Busmonitor **~80 Sekunden**,
-bis der Reaper den Slot freigibt. Das Gerät klemmt nicht, aber weil der Busmonitor exklusiv ist,
-ist das Feature so lange für alle weg.
+**Betriebshinweis:** Ein abgestürzter Busmonitor-Client blockiert den Busmonitor **120 Sekunden**
+(das Heartbeat-Timeout aus 03_08_02 Core 5.4), bis der Reaper den Slot freigibt. Das Gerät klemmt
+nicht, aber weil der Busmonitor exklusiv ist, ist das Feature so lange für alle weg. Warten ist
+seit v1.2.0 nicht mehr nötig: auf der Webseite des **IP-Interface** lässt sich der Busmonitor unter
+*Busmonitor* sofort beenden, unabhängig davon, wer ihn hält. Der Router hat keinen HW-Busmonitor
+und damit auch diesen Abschnitt nicht.
 
 ---
 

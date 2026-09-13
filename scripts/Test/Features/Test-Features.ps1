@@ -227,9 +227,22 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-TUN-1' -Title 'Configured number of tunn
         }
         $addrs = @($open | ForEach-Object { $_.TunnelPa })
         Add-KnxEvidence -Note "$($open.Count) of $TunnelCount tunnels granted: $($addrs -join ', ')"
+        # Naming the addresses that never appeared turns a shortfall from a bare verdict into a
+        # lead: a slot reserved for a different client withholds its address, and a foreign client
+        # holds one invisibly - neither is visible over KNXnet/IP, so the names are what let the
+        # operator tell a configuration from a defect.
+        $missing = @($distinct | Where-Object { $addrs -notcontains $_ })
+        if ($missing.Count -gt 0) {
+            Add-KnxEvidence -Note "never offered: $($missing -join ', ') - reserved for another client, or held by one during the run"
+        }
         Assert-KnxTrue ($open.Count -gt 0) 'no tunnel could be opened'
         Assert-KnxEqual $expected $open.Count "the device has $expected assignable tunnel address(es) but grants $($open.Count)"
-        Assert-KnxStatus $K.Error.E_NO_MORE_CONNECTIONS $refusal 'the tunnel past the configured maximum was refused with the wrong status'
+        Assert-KnxTrue ($refusal -ge 0) "device accepted $($open.Count) tunnels without ever refusing"
+        # Both codes are accepted here for the same reason as in H-5.1.2: this case reaches A limit
+        # without setting up WHICH one. H-5.3.4 and H-5.3.5 are the cases that separate them.
+        Assert-KnxStatusAny -Accept @($K.Error.E_NO_MORE_CONNECTIONS, $K.Error.E_NO_MORE_UNIQUE_CONNECTIONS) `
+                            -Actual $refusal `
+                            -Message 'the tunnel past the configured maximum was refused with the wrong status'
     }
     finally { foreach ($c in $open) { [void](Close-KnxConnection -Connection $c) } }
 }

@@ -1,0 +1,14 @@
+testdevice:
+  dutaddress: 11.11.0.210
+  localaddress: 11.11.0.19
+  multicastaddress: 0.0.0.0
+  serialnumber: $00 $fa $38 $d6 $dd $db
+  port: 3671
+  individualaddress: 5.0.13
+  friendlyname: 'OpenKNX: IP-Interface (Dev)'
+  macaddress: C0CDD6381B13
+networkinterface:
+  name: Ethernet 2
+  interfaceaddress: 11.11.0.19
+busconnection:
+  parameters: Type=KnxIpTunneling;HostAddress=11.11.0.2;ProtocolType=Tcp;UseNat=True;Name="SCN-IP000.03 IP Interface mit "

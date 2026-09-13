@@ -1,0 +1,152 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  KNX/IP Validation Tool - test configuration
+#  OAM-IP-Router (IPRO) - KNXnet/IP router, mask 091A, TP1 medium
+#  2026 OpenKNX - Erkan Colak
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#  FORMAT - read this before editing
+#  ---------------------------------
+#  This is the shape the TOOL itself writes: an "include" list of tree paths and
+#  test ids. Saving from inside the tool REWRITES this file and DROPS EVERY
+#  COMMENT - re-apply them afterwards, or the reasons below are gone.
+#  Because this is an include list, what is EXCLUDED is invisible. Every omission
+#  is therefore written out here.
+#
+#  Device under test (measured 2026-09-06): 11.11.0.126, PA 5.0.0, mask 091A,
+#  families CORE v1 - DEVICE_MANAGEMENT v1 - TUNNELLING v1 - ROUTING v1.
+#
+#  ── What is left out, and why ────────────────────────────────────────────────
+#
+#  Core v2 / TCP (10701-10731), extended discovery (10902-10920)
+#      CORE is advertised as v1.
+#
+#  Tunnelling v2 feature services (30401-30428)
+#      TUNNELLING is advertised as v1; 03_08_04 3.5 tells a server that does not
+#      support them to ignore them.
+#
+#  KNX Busmonitor mode (30107)
+#      A device that advertises ROUTING may NOT offer a bus monitor
+#      (03_08_04 2.2.4 p.8). Refusing it is the conformant answer - the opposite
+#      of the interface, which advertises no routing and therefore may offer it.
+#
+#  cEMI raw mode (30105)
+#      Optional connection option, refused with E_TUNNELING_LAYER.
+#
+#  Remote Configuration and Diagnosis (50101-50510)
+#      REMOTE_CONF_DIAG is not advertised.
+#
+#  KNX IP end device (60101, 60102)
+#      TP1 device with an IP side (medium 0x02), not a KNX IP end device (0x20).
+#
+#  Device Management v2 (60201)
+#      Advertised as v1. 60202-60206 stay IN - see below.
+#
+#  Programming mode by memory access (20208)
+#      03_05_01 4.26 p.303: type 1 IS the property PID_PROG_MODE; type 2 is the
+#      memory cell 0060h and 4.26.3 lists its users - "Ctrl-Mode fixed DMA,
+#      Ctrl-Mode reloc DMA, masks 0012h, 0020h, 0021h, 0701h in E-Mode". 091A is
+#      NOT among them: it is a System B device and uses type 1, which 20207
+#      measures. Honouring it would let a tool write into NVM offset 0x60, which
+#      is inside the saved interface-object image.
+#
+#  ── DELIBERATELY IN, and expected to be interesting ──────────────────────────
+#
+#  Routing (30201-30203, 40101-40315) and 80130
+#      The router advertises ROUTING v1 and must be measured against it.
+#      [80130] wants family version >= 2 and will fail - a real gap, left visible.
+#
+#  cEMI Transport Layer (60202-60206)
+#      03_08_03 2.6.1.1 p.18 requires the MODE of ANY device that uses KNXnet/IP
+#      Device Management, independently of the version; only the T_Data_*
+#      services are version dependent (4.2.5 p.23 marks them X at v1). The mode
+#      and the services are now built on this product too, so all five are real
+#      measurements. Unlike on the interface, 60202 can be delivered as intended
+#      here, because this device HAS routing and the tool can send the T_Connect
+#      as a ROUTING_INDICATION.
+#
+#  ── Setup - the part that decides whether the run means anything ─────────────
+#
+#  Configure the SECOND bus connection in the tool, or every "from KNX" case
+#  fails for a rig reason.
+#
+#  QUIET BUS: this router couples the production line onto the test line. On
+#  2026-09-06 the test line carried ~1.2 foreign telegrams per second, sourced
+#  from 11.11.0.3 (Siemens N 146/02, 1.0.0) and 11.11.0.31 (OpenKNX REG2-ESP,
+#  2.0.0) over routing multicast 224.0.23.12. That noise produced failures that
+#  say nothing about the device.
+#  Do NOT solve it by moving this router to another routing multicast group:
+#  measured 2026-09-06, the device then disappears from discovery entirely
+#  (it joins only its routing group, so SEARCH_REQUEST on the fixed system setup
+#  address 224.0.23.12 never reaches it - 03_08_02 8.5.2.1 p.48). A restart does
+#  not repair the membership either. Both are open device findings; see doc/.
+#  Until they are fixed, isolate at the ETHERNET level (separate segment, as
+#  TSSH 1.2.1 asks for anyway) or power down the two other routers.
+# ══════════════════════════════════════════════════════════════════════════════
+
+include:
+# ── 00 Setup ─────────────────────────────────────────────────────────────────
+- KNX/00 Setup
+
+# ── 01 Core - complete, all six sections ─────────────────────────────────────
+- KNX/01 Core/01 Unspecific
+- KNX/01 Core/02 SEARCH_REQUEST
+- KNX/01 Core/03 DESCRIPTION_REQUEST
+- KNX/01 Core/04 CONNECT_REQUEST
+- KNX/01 Core/05 CONNECTIONSTATE_REQUEST
+- KNX/01 Core/06 DISCONNECT_REQUEST
+
+# ── 02 Device Management ─────────────────────────────────────────────────────
+- KNX/02 Device Management/01 Device Management CONNECT_REQUEST
+# 02 DEVICE_CONFIGURATION_REQUEST per id: 20208 is left out (see header)
+- 20201
+- 20202
+- 20203
+- 20204
+- 20205
+- 20206
+- 20207
+- 20209
+- 20210
+- 20211
+- 20212
+- KNX/02 Device Management/03 cEMI Transport Layer
+
+# ── 03 Tunnelling ────────────────────────────────────────────────────────────
+# 01 CONNECT_REQUEST per id: 30105 (raw mode) and 30107 (bus monitor) left out
+- 30101
+- 30102
+- 30108
+- KNX/03 Tunneling/02 TUNNELING_REQUEST
+- KNX/03 Tunneling/03 Tunnel Addresses
+- KNX/03 Tunneling/04 NAT Compatible Tunneling
+
+# ── 04 Routing - the part that makes this a router ───────────────────────────
+- KNX/04 Routing
+
+# ── 06 Medium - cEMI Transport Layer ─────────────────────────────────────────
+# 60101/60102 (KNX IP end device) and 60201 (DevMgmt v2) are left out
+- 60202
+- 60203
+- 60204
+
+# ── 07 Security ──────────────────────────────────────────────────────────────
+- KNX/07 Security
+
+# ── 08 System Broadcast ──────────────────────────────────────────────────────
+- KNX/08 System Broadcast
+
+exclude: []
+
+parameters:
+# [30213] sends a tunnelled MaskVersionRead here and expects the answer to carry
+# this address as source. Any answering TP device works; 5.0.3 is measured green
+# by our own suite as H-5.2.10.
+- id: 30213
+  parameters:
+    Device address of load switch: 5.0.3
+
+systemparameters:
+# Set to true when the device under test draws its supply from the TP line, so
+# the tool does not expect an answer after it opens the TP connection.
+- name: BdutIsTp1Powered
+  value: true

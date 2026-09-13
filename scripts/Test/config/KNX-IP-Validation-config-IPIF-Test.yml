@@ -1,0 +1,199 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  KNX/IP Validation Tool - test configuration
+#  OAM-IP-Interface (IPIF) - KNXnet/IP interface, mask 07B0, TP1 medium
+#  2026 OpenKNX - Erkan Colak
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#  FORMAT - read this before editing
+#  ---------------------------------
+#  This is the shape the TOOL itself writes: an "include" list of tree paths and
+#  test ids, plus "parameters" / "systemparameters". A whole section is selected
+#  by its path; where single ids are listed instead, it is because something in
+#  that section is deliberately NOT selected.
+#
+#  Careful: saving the configuration from inside the tool REWRITES this file and
+#  DROPS EVERY COMMENT. If you change the selection in the dialog, re-apply the
+#  comments afterwards - or the reasons below are gone. The clause references are
+#  the part that took the measuring; the id list is mechanical.
+#
+#  Because this is an include list, what is EXCLUDED is invisible. Every omission
+#  is therefore written out below.
+#
+#  Device under test (measured 2026-09-06): 11.11.0.210, PA 5.0.13, mask 07B0,
+#  service families CORE v1 - DEVICE_MANAGEMENT v1 - TUNNELLING v1, NO ROUTING.
+#
+#  ── What is left out, and why ────────────────────────────────────────────────
+#
+#  Core v2 / TCP (10701-10731) and extended discovery (10902-10920)
+#      CORE is advertised as v1. TCP and SEARCH_REQUEST_EXTENDED arrived with
+#      Core v2; every case fails with "TCP connection failed". Not implementing
+#      an optional service is allowed - advertising one you do not serve is not,
+#      and this product does not.
+#
+#  Tunnelling v2 feature services (30401-30428)
+#      TUNNELLING is advertised as v1. 03_08_04 3.5: a server that does not
+#      support the feature services shall ignore them.
+#
+#  Routing (30201-30203, 40101-40315) and the routing version check (80130)
+#      ROUTING is not advertised, and must not be: a device advertising it may
+#      not offer the HW bus monitor (03_08_04 2.2.4 p.8). This is the product
+#      decision that makes the bus monitor conformant, not a gap.
+#
+#  Remote Configuration and Diagnosis (50101-50510)
+#      REMOTE_CONF_DIAG is not advertised. Optional family, deliberately absent.
+#
+#  KNX IP end device (60101, 60102)
+#      This is a TP1 device with an IP interface (medium 0x02), not a KNX IP end
+#      device (0x20). The tool reports Medium=0x02<>0x20.
+#
+#  Device Management v2 (60201)
+#      DEVICE_MANAGEMENT is advertised as v1. Note the tension: 60202-60206 stay
+#      IN, and they ARE the cEMI Transport Layer, i.e. what "v2" means. The mode
+#      is required at v1 too (03_08_03 2.6.1.1 p.18) - only the T_Data_* services
+#      are version dependent (4.2.5 p.23). This product builds both.
+#
+#  cEMI raw mode (30105)
+#      Optional connection option, refused with E_TUNNELING_LAYER (0x29), which
+#      is the correct answer for a layer that is not supported.
+#
+#  Programming mode by memory access (20208)
+#      03_05_01 4.26 p.303 has TWO realisations. Type 1 IS the property
+#      PID_PROG_MODE (4.26.2). Type 2 is the memory cell 0060h (4.26.3 -
+#      "curr_prog_mode", bit 0 prog_mode and bit 7 parity, exactly the 0x81 the
+#      tool writes), and 4.26.3 lists who uses it: "Ctrl-Mode fixed DMA,
+#      Ctrl-Mode reloc DMA, masks 0012h, 0020h, 0021h, 0701h in E-Mode". 07B0 is
+#      NOT among them - it is a System B S-Mode device and uses type 1, which
+#      20207 measures green. Vol.6 Profiles 3.5.5.3 p.31 marks 20208 n/a for the
+#      KNX IP mask 57B0h for the same reason. Honouring it would also let a tool
+#      write into NVM offset 0x60, which is inside the saved interface-object
+#      image.
+#
+#  T_Connect/T_Disconnect (60202)
+#      NOT a routing test - TSSH 8.3.2 p.158 checks the cEMI Transport Layer, a
+#      service this product HAS, and its second half was a real defect that is
+#      now fixed (a device management connection was accepted while a transport
+#      connection was open; the tool required E_NO_MORE_CONNECTIONS).
+#      It is excluded because the tool cannot deliver the FIRST half here: it
+#      sends the T_Connect as a ROUTING_INDICATION, this product must not
+#      advertise ROUTING, so the tool falls back to the tunnel and keeps its own
+#      source address 1.1.255. 03_08_04 2.2.2 p.7 then forbids the answer - a
+#      source address other than 0000h is sent unchanged, and a point-to-point
+#      telegram is only passed to the tunnelling client whose connection carries
+#      that individual address. Measured 2026-09-06 on 11.11.0.210:
+#          source 0.0.0    -> T_Disconnect arrives in the tunnel
+#          source 1.1.255  -> nothing in the tunnel        (what the tool sends)
+#          source 5.0.207  -> T_Disconnect arrives in the tunnel  (tunnel PA)
+#      Our own suite covers the same case as H-4.2.14 and measures it green.
+#
+#  ── Known red cases that STAY IN ─────────────────────────────────────────────
+#    [10503] and [20212] need a load switch (TSSH 1.2.2 p.7: 1/1/50 on 1.1.50)
+#            AND an externally powered device: this REG1 draws its supply from
+#            the TP line, so opening the switch also removes its power and it
+#            cannot answer. Use the REG2 with mains/USB supply for these two.
+#    Excluding a failure you do not like is how a green report stops meaning
+#    anything - they stay in.
+#
+#  ── Setup, not this file ─────────────────────────────────────────────────────
+#    Configure the SECOND bus connection in the tool. With "busconnection" empty
+#    the 2026-09-06 run lost 22 results to "Falcon connection failed", none of
+#    which said anything about the device.
+#    Keep the bus QUIET. A router that couples the production line onto the test
+#    line produced [30212] and [60206] as pure noise artefacts; both vanished
+#    when it was disconnected.
+# ══════════════════════════════════════════════════════════════════════════════
+
+include:
+# ── 00 Setup ─────────────────────────────────────────────────────────────────
+- KNX/00 Setup
+
+# ── 01 Core - complete, all six sections ─────────────────────────────────────
+- KNX/01 Core/01 Unspecific
+- KNX/01 Core/02 SEARCH_REQUEST
+- KNX/01 Core/03 DESCRIPTION_REQUEST
+- KNX/01 Core/04 CONNECT_REQUEST
+- KNX/01 Core/05 CONNECTIONSTATE_REQUEST
+- KNX/01 Core/06 DISCONNECT_REQUEST
+
+# ── 02 Device Management ─────────────────────────────────────────────────────
+- KNX/02 Device Management/01 Device Management CONNECT_REQUEST
+# 02 DEVICE_CONFIGURATION_REQUEST listed per id: 20208 is left out (see header)
+- 20201
+- 20202
+- 20203
+- 20204
+- 20205
+- 20206
+- 20207
+- 20209
+- 20210
+- 20211
+- 20212
+- KNX/02 Device Management/03 cEMI Transport Layer
+
+# ── 03 Tunnelling ────────────────────────────────────────────────────────────
+# 01 CONNECT_REQUEST listed per id: 30105 (cEMI raw mode) is left out
+- 30101
+- 30102
+- 30107
+- 30108
+- KNX/03 Tunneling/02 TUNNELING_REQUEST
+- KNX/03 Tunneling/03 Tunnel Addresses
+- KNX/03 Tunneling/04 NAT Compatible Tunneling
+
+# ── 06 Medium - cEMI Transport Layer ─────────────────────────────────────────
+# 60101/60102 (KNX IP end device), 60201 (DevMgmt v2) and 60202 are left out
+- 60203
+- 60204
+- 60205
+- 60206
+
+# ── 07 Security ──────────────────────────────────────────────────────────────
+- KNX/07 Security
+
+# ── 08 System Broadcast - complete except the routing version check ──────────
+- 80102
+- 80103
+- 80104
+- 80105
+- 80106
+- 80107
+- 80108
+- 80109
+- 80110
+- 80111
+- 80112
+- 80113
+- 80114
+- 80115
+- 80116
+- 80117
+- 80118
+- 80119
+- 80120
+- 80121
+- 80122
+- 80123
+- 80124
+- 80125
+- 80126
+- 80127
+- 80128
+- 80129
+- 80131
+
+exclude: []
+
+parameters:
+# [30213] sends a tunnelled MaskVersionRead to this address and expects the answer
+# to carry it as source. TSSH uses the load switch (1.1.50); any answering TP device
+# works. 5.0.3 is measured green by our own suite as H-5.2.10.
+- id: 30213
+  parameters:
+    Device address of load switch: 5.0.3
+
+systemparameters:
+# The REG1 under test draws its supply FROM the TP line. The tool defaults this to
+# False, i.e. "supply independent of the bus", and on that assumption [10503] and
+# [20212] open the TP connection and still expect an answer over IP.
+- name: BdutIsTp1Powered
+  value: true

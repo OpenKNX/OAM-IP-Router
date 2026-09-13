@@ -1,0 +1,39 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  KNX/IP Validation Tool - test SETUP
+#  OAM-IP-Router (IPRO) - measured on 11.11.0.126, 2026-09-06
+#  2026 OpenKNX - Erkan Colak
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#  Same keys and the same order as the setup the tool wrote itself on 2026-09-06.
+#  Nothing invented: the tool's YAML reader does NOT skip keys it does not know -
+#  it throws (TypeInspectorSkeleton.GetProperty ... ignoreUnmatched), which is
+#  exactly what "The selected file is not a valid configuration file!" was.
+#
+#  Device values read from the DESCRIPTION_RESPONSE of 11.11.0.126 on 2026-09-06.
+#  Adjust localaddress / interfaceaddress / name to the PC this runs on.
+#
+#  multicastaddress: the router routes on the system group 224.0.23.12. Note that
+#  the interface reports 0.0.0.0 here because it does no routing at all - do not
+#  copy one into the other.
+#
+#  busconnection: LEAVE THIS TO THE TOOL. In the 2026-09-06 run it was empty, and
+#  that alone produced 22 of the 138 errors - 17x "Falcon connection failed" and
+#  5x "Falcon: Missing Second Connection settings". It knocked out every
+#  tunnelling standard case and all six NAT cases, which our own suite measures
+#  green. Configure the second bus connection in the tool's own dialog once and
+#  save; the tool then writes the keys it expects. I am deliberately not guessing
+#  them here - a wrong key does not degrade, it refuses the whole file.
+
+testdevice:
+  dutaddress: 11.11.0.126
+  localaddress: 11.11.0.19
+  multicastaddress: 224.0.23.12
+  serialnumber: $00 $fa $13 $2f $85 $31
+  port: 3671
+  individualaddress: 5.0.0
+  friendlyname: 'OpenKNX: IP-Router REG2'
+  macaddress: D25113318531
+networkinterface:
+  name: Ethernet 2
+  interfaceaddress: 11.11.0.19
+busconnection: {}

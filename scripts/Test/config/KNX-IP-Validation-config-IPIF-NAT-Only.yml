@@ -1,0 +1,48 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  KNX/IP Validation Tool - NAT block in isolation
+#  OAM-IP-Interface (IPIF) - settles finding B4 ([30301] / [30304])
+#  2026 OpenKNX - Erkan Colak
+# ══════════════════════════════════════════════════════════════════════════════
+#
+#  Why this file exists
+#  --------------------
+#  In the 2026-09-06 run only [30301] and [30304] failed, with an EMPTY reason,
+#  while [30302] [30303] [30305] [30306] passed. That is contradictory, because
+#  the device cannot tell those cases apart:
+#
+#    30301/30304  control + data HPAI = 0.0.0.0:0   -> IP from the packet, port from the packet
+#    30302        IP = the real IP, port = 0        -> IP from the HPAI (== the packet's), port from the packet
+#    30303        IP = 0, port = the real port      -> IP from the packet, port from the HPAI
+#
+#  ip_tunnel_server.cpp resolves each field on its own (lines 749-750, 1049-1051).
+#  In 30302 the HPAI IP IS the source IP, and the ports are zero there as well, so
+#  the resolved (ip, port) pair is byte-identical to 30301. Every single fallback
+#  is proven working by a test that passed. An empty reason is an exception, not a
+#  failed assertion, and both failures are the FIRST test of their block - right
+#  after 30110-30115, which open as many tunnels as possible and rewrite
+#  PID_ADDITIONAL_INDIVIDUAL_ADDRESSES.
+#
+#  So: run the NAT block alone. If 30301/30304 pass here, the earlier failure was
+#  carry-over from the preceding block and B4 is not a device finding. If they
+#  still fail alone, it IS one - then capture it with Wireshark and hold it
+#  against 03_08_02 8.6.2.2 p.49.
+#
+#  Note on the half-zero cases: 03_08_02 8.6.2.2 p.49 says an HPAI with only the
+#  IP or only the port set to zero is INVALID and "shall be ignored". 08_TSSH
+#  5.4.2/5.4.3 nevertheless expects 30302/30303 to succeed. The tool implements the
+#  test spec, our permissive field-wise resolution matches it, and they pass. Do
+#  not "fix" that towards the Core wording - it would turn four green cases red.
+
+include:
+  - 30301   # Standard Case NAT Compatible Tunneling to KNX
+  - 30302   # NAT Compatible Tunneling to KNX with IP address set
+  - 30303   # NAT Compatible Tunneling to KNX with port number set
+  - 30304   # Standard Case NAT Compatible Tunneling from KNX
+  - 30305   # NAT Compatible Tunneling from KNX with IP address set
+  - 30306   # NAT Compatible Tunneling from KNX with port number set
+
+exclude: []
+
+parameters: []
+
+systemparameters: []

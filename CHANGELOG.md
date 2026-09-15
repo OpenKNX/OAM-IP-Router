@@ -102,7 +102,7 @@ with OpenKNXproducer 4.3.12.
 The commits below are pinned in `dependencies.txt`. Each library carries its own CHANGELOG with the full
 list; this is what matters for this product.
 
-**knx** `b8b6931` -> `0776420` (tag `ec/v2.5.0-beta.1`)
+**knx** `b8b6931` -> `609312e` (tag `ec/v2.5.0-beta.1`)
 * Memory-safety pass over the paths the router runs on: `CemiFrame::valid()` out-of-bounds read, truncated `M_PropRead`/`M_PropWrite` frames, the `TpUart sendFrame` malloc guard, the LC-config property pointer in `isAckRequired`, and two memory leaks (TPUart frames on discarded TP frames, cEMI `M_PropRead` on a negative response)
 * Tunnel-slot exhaustion fixed: all expired slots are reaped, not just the first occupied one, and the dangling `addresses` pointer in `HandleConnectRequest` is gone
 * Inbound routing cEMI is validated before it is forwarded to TP, and a frame dropped by the routing send limit produces a negative `L_Data.con`
@@ -115,7 +115,7 @@ list; this is what matters for this product.
 * Fix: the counter header is included outside the architecture guards -- an ESP32 target without `KNX_TUNNELING` did not compile; this product was never affected, its builds carry tunnelling
 * Since `e75b123`: the coupler records its routing decisions and counts telegrams dropped for hop count 0; the filter table is exposed for diagnostics; the bus monitor is refused on a routing device; a tunnel reports which slot it holds and which one is reserved for it, and a connect that is turned away is recorded
 
-**OFM-FileTransferModule** `178f186` -> `a72f160` (tag `ec/v0.2.0-beta.1`)
+**OFM-FileTransferModule** `178f186` -> `9c53ab5` (tag `ec/v0.2.0-beta.1`)
 * The whole FTC feature set arrives in this product: file transfer, firmware update, console tunnel and access control over cEMI/KNX, with one shared client core driving both the on-device `ftc` command and the desktop `ftc-cli`
 * Access control with password login, gated from ETS; reads stay open except in the blocked stage
 * Firmware update as a difference to the running image (`.okd`) — about 2 min instead of 78 min for a 1.8 MB image
@@ -123,7 +123,7 @@ list; this is what matters for this product.
 * The German documents are replaced by an English set
 * Since `9e1c03d`: knxOTA names the devices a scan finds and merges start and cancel into one button; the installer copies the binary with a plain read/write loop; the ETS download counter is out of the device profile
 
-**TPUart** (new pin, tag `ec/1.3.0-beta.1` at `42a59c6`)
+**TPUart** (new pin, tag `ec/1.3.0-beta.1` at `50a4d7e`)
 * Proven behaviours are the default now: BCU auto-reconnect, sticky TX data offset, fast TX and RX drain on ESP32, BCU health counters and the lost-CON backstop. This is why nine switches could be dropped from the ini
 * Three signed-char bugs that only hit ESP32: a `0xFF` UART byte was dropped, any octet `>= 0x80` corrupted CRC and addresses, and the receiver control-byte comparisons were dead code
 * Medium-access priority honoured on TP egress, so an ETS system-priority frame does not queue behind a low-priority backlog
@@ -132,28 +132,28 @@ list; this is what matters for this product.
 * `busOperational()` for the tunnel heartbeat — the host-to-chip link stays up on an externally powered NCN when the bus voltage drops
 * Since `80210c8` (`ec/1.2.0-beta.1` -> `ec/1.3.0-beta.1`): the volatile counters are no longer incremented with `++`/`--`; the NCN chip identity is read in a receiver-off window; a switch for the chip's own acknowledge; a blocked acknowledge is parked instead of losing its window; a dropped frame is reported only when one was in flight; the probed baud rate is verified before it is accepted; the UART byte status is split into framing, parity, break and overrun
 
-**OFM-Network** `876598e` -> `547d544`
+**OFM-Network** `876598e` -> `b7d3fdd`
 * Webserver, web console, file manager (internal / SD / external flash), group monitor, MQTT client and broker, HTTP(S) client, ping
 * KNX-IP status LED, IP capabilities reported per 03_08_03, multicast rebind on IP change, the RP2040 W5500 robustness layer restored
 * Link mode from ETS instead of from flash, whole-interface packet counters, TLS chain validated against a root certificate, file download from a URL straight onto the device
 * OTA stays open while the device is unconfigured — an unconfigured device used to evaluate erased parameter memory and could lock itself out of OTA
 * Since `1f95c5d`: `net phy` reads the W5500 over SPI (register read at a chosen clock, timed RSTn pulse, 1 Hz square wave); the self-heal no longer spends 62 ms of `delay()` in one loop pass every 5 s while the chip is down, which starved the TPUart receive path; mDNS announces product, KNX order number and board
 
-**OGM-Common** `c703d7b` -> `9c08f0b`
+**OGM-Common** `c703d7b` -> `b0e1779` (tag `ec/v2.0.0-beta.1`)
 * Build-time flash and knxOTA reporting, unified reports that also work on Windows, `Prepare-Firmware.ps1` with a real file browser, module release hooks by convention
 * Web assets are generated from `web/assets/` into `webassets.h` at build time, so modules no longer hand-minify into C++ string literals
 * PSRAM helpers, `pausePeriodicSave()`, uptime rollover and unreadable bus counters fixed
 * **Breaking:** the trace filter was reworked — `OPENKNX_TRACE1..5` are replaced by a single `OPENKNX_TRACE`, and the regex dependency (about 80 kB flash when tracing was on) is gone
 * Since `420d94c`: the OTA upload names the product and refuses a mismatched target; identity and provenance are written next to the firmware; `InternalTime` moves out of the aliased parameter bit; `bcu stat` gives the NCN chip its own row and shows it only when a register answered; the busmonitor console command is refused on a routing device; device commands stay off the diagnose object
 
-**OFM-DeviceDisplay** `0838614` -> `f90faca`
+**OFM-DeviceDisplay** `0838614` -> `4fab100` (tag `v0.1.0`)
 * The widget manager owns the top-right corner: a blinking busmon badge and the rotation state, so both are visible whatever widget is on screen
 * Clock, console header and system-info widget show local time instead of UTC
 
 **OGM-HardwareConfig** `51dc43e` -> `0f59ba5`
 * Datasheets for the REG board components
 
-**OFM-SDCard** — pinned unchanged, see `dependencies.txt`.
+**OFM-SDCard** `638cf14` -> `3ba0aa4` (tag `v0.1.0`)
 
 **OFM-UsbExchange** — removed from this product.
 

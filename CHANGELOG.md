@@ -37,7 +37,7 @@ with OpenKNXproducer 4.3.12.
 * Feature: HTTP service and LAN mode enabled; Info1 is driven as "(KNX-IP)" with function 11
 * Change: the BASE channel is rebuilt in `TemplateRouter.xml` so the FTM block sits inside "Erweitert" instead of beside it, mirroring the interface template
 * Change: `Common.Router.share.xml` is taken from `lib/OGM-Common` instead of `lib/OFM-Network` — this requires an OGM-Common that carries the file
-* Change: product 7.6.0 -> 7.6.1 -> 7.6.2 -> 8.0.0; `op:verify` floors raised to OGM-Common 1.9 and OFM-Network 0.8
+* Change: product 7.6.0 -> 7.6.1 -> 7.6.2 -> 8.0.0; `op:verify` floors raised to OGM-Common 2.0 and OFM-Network 0.8
 
 ### Device
 * Feature: the FileTransferClient module is registered as object 11 — PA to PA firmware push over the bus, with SD and external-flash storage backends

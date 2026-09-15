@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Test-Features
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Features/Test-Features.ps1
+
 <#
-Open ■
-┬────┴  Test-Features
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Features/Test-Features.ps1
-
 .SYNOPSIS
     Layer 2 of the test plan: product features and behaviour that no KNX specification
     prescribes but that the product promises.
@@ -108,7 +108,7 @@ if ($ExpectRouting) { $productName = 'IP-Router' }
         'Expect routing'   = $ExpectRouting.ToString()
         'Tunnel count'     = "$TunnelCount"
         'Device name'      = $(if ($null -ne $desc -and $null -ne $desc.Device) { $desc.Device.FriendlyName } else { 'unknown' })
-        'Mask version'     = $(if ($null -ne $desc -and $null -ne $desc.Extended) { $desc.Extended.MaskVersion } else { 'unknown' })
+        'Mask version'     = $(Get-KnxMaskVersionText -Ip $Ip -Port $Port)
         'Host'             = "$($PSVersionTable.PSEdition) $($PSVersionTable.PSVersion)"
     })
 
@@ -368,12 +368,21 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-BM-3' -Title 'Busmonitor delivers byte-e
     # Gate on what X-BM-1 actually observed, not on the command-line switch.
     if (-not $script:BusmonAvailable) { Set-KnxTestNotApplicable 'device refused a busmonitor tunnel (no hardware busmonitor) - see X-BM-1' }
     if (-not $TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to generate bus traffic' }
+    # Traffic tunnel first: the wait for a slot happens with no busmonitor open, so an exclusive
+    # channel is not left unserviced while it runs.
+    $src = Get-KnxTrafficConnection -Ip $TrafficIp
+
 
     $bm = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer $K.Layer.TUNNEL_BUSMONITOR
     Assert-KnxTrue $bm.Ok "busmonitor tunnel refused ($($bm.StatusName))"
-    $src = Get-KnxTrafficConnection -Ip $TrafficIp
+
     try {
-        Assert-KnxTrue ($null -ne $src) 'no tunnel available on the traffic interface'
+        # NOT an assertion: a traffic interface whose slots are still held says nothing about the
+        # device under test. Run standalone this never happens; run after another stage it does,
+        # and failing here pointed the red line at the wrong device.
+        if ($null -eq $src) {
+            Set-KnxTestSkip "the traffic interface $TrafficIp granted no tunnel while we waited - its slots are still held by an earlier stage, so this says nothing about the busmonitor"
+        }
         $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination (ConvertTo-KnxGa -Address '0/0/31') -IsGroup -Tpdu (New-TpduGroupValueWrite -Value 1)
         foreach ($i in 1..3) { [void](Send-KnxTunnelCemi -Connection $src -Cemi $cemi -TimeoutMs 3000); Start-Sleep -Milliseconds 200 }
 

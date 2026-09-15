@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Sync-TestLib
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Sync-TestLib.ps1
+
 <#
-Open ■
-┬────┴  Sync-TestLib
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Sync-TestLib.ps1
-
 .SYNOPSIS
     Compares - and on request propagates - the shared conformance test library between
     OAM-IP-Interface and OAM-IP-Router.

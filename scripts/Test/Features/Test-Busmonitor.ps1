@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Test-Busmonitor
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Features/Test-Busmonitor.ps1
+
 <#
-Open ■
-┬────┴  Test-Busmonitor
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Features/Test-Busmonitor.ps1
-
 .SYNOPSIS
     Edge cases of the hardware busmonitor - the ones a single "does it capture" check misses.
 
@@ -36,6 +36,11 @@ FILEPATH: scripts/Test/Features/Test-Busmonitor.ps1
     Device under test - the interface whose busmonitor is exercised.
 .PARAMETER TrafficIp
     Second interface on the same TP line, used to put telegrams on the bus.
+    Pick one that passes the control field through. Measured 2026-09-14 with the same device
+    under test: via 11.11.0.5 all 8 hostile telegrams of B-14 came back with priorities 0/2/3,
+    hop counts 0/6/7 and the extended frame; via 11.11.0.2 only 4 came back, all flattened to
+    priority 3 and hop count 6. A normalising source silently narrows what B-7 and B-14 can
+    prove - it does not fail them.
 .PARAMETER Seconds
     Capture window for the load cases. Default 15.
 .PARAMETER ReportDir
@@ -302,6 +307,19 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-12' -Title 'Capture stays faithful under
         if ($hs[$i].Sequence -ne ((($hs[$i - 1].Sequence + 1) -band 0x07))) { $gaps++ }
     }
     Add-KnxEvidence -Note "$($heavy.Sent) telegram(s) generated, $($heavy.Frames.Count) frame(s) captured, $($hbad.Count) bad FCS, $($hlost.Count) lost-flag, $gaps sequence gap(s)"
+    # A bad check octet has two very different causes and the count alone cannot tell them apart:
+    # a corrupt capture, or a device that splits one long telegram into several L_Busmon.ind -
+    # each piece then fails an FCS test that only a whole telegram can pass. MORE frames than
+    # telegrams with no lost flag and no sequence gap points at the second. Record the raw LPDUs
+    # so the reader can decide instead of trusting the label on the assertion.
+    if ($hbad.Count -gt 0) {
+        foreach ($b in ($hbad | Select-Object -First 4)) {
+            Add-KnxEvidence -Note "bad FCS, AddIL $($b.AddIL), raw LPDU: $(ConvertTo-HexString -Bytes $b.Lpdu) | whole cEMI: $(ConvertTo-HexString -Bytes $b.Cemi)"
+        }
+        if ($heavy.Frames.Count -gt $heavy.Sent -and $hlost.Count -eq 0 -and $gaps -eq 0) {
+            Add-KnxEvidence -Note "$($heavy.Frames.Count) frames for $($heavy.Sent) telegrams with no loss signalled - consistent with a device that reports a long telegram in pieces rather than with a corrupt capture"
+        }
+    }
     Assert-KnxTrue ($heavy.Frames.Count -gt 0) 'nothing captured under load'
     Assert-KnxEqual 0 $hbad.Count 'under load the monitor delivered a telegram with a broken frame check octet'
     Assert-KnxEqual 0 $hlost.Count 'under load the monitor set the lost flag - it dropped frames'
@@ -333,10 +351,15 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
     # check octet itself, so anything it puts on TP is well formed by construction. Producing
     # those needs a faulty transmitter. That the monitor would SURFACE such a frame is covered
     # by B-13, which proves the error flags are carried through and readable.
+    # The traffic tunnel FIRST. Get-KnxTrafficConnection waits for a slot when the interface is
+    # still holding the previous stage's, and waiting with an already-open busmonitor means nobody
+    # reads it for that long - the device then ends the exclusive channel this case needs.
+    $gen = Get-KnxTrafficConnection -Ip $TrafficIp -Port $Port
+    if ($null -eq $gen) {
+        Set-KnxTestSkip "the traffic interface $TrafficIp granted no tunnel - its slots are still held by an earlier case, so this says nothing about the monitor"
+    }
     $bm = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer $K.Layer.TUNNEL_BUSMONITOR
     Assert-KnxTrue $bm.Ok "busmonitor refused ($($bm.StatusName))"
-    $gen = Get-KnxTrafficConnection -Ip $TrafficIp -Port $Port
-    Assert-KnxTrue ($null -ne $gen) "no tunnel available on the traffic interface $TrafficIp"
     try {
         Clear-KnxSocket -Socket $bm.Socket -QuietMs 600
         $ga = ConvertTo-KnxGa -Address '7/7/7'
@@ -350,32 +373,74 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
             @{ Name = 'max standard APDU';     Cemi = (New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination $ga -IsGroup -Tpdu ([byte[]]((, 0x00) + (, 0x80) + (1..14 | ForEach-Object { [byte]$_ }))) -Priority 3) }
             @{ Name = 'extended-length APDU';  Cemi = (New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination $ga -IsGroup -Tpdu ([byte[]]((, 0x00) + (, 0x80) + (1..40 | ForEach-Object { [byte]$_ }))) -Priority 3) }
         )
-        $sent = @()
-        $refused = @()
-        foreach ($p in $probes) {
-            $r = Send-KnxTunnelCemi -Connection $gen -Cemi $p.Cemi -TimeoutMs 2000
-            if ($r.Acked) { $sent += $p.Name } else { $refused += $p.Name }
-            Start-Sleep -Milliseconds 250
+        # The busmonitor channel has to be serviced WHILE the probes go out. A device whose
+        # indications stay unacknowledged repeats once and then ends the connection
+        # (03_08_04 p.9), so sending for ten seconds without reading kills the very capture
+        # this case is about - the drain afterwards then finds a channel that is already gone.
+        $seen = New-Object 'System.Collections.Generic.List[object]'
+        $drainBm = {
+            param([int]$Ms)
+            $end = [DateTime]::UtcNow.AddMilliseconds($Ms)
+            while ([DateTime]::UtcNow -lt $end) {
+                $left = [int]([Math]::Max(1, ($end - [DateTime]::UtcNow).TotalMilliseconds))
+                $in = Receive-KnxTunnelCemi -Connection $bm -TimeoutMs $left
+                if ($null -eq $in) { break }
+                if ($in.Cemi.Length -lt 1 -or $in.Cemi[0] -ne $K.Cemi.L_BUSMON_IND) { continue }
+                $d = Read-CemiBusmon -Cemi $in.Cemi
+                if ($null -ne $d) { [void]$seen.Add($d) }
+            }
         }
-        Add-KnxEvidence -Note "put on the bus: $($sent -join '; ')"
-        if ($refused.Count -gt 0) { Add-KnxEvidence -Note "the traffic interface did not acknowledge: $($refused -join '; ')" }
+
+        # B-12 ran just before and left its confirmations parked on this shared connection.
+        if ($null -ne $gen.PSObject.Properties['Pending']) { $gen.Pending.Clear() }
+        Clear-KnxSocket -Socket $gen.Socket -QuietMs 300
+
+        # ...and it also leaves the traffic interface busy. A source that has just carried 120
+        # telegrams needs a moment before it confirms anything again, and without this wait the
+        # case skipped for a reason that has nothing to do with the monitor. Send one canary and
+        # give the source up to 12 s to confirm it; what it does after that is representative.
+        $canary = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination $ga -IsGroup -Tpdu (New-TpduGroupValueRead) -Priority 3
+        $ready = $false
+        $until = [DateTime]::UtcNow.AddSeconds(12)
+        while (-not $ready -and [DateTime]::UtcNow -lt $until) {
+            $c = Send-KnxTunnelCemi -Connection $gen -Cemi $canary -TimeoutMs 1500
+            $ready = $c.Acked -and (Test-KnxTransmitted -Connection $gen -Sent $canary -TimeoutMs 1500)
+            if (-not $ready) { Start-Sleep -Milliseconds 500 }
+        }
+        Add-KnxEvidence -Note $(if ($ready) { 'traffic interface confirmed a canary before the probes' }
+                                else { 'traffic interface did not confirm a canary in the window after the load case' })
+        Clear-KnxSocket -Socket $bm.Socket -QuietMs 200
+
+        $onBus = @()
+        $noConfirm = @()
+        foreach ($p in $probes) {
+            # Drain before every send. -Sent rejects a confirmation for a different telegram, but
+            # five of these probes and the canary share destination AND payload and differ only in
+            # the control field, which an interface may rewrite - so the filter cannot separate
+            # them. Only an empty queue makes the next L_Data.con unambiguously this probe's.
+            if ($null -ne $gen.PSObject.Properties['Pending']) { $gen.Pending.Clear() }
+            Clear-KnxSocket -Socket $gen.Socket -QuietMs 120
+            $r = Send-KnxTunnelCemi -Connection $gen -Cemi $p.Cemi -TimeoutMs 2000
+            # The TUNNELLING_ACK only says the interface took the packet off the wire. What
+            # proves the telegram reached TP is the device's own L_Data.con with the confirm
+            # flag cleared (03_06_03 p.80). Judging "on the bus" by the ack counted frames the
+            # server had acknowledged and discarded as duplicates.
+            if ($r.Acked -and (Test-KnxTransmitted -Connection $gen -Sent $p.Cemi -TimeoutMs 1500)) { $onBus += $p.Name }
+            else { $noConfirm += $p.Name }
+            & $drainBm 300
+        }
+        Add-KnxEvidence -Note "confirmed on the bus by L_Data.con: $($onBus -join '; ')"
+        if ($noConfirm.Count -gt 0) { Add-KnxEvidence -Note "the traffic interface did not confirm transmission: $($noConfirm -join '; ')" }
         # Nothing on the bus means the monitor had nothing to show, so it cannot be judged
         # here. Asserting on the capture anyway blamed the busmonitor for a traffic source
         # that had just been exhausted by the load case before it - a red line pointing at
         # the wrong device. B-12 runs immediately before this and hammers the same
         # interface; a one-tunnel traffic source has not recovered by the time we get here.
-        if ($sent.Count -eq 0) {
-            Set-KnxTestSkip 'the traffic interface acknowledged none of the hostile telegrams - nothing reached the bus, so this says nothing about the monitor'
+        if ($onBus.Count -eq 0) {
+            Set-KnxTestSkip 'the traffic interface confirmed none of the hostile telegrams - nothing reached the bus, so this says nothing about the monitor'
         }
 
-        $seen = @()
-        $deadline = [DateTime]::UtcNow.AddSeconds(6)
-        while ([DateTime]::UtcNow -lt $deadline) {
-            $in = Receive-KnxTunnelCemi -Connection $bm -TimeoutMs 900
-            if ($null -eq $in -or $in.Cemi[0] -ne $K.Cemi.L_BUSMON_IND) { continue }
-            $d = Read-CemiBusmon -Cemi $in.Cemi
-            if ($null -ne $d) { $seen += $d }
-        }
+        & $drainBm 2000
         $tel = @($seen | Where-Object { -not $_.IsAck })
         $badFcs = @($tel | Where-Object { -not $_.FcsOk })
         $lenBad = @()
@@ -386,11 +451,25 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
             if ($l.Length -ne $exp) { $lenBad += (ConvertTo-HexString -Bytes $l) }
         }
         $prios = @($tel | ForEach-Object { ($_.Lpdu[0] -shr 2) -band 0x03 } | Sort-Object -Unique)
-        $hops = @($tel | Where-Object { $_.Lpdu.Length -gt 5 } | ForEach-Object { ($_.Lpdu[5] -shr 4) -band 0x07 } | Sort-Object -Unique)
+        # Standard frame: Ctrl|SA(2)|DA(2)|NPCI, hop count in the NPCI nibble at index 5.
+        # Extended frame (bit 7 of Ctrl clear): Ctrl|CtrlE|SA(2)|DA(2)|Len - the hop count is in
+        # CtrlE at index 1, and index 5 is the destination low byte. Reading index 5 for both
+        # mixed real hop counts with an address byte, and this evidence is now quoted in the report.
+        $hops = @($tel | Where-Object { $_.Lpdu.Length -gt 5 } | ForEach-Object {
+                    $i = if (($_.Lpdu[0] -band 0x80) -ne 0) { 5 } else { 1 }
+                    ($_.Lpdu[$i] -shr 4) -band 0x07
+                 } | Sort-Object -Unique)
         $exts = @($tel | Where-Object { ($_.Lpdu[0] -band 0x80) -eq 0 })
-        Add-KnxEvidence -Note "captured $($tel.Count) telegram(s); priorities $($prios -join ','); hop counts $($hops -join ','); $($exts.Count) extended frame(s)"
+        # State both numbers side by side. A capture that is SHORTER than what the traffic
+        # interface confirmed is not asserted on - this case cannot see the sender and must not
+        # blame the monitor for it - but burying the gap would let a monitor that drops half the
+        # bus pass as green.
+        Add-KnxEvidence -Note "$($onBus.Count) telegram(s) confirmed on the bus, $($tel.Count) came back from the monitor; priorities $($prios -join ','); hop counts $($hops -join ','); $($exts.Count) extended frame(s)"
+        if ($tel.Count -lt $onBus.Count) {
+            Add-KnxEvidence -Note "$($onBus.Count - $tel.Count) confirmed telegram(s) did not appear in the capture - either the sending interface never put them on TP despite a positive L_Data.con, or the monitor dropped them; not attributable from here"
+        }
 
-        Assert-KnxTrue ($tel.Count -gt 0) 'none of the hostile telegrams came back from the monitor'
+        Assert-KnxTrue ($tel.Count -gt 0) "the traffic interface confirmed $($onBus.Count) telegram(s) on the bus, but the monitor reported none of them"
         Assert-KnxEqual 0 $badFcs.Count 'a hostile telegram came back with a broken frame check octet - the monitor altered it'
         Assert-KnxEqual 0 $lenBad.Count "a hostile telegram came back with a length its own header contradicts: $($lenBad -join '; ')"
 

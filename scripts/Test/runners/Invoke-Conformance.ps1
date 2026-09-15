@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Invoke-Conformance
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Invoke-Conformance.ps1
+
 <#
-Open ■
-┬────┴  Invoke-Conformance
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Invoke-Conformance.ps1
-
 .SYNOPSIS
     Runs the KNXnet/IP conformance suites against an OpenKNX IP-Interface or IP-Router
     and writes a Markdown + JSON report with a per-clause verdict.
@@ -309,9 +309,13 @@ if ($null -ne $desc) {
         $deviceName = $desc.Device.FriendlyName
         $devicePa = $desc.Device.IndividualAddr
     }
-    if ($null -ne $desc.Extended) { $maskVersion = $desc.Extended.MaskVersion }
     foreach ($f in $families) { if ($f.Id -eq 0x05) { $isRouter = $true } }
 }
+
+# The mask comes from PID 83 over device management and does not depend on a DESCRIPTION_RESPONSE.
+# Inside that guard, the one device this was written for - one that answers no description - kept
+# printing 'unknown', which is the word the helper exists to replace.
+$maskVersion = Get-KnxMaskVersionText -Ip $Ip -Port $Port
 
 if ($Product -eq 'Interface') { $isRouter = $false }
 if ($Product -eq 'Router')    { $isRouter = $true }

@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Start-FakeKnxDevice
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Tools/Start-FakeKnxDevice.ps1
+
 <#
-Open ■
-┬────┴  Start-FakeKnxDevice
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Tools/Start-FakeKnxDevice.ps1
-
 .SYNOPSIS
     A minimal KNXnet/IP responder used to exercise the conformance suites without hardware.
 

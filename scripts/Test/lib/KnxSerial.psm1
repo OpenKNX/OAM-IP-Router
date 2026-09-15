@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  KnxSerial
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/lib/KnxSerial.psm1
+
 <#
-Open ■
-┬────┴  KnxSerial
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/lib/KnxSerial.psm1
-
 .SYNOPSIS
     The serial side of the test suite: find the ports, find out what is on them, and talk
     to a device console without every script reinventing it.

@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  D-Device.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/D-Device.Tests.ps1
+
 <#
-Open ■
-┬────┴  D-Device.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/D-Device.Tests.ps1
-
 .SYNOPSIS
     Conformance of a normal KNX DEVICE on the TP line, seen through a KNXnet/IP interface.
 

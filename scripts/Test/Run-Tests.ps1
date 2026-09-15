@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Run-Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Run-Tests.ps1
+
 <#
-Open ■
-┬────┴  Run-Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Run-Tests.ps1
-
 .SYNOPSIS
     The single entry point. Asks what to test, asks for the rig, runs it, reports.
 
@@ -83,7 +83,16 @@ function Show-Logo {
 
 function Get-LastRun {
     if (-not (Test-Path $stateFile)) { return @{} }
-    try { return (Get-Content $stateFile -Raw | ConvertFrom-Json -AsHashtable) } catch { return @{} }
+    # -AsHashtable arrived with PowerShell 6; under Windows PowerShell 5.1 the parameter does not
+    # exist, the call throws, and the catch below silently returned an empty state - the runner
+    # then forgot every previous answer on exactly the platform it has to run on. Convert by hand.
+    try {
+        $o = Get-Content $stateFile -Raw | ConvertFrom-Json
+        $h = @{}
+        foreach ($p in $o.PSObject.Properties) { $h[$p.Name] = $p.Value }
+        return $h
+    }
+    catch { return @{} }
 }
 
 function Save-LastRun {

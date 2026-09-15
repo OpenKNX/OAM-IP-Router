@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Invoke-DeviceTests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/runners/Invoke-DeviceTests.ps1
+
 <#
-Open ■
-┬────┴  Invoke-DeviceTests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/runners/Invoke-DeviceTests.ps1
-
 .SYNOPSIS
     Runs the KNX device conformance cases against one or more TP devices, through an
     interface or a router, and writes a Markdown + JSON report.

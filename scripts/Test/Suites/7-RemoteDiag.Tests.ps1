@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  7-RemoteDiag.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/7-RemoteDiag.Tests.ps1
+
 <#
-Open ■
-┬────┴  7-RemoteDiag.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/7-RemoteDiag.Tests.ps1
-
 .SYNOPSIS
     TSSH section 7 - Remote Diagnosis and Configuration.
 

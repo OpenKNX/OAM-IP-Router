@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Compare-Reference
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Compare-Reference.ps1
+
 <#
-Open ■
-┬────┴  Compare-Reference
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Compare-Reference.ps1
-
 .SYNOPSIS
     Runs the conformance suite against OUR device and against a certified reference
     device, then classifies every case by how the two answered.

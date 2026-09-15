@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  6-Routing.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/6-Routing.Tests.ps1
+
 <#
-Open ■
-┬────┴  6-Routing.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/6-Routing.Tests.ps1
-
 .SYNOPSIS
     TSSH section 6 - Routing. Full coverage for a router; a MUST-NOT check for an interface.
 

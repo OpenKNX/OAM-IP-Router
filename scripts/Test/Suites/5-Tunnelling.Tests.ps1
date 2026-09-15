@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  5-Tunnelling.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/5-Tunnelling.Tests.ps1
+
 <#
-Open ■
-┬────┴  5-Tunnelling.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/5-Tunnelling.Tests.ps1
-
 .SYNOPSIS
     TSSH section 5 - Tunnelling: connection handling, tunnelling requests, tunnel
     addresses and NAT compatibility.

@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Invoke-AllTests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Invoke-AllTests.ps1
+
 <#
-Open ■
-┬────┴  Invoke-AllTests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Invoke-AllTests.ps1
-
 .SYNOPSIS
     Runs every test stage in one go and produces ONE combined verdict.
 
@@ -319,7 +319,10 @@ if ($IncludeHardReset) { Write-Host '  Hard reset : ENABLED - forces factory con
 Write-Host "  Reports    : $ReportDir"
 
 $ftmDir = Join-Path (Join-Path $parentDir 'OFM-FileTransferModule') 'scripts/Hardening'
-$ftmReportDir = Join-Path $ftmDir 'Reports'
+# The hardening suite lives in OFM-FileTransferModule and writes into its own Reports folder when
+# it is started there. Run as a stage of THIS suite it belongs with the run it is part of: one
+# report directory per run, so the path printed when a run starts names the place all of them are.
+$ftmReportDir = $ReportDir
 
 # ─── Stage 1: self-tests ────────────────────────────────────────────────────────
 

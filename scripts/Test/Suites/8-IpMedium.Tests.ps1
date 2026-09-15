@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  8-IpMedium.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/8-IpMedium.Tests.ps1
+
 <#
-Open ■
-┬────┴  8-IpMedium.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/8-IpMedium.Tests.ps1
-
 .SYNOPSIS
     TSSH section 8 - IP as KNX Medium.
 

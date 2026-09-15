@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Invoke-Endurance
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Invoke-Endurance.ps1
+
 <#
-Open ■
-┬────┴  Invoke-Endurance
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Invoke-Endurance.ps1
-
 .SYNOPSIS
     Runs the full test stack N times and answers the only question repetition can answer:
     is anything INTERMITTENT, and does the device DEGRADE while being tested?

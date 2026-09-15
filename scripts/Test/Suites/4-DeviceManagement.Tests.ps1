@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  4-DeviceManagement.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/4-DeviceManagement.Tests.ps1
+
 <#
-Open ■
-┬────┴  4-DeviceManagement.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/4-DeviceManagement.Tests.ps1
-
 .SYNOPSIS
     TSSH section 4 - Device Management: connection handling, device configuration
     requests, mandatory properties, and the twelve cEMI transport-layer cases.

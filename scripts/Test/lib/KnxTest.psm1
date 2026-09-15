@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  KnxTest
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/KnxTest.psm1
+
 <#
-Open ■
-┬────┴  KnxTest
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/KnxTest.psm1
-
 .SYNOPSIS
     Shared KNXnet/IP conformance-test library for the OpenKNX IP-Interface and IP-Router.
 
@@ -902,6 +902,47 @@ function Read-CemiLData {
     }
 }
 
+function Get-KnxMaskVersion {
+    <#
+    .SYNOPSIS
+        Reads a device's mask version from PID_DEVICE_DESCRIPTOR (83) in the Device Object.
+    .DESCRIPTION
+        NOT from the DESCRIPTION_RESPONSE: 03_08_02 Table 5 p.31 lists the Extended Device
+        Information DIB as "Not allowed" there, so a device that omits it is right and looking
+        for the mask in that frame can only ever answer "unknown". The same page names the
+        authoritative source - the field "shall be identical as the contents of the Property
+        PID_DEVICE_DESCRIPTOR (PID: 83) in the Device Object".
+    .OUTPUTS
+        The mask as '0xNNNN', or $null when the device serves no device management connection
+        (a foreign interface may refuse one) or does not answer the property.
+    #>
+    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$TimeoutMs = 2000)
+    $K = Get-KnxConstants
+    $mgmt = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1 -TimeoutMs $TimeoutMs
+    if (-not $mgmt.Ok) { return $null }
+    try {
+        $dd = Read-KnxProperty -Connection $mgmt -ObjectType $K.ObjType.DEVICE -PropertyId 83
+        if ($null -eq $dd.Parsed -or $dd.Parsed.IsError -or $dd.Parsed.Data.Length -lt 2) { return $null }
+        return ('0x{0:X4}' -f (Get-Uint16 -Bytes $dd.Parsed.Data -Offset 0))
+    }
+    catch { return $null }
+    finally { [void](Close-KnxConnection -Connection $mgmt) }
+}
+
+function Get-KnxMaskVersionText {
+    <#
+    .SYNOPSIS
+        The mask version for a report header - never $null, always something the reader can act on.
+    .DESCRIPTION
+        Says WHY it is missing instead of "unknown": a device that serves no device management
+        connection cannot be asked, and that is a property of that device, not an open question.
+    #>
+    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671)
+    $m = Get-KnxMaskVersion -Ip $Ip -Port $Port
+    if ($null -ne $m) { return $m }
+    return 'not readable (no device management connection, or PID 83 unanswered)'
+}
+
 function Read-CemiBusmon {
     <#
     .SYNOPSIS
@@ -943,6 +984,7 @@ function Read-CemiBusmon {
     return [pscustomobject]@{
         AddIL       = $addIl
         Lpdu        = $lpdu
+        Cemi        = $Cemi   # kept so a caller can show the framing a slicing question turns on
         Status      = $status
         Lost        = $lost
         Sequence    = $seq
@@ -1413,7 +1455,6 @@ function Send-KnxTunnelCemi {
     )
     $seq = if ($Sequence -ge 0) { $Sequence } else { $Connection.SeqSend }
     $frame = New-KnxTunnellingRequest -Channel $Connection.Channel -Sequence $seq -Cemi $Cemi
-    Send-KnxFrame -Socket $Connection.Socket -Frame $frame -Ip $Connection.Ip -Port $Connection.Port
 
     # While waiting for our own ack the device may already be sending us frames - the
     # L_Data.con for this very request, and any indication that arrives meanwhile. Waiting
@@ -1425,8 +1466,20 @@ function Send-KnxTunnelCemi {
         Add-Member -InputObject $Connection -NotePropertyName 'Pending' `
                    -NotePropertyValue (New-Object 'System.Collections.Generic.List[object]') -Force
     }
+    # 03_08_04 p.9: on a missing TUNNELLING_ACK the sending device shall repeat the frame ONCE
+    # with the SAME sequence number, then terminate the connection. Both shortcuts are wrong and
+    # both were tried here: keeping the counter turns the NEXT, different frame into a duplicate
+    # that the server acks with E_NO_ERROR and DISCARDS, so the caller believes it went out;
+    # advancing past a frame the server never saw puts every later frame outside its window,
+    # where the server "shall not reply and shall discard" - on a connection shared by the whole
+    # run that silences it for good. The repeat is correct either way: if only the ack was lost
+    # the repeat is a duplicate and gets acked, and if the frame was lost the repeat is the one
+    # the server was waiting for.
     $status = -1; $ackSeq = -1; $ackCh = -1
     $ack = $null
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+    if ($attempt -gt 1) { $status = -1; $ackSeq = -1; $ackCh = -1; $ack = $null }
+    Send-KnxFrame -Socket $Connection.Socket -Frame $frame -Ip $Connection.Ip -Port $Connection.Port
     $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
     while ([DateTime]::UtcNow -lt $deadline) {
         $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
@@ -1466,7 +1519,32 @@ function Send-KnxTunnelCemi {
     if (-not $ack.TimedOut -and $ack.Header.Body.Length -ge 4) {
         $ackCh = $ack.Header.Body[1]; $ackSeq = $ack.Header.Body[2]; $status = $ack.Header.Body[3]
     }
+    # 03_08_04 2.6.1 names TWO repeat triggers: no ack within the timeout, AND an ack whose status
+    # signals any error. Leaving on any received ack implemented only half of it.
+    if (-not $ack.TimedOut -and $status -eq 0) { break }
+    if ($null -ne $Connection.PSObject.Properties['Disconnected'] -and $Connection.Disconnected) { break }
+    }
+    if ($null -eq $ack) { $ack = [pscustomobject]@{ TimedOut = $true; Ignored = @() } }
+    # Advance only on a positive ack. After two unanswered attempts the server never confirmed
+    # receipt, so moving the counter would step out of its window for every frame that follows.
     if (-not $NoAdvance -and $status -eq 0) { $Connection.SeqSend = (($seq + 1) -band 0xFF) }
+    # ...and then the clause requires the connection to be TERMINATED. Without that the counter
+    # stays put while the server has moved on, so the next DIFFERENT frame arrives as "one less
+    # than expected": acknowledged with E_NO_ERROR and discarded. The caller reads a positive ack,
+    # advances, and every frame from there on is silently thrown away - on a connection the whole
+    # run shares. Ending it is what stops one lost ack from poisoning every later case; the next
+    # Get-KnxTrafficConnection finds it dead and opens a fresh one.
+    # Covers both triggers: a timeout leaves $status at -1, an error status leaves it non-zero.
+    # -NoAdvance marks a caller that is deliberately probing sequence handling and expects no ack;
+    # ending its connection would destroy the very case it is running.
+    if (-not $NoAdvance -and $status -ne 0) {
+        try {
+            $bye = New-KnxDisconnectRequest -Channel $Connection.Channel -ControlIp $Connection.LocalIp -ControlPort $Connection.LocalPort
+            Send-KnxFrame -Socket $Connection.Socket -Frame $bye -Ip $Connection.Ip -Port $Connection.Port
+        }
+        catch { }
+        Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $true -Force
+    }
     $gone = $false
     if ($null -ne $Connection.PSObject.Properties['Disconnected']) { $gone = [bool]$Connection.Disconnected }
     return [pscustomobject]@{
@@ -1479,6 +1557,64 @@ function Send-KnxTunnelCemi {
         Status     = $status
         Ignored    = $ack.Ignored
     }
+}
+
+function Test-KnxTransmitted {
+    <#
+    .SYNOPSIS
+        Drains a tunnel for the L_Data.con of a frame just sent and reports whether the device
+        transmitted it.
+    .DESCRIPTION
+        A TUNNELLING_ACK only says the interface took the packet off the wire; it says nothing
+        about TP. 03_06_03 p.80: the L_Data.con (MC 2Eh) is generated by the cEMI server's own
+        data link layer, and bit 0 of Control field 1 is the confirm flag - 1 = Error, 0 = No
+        Error. That flag, not the ack, is the proof a frame reached the bus.
+    .OUTPUTS
+        $true on a positive confirmation, $false on an error confirmation or none at all.
+    #>
+    param([Parameter(Mandatory)]$Connection, [byte[]]$Sent, [int]$TimeoutMs = 1500)
+    # Without -Sent the FIRST confirmation wins, and on a connection that has just carried a load
+    # case that is somebody else's: Send-KnxTunnelCemi parks every frame that arrives while it
+    # waits, so a backlog of older L_Data.con sits there and each probe collects one. Every probe
+    # then reads as "transmitted" while nothing new went out.
+    #
+    # -Sent filters by destination and NPDU. That rejects a confirmation for a DIFFERENT telegram,
+    # but it does NOT separate two telegrams that differ only in their control field - measured:
+    # five of B-14's probes and its canary all carry destination 7/7/7 with the same GroupValueRead
+    # and differ only in priority, hop count or the repeat flag. The control field cannot be used
+    # to tell them apart either, because a normalising interface rewrites it before the L_Data.con
+    # and every probe would then read as unconfirmed. The caller must therefore drain this
+    # connection before each send; this filter is the second line, not the first.
+    $wantDa = $null; $wantNpdu = $null
+    if ($null -ne $Sent -and $Sent.Length -gt 8) {
+        $o = 2 + [int]$Sent[1]
+        if ($Sent.Length -ge ($o + 7)) {
+            $wantDa = @($Sent[($o + 4)], $Sent[($o + 5)])
+            $wantNpdu = @($Sent[($o + 6)..($Sent.Length - 1)])
+        }
+    }
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
+        $in = Receive-KnxTunnelCemi -Connection $Connection -TimeoutMs $left
+        if ($null -eq $in) { break }
+        $c = $in.Cemi
+        if ($c.Length -lt 3 -or $c[0] -ne 0x2E) { continue }   # not an L_Data.con - keep draining
+        $addIL = [int]$c[1]
+        $o = 2 + $addIL
+        if ($c.Length -lt ($o + 1)) { continue }
+        if ($null -ne $wantDa) {
+            if ($c.Length -lt ($o + 7)) { continue }
+            if ($c[$o + 4] -ne $wantDa[0] -or $c[$o + 5] -ne $wantDa[1]) { continue }
+            $npdu = @($c[($o + 6)..($c.Length - 1)])
+            if ($npdu.Count -ne $wantNpdu.Count) { continue }
+            $same = $true
+            for ($k = 0; $k -lt $npdu.Count; $k++) { if ($npdu[$k] -ne $wantNpdu[$k]) { $same = $false; break } }
+            if (-not $same) { continue }
+        }
+        return ((($c[$o]) -band 0x01) -eq 0)
+    }
+    return $false
 }
 
 function Receive-KnxTunnelCemi {
@@ -1760,7 +1896,7 @@ function Get-KnxTrafficConnection {
         One connection, reused for the whole run, and closed by Close-KnxTrafficConnection.
         Returns $null when the interface cannot serve one.
     #>
-    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$TimeoutMs = 3000)
+    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$TimeoutMs = 3000, [int]$WaitSeconds = 25)
     if ($null -ne $script:TrafficConnection) {
         $c = $script:TrafficConnection
         if ($null -ne $c.Socket -and $c.Ip -eq $Ip) {
@@ -1779,11 +1915,24 @@ function Get-KnxTrafficConnection {
         }
         $script:TrafficConnection = $null
     }
-    $conn = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $script:KnxConnType.TUNNEL_CONNECTION `
-                               -Layer $script:KnxLayer.TUNNEL_LINKLAYER -TimeoutMs $TimeoutMs
-    if (-not $conn.Ok) { return $null }
-    $script:TrafficConnection = $conn
-    return $conn
+    # A device does not free a tunnel slot the instant the previous client disconnects. Run
+    # standalone there is always one; run as one stage after another, the stage before has just
+    # released its tunnel and the slot is still held - the case then fails for a reason that has
+    # nothing to do with the device under test, and the suite looks non-deterministic when it is
+    # merely impatient. Wait, bounded, and only while the device says it is FULL: an unreachable
+    # or refusing device is answered once and not hammered.
+    $deadline = [DateTime]::UtcNow.AddSeconds($WaitSeconds)
+    while ($true) {
+        $conn = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $script:KnxConnType.TUNNEL_CONNECTION `
+                                   -Layer $script:KnxLayer.TUNNEL_LINKLAYER -TimeoutMs $TimeoutMs
+        if ($conn.Ok) {
+            $script:TrafficConnection = $conn
+            return $conn
+        }
+        $full = ($conn.Status -eq 0x24 -or $conn.Status -eq 0x25)   # E_NO_MORE_CONNECTIONS / _UNIQUE
+        if (-not $full -or [DateTime]::UtcNow -ge $deadline) { return $null }
+        Start-Sleep -Milliseconds 1500
+    }
 }
 
 function Close-KnxTrafficConnection {

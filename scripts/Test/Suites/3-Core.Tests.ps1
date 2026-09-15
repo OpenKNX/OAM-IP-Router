@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  3-Core.Tests
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: scripts/Test/Suites/3-Core.Tests.ps1
+
 <#
-Open ■
-┬────┴  3-Core.Tests
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: scripts/Test/Suites/3-Core.Tests.ps1
-
 .SYNOPSIS
     TSSH section 3 - Core: discovery, description, connect, connection state, disconnect.
 

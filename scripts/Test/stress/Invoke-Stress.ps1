@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
+# Open ■
+# ┬────┴  Test-KnxRouter
+# ■ KNX   2026 OpenKNX - Erkan Çolak
+#
+# FILEPATH: Test-KnxRouter.ps1
+
 <#
-Open ■
-┬────┴  Test-KnxRouter
-■ KNX   2026 OpenKNX - Erkan Çolak
-
-FILEPATH: Test-KnxRouter.ps1
-
 .SYNOPSIS
     Test & stress tool for the OpenKNX KNX-over-IP router
 

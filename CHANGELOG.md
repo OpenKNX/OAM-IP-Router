@@ -1,22 +1,7 @@
 # Changes
 
 
-## unreleased
-
-**Conformance test suite**
-* Fix: a lost TUNNELLING_ACK is answered the way 03_08_04 2.6.1 requires -- the frame is repeated once with the same sequence number and the connection is ended when two attempts go unconfirmed. Keeping the counter made the next, different frame a duplicate that a server acknowledges with `E_NO_ERROR` and discards, so a positive ack was read for a frame that never went out; advancing past a frame the server never saw put every later frame outside its window, where it must not reply at all, and silenced the shared traffic connection for the rest of a run
-* Fix: B-14 judges a telegram on the bus by the device's own `L_Data.con` with the confirm flag cleared (03_06_03 p.80), not by the tunnel acknowledgement, which only reports that the interface took the packet. The connection is drained before every probe, because five of the probes and the canary share destination and payload and differ only in the control field, which an interface may rewrite
-* Fix: the busmonitor is read while the probes are sent. An unacknowledged indication makes the device end the connection, which emptied the capture the case is about
-* Fix: the hop count is read from CtrlE on an extended frame, where index 5 is the destination low byte -- the reported value was never on the bus
-* Fix: a traffic interface whose slots are still held is a skip, not a failure, and the wait for a slot happens before the exclusive busmonitor is opened rather than while it sits unread
-* Fix: the mask version comes from PID 83 over device management. 03_08_02 Table 5 p.31 lists the Extended Device Information DIB as not allowed in a DESCRIPTION_RESPONSE, so looking for it there could only ever answer `unknown`
-* Fix: the last-run state survives on Windows PowerShell 5.1 -- `ConvertFrom-Json -AsHashtable` arrived with PowerShell 6, so the call threw and the runner forgot every previous answer on the platform it has to run on
-* The hardening stage writes into the run's report directory instead of the other repository's, so one report of a combined run no longer lies elsewhere than the rest
-* The OpenKNX header sits above the help block instead of inside it. PowerShell exposed neither synopsis nor parameters while it was in there, so `Get-Help` was empty for every script in the suite
-
-* The suite is the identical copy the interface carries; propagated with `lib/Sync-TestLib.ps1`, which reports by default and only writes with an explicit direction
-
-## ec/ALPHA-DEV-v8.0.0: 2026-09-05
+## ec/ALPHA-DEV-v8.0.0: 2026-09-15
 
 ETS product **8.0** (`IP-Router-Dev-v8.0.knxprod`), release variant **0.8**. Alpha dev build for testers,
 covering everything since `6c1a294` (v7.6.0). All six release environments build; both knxprods generate
@@ -60,6 +45,18 @@ with OpenKNXproducer 4.3.12.
 ### Tests
 * Test: suite-based test runner — `Run-Tests` drives feature and suite scripts against a real device over the bus; shared helpers, tools and runners live next to the suites instead of in one script
 * Change: the former `Test-KnxRouter` script moves to `Test/stress/Invoke-Stress`
+
+**Conformance test suite**
+* Fix: a lost TUNNELLING_ACK is answered the way 03_08_04 2.6.1 requires -- the frame is repeated once with the same sequence number and the connection is ended when two attempts go unconfirmed. Keeping the counter made the next, different frame a duplicate that a server acknowledges with `E_NO_ERROR` and discards, so a positive ack was read for a frame that never went out; advancing past a frame the server never saw put every later frame outside its window, where it must not reply at all, and silenced the shared traffic connection for the rest of a run
+* Fix: B-14 judges a telegram on the bus by the device's own `L_Data.con` with the confirm flag cleared (03_06_03 p.80), not by the tunnel acknowledgement, which only reports that the interface took the packet. The connection is drained before every probe, because five of the probes and the canary share destination and payload and differ only in the control field, which an interface may rewrite
+* Fix: the busmonitor is read while the probes are sent. An unacknowledged indication makes the device end the connection, which emptied the capture the case is about
+* Fix: the hop count is read from CtrlE on an extended frame, where index 5 is the destination low byte -- the reported value was never on the bus
+* Fix: a traffic interface whose slots are still held is a skip, not a failure, and the wait for a slot happens before the exclusive busmonitor is opened rather than while it sits unread
+* Fix: the mask version comes from PID 83 over device management. 03_08_02 Table 5 p.31 lists the Extended Device Information DIB as not allowed in a DESCRIPTION_RESPONSE, so looking for it there could only ever answer `unknown`
+* Fix: the last-run state survives on Windows PowerShell 5.1 -- `ConvertFrom-Json -AsHashtable` arrived with PowerShell 6, so the call threw and the runner forgot every previous answer on the platform it has to run on
+* The hardening stage writes into the run's report directory instead of the other repository's, so one report of a combined run no longer lies elsewhere than the rest
+* The OpenKNX header sits above the help block instead of inside it. PowerShell exposed neither synopsis nor parameters while it was in there, so `Get-Help` was empty for every script in the suite
+* The suite is the identical copy the interface carries; propagated with `lib/Sync-TestLib.ps1`, which reports by default and only writes with an explicit direction
 
 ### Bus load and console
 

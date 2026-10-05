@@ -495,6 +495,9 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
         // Telegrams that had used up their couplers. Nothing counted these before.
         logInfoP("Hop-Count 0->IP %lu   ->TP %lu",
                  (unsigned long)c.hopCountToIp(), (unsigned long)c.hopCountToKnx());
+        // ROUTING_LOST_MESSAGE / ROUTING_BUSY received from other devices (03_08_05 5.3/5.4).
+        logInfoP("Rx LOST    %lu   (reported lost %lu)   Rx BUSY %lu",
+                 (unsigned long)c.lostMessageRx(), (unsigned long)c.lostReportedRx(), (unsigned long)c.busyRx());
 
         // Shared 1 Hz sampler; 100% = the line is full (03_02_02 line time, not a byte rate).
         const uint16_t now10 = openknx.busLoad.currentPermille();
@@ -858,6 +861,9 @@ static const std::string &buildIproJson()
              (unsigned long)c.transmitToIp(), (unsigned long)c.transmitToKnx(),
              c.overflowToIp(), c.overflowToKnx(),
              (unsigned long)c.hopCountToIp(), (unsigned long)c.hopCountToKnx());
+    json += buf;
+    snprintf(buf, sizeof(buf), ",\"lostRx\":%lu,\"lostRxN\":%lu,\"busyRx\":%lu",
+             (unsigned long)c.lostMessageRx(), (unsigned long)c.lostReportedRx(), (unsigned long)c.busyRx());
     json += buf;
 
     snprintf(buf, sizeof(buf), ",\"load\":{\"now\":%u,\"avg\":%u,\"peak\":%u,\"bps\":%u,\"hist\":[",

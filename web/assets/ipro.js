@@ -388,7 +388,11 @@
         routed: 'Vom Router weitergegeben.',
         filt: 'Vom Filter absichtlich verworfen - kein Verlust.',
         hop0: 'Kopplerdurchg&auml;nge aufgebraucht, wird nicht weitergereicht. Absicht ' +
-              '(Routing Count 0) oder eine Schleife im Netz.'
+              '(Routing Count 0) oder eine Schleife im Netz.',
+        lostRx: 'ROUTING_LOST_MESSAGE anderer KNX-IP-Ger&auml;te: deren Warteschlange LAN&rarr;KNX ist ' +
+                '&uuml;bergelaufen, dort gingen Telegramme verloren. Gemeldete Verluste = Summe der darin genannten Anzahlen.',
+        busyRx: 'ROUTING_BUSY anderer KNX-IP-Ger&auml;te: deren Eingangswarteschlange f&uuml;llt sich, sie fordern ' +
+                'alle Sender zu einer Pause auf. Dieser Router legt diese Pause noch nicht ein.'
     };
 
     // --- Overview + status line ---
@@ -437,6 +441,8 @@
             row('Verloren (Queue)', '&rarr;IP ' + humanCount(d.lostIp) + ' &nbsp; &rarr;TP ' +
                 (d.lostTp ? '<span class="ii-bad">' + humanCount(d.lostTp) + '</span>' : '0'), WHY.lost) +
             row('Hop-Count 0', '&rarr;IP ' + humanCount(d.hop0Ip) + ' &nbsp; &rarr;TP ' + humanCount(d.hop0Tp), WHY.hop0) +
+            row('LOST empfangen', humanCount(d.lostRx) + ' &nbsp; gemeldete Verluste ' + humanCount(d.lostRxN), WHY.lostRx) +
+            row('BUSY empfangen', humanCount(d.busyRx), WHY.busyRx) +
             '<details class="ii-rowd ii-row-wide" data-k="Buslast"' + (openWhy.has('Buslast') ? ' open' : '') +
                 '><summary class="ii-row wide">' +
                 '<i>Buslast</i><b>' + spark(l.hist) +

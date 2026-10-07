@@ -24,6 +24,15 @@
 #include "esp_heap_caps.h" // only the optional periodic heap log (loop) uses heap_caps_*
 #endif
 
+// The ETS parameter block is a STATIC table on mask 091A and the knxprod accessors are not bounds-checked,
+// so a product that outgrows the segment reads past it into the filter table. Fail the build instead.
+// Raise KNX_091A_APPLICATION_PROGRAM_SIZE and the AbsoluteSegment/LdCtrlWriteMem Size in
+// src/TemplateRouter.xml together -- they must stay equal.
+#ifdef KNX_091A_APPLICATION_PROGRAM_SIZE
+static_assert(MAIN_ParameterSize <= KNX_091A_APPLICATION_PROGRAM_SIZE,
+              "MAIN_ParameterSize exceeds the 091A parameter segment");
+#endif
+
 bool core1_separate_stack = true;
 
 void setup()

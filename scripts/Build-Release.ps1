@@ -13,7 +13,7 @@ Open ■
 .PARAMETER Dev          Build the Dev variant. This is the default; the flag is optional / explicit.
 .PARAMETER Full         Build ALL variants (tested + untested), not just the tested set.
 .PARAMETER SkipFirmware Run the pre/post config steps only, skip the firmware compilation.
-.PARAMETER SkipHostCli  Skip building the PC FileTransferClient (ftc-cli / ftc).
+.PARAMETER SkipHostCli  Skip building the PC tool oknx.
 .PARAMETER Clean        Remove generated files (knxprod header + generated knxprods) and exit.
 .PARAMETER Help, -h     Show this help.
 
@@ -75,7 +75,7 @@ function Show-Help {
     Write-Host "  -Dev           Build the Dev variant (this is the default anyway)"
     Write-Host "  -Full          Build ALL variants (default: tested only)"
     Write-Host "  -SkipFirmware  Generate configs/knxprod only, skip firmware compilation"
-    Write-Host "  -SkipHostCli   Skip building the PC FileTransferClient (ftc-cli / ftc)"
+    Write-Host "  -SkipHostCli   Skip building the PC tool oknx"
     Write-Host "  -Clean         Remove generated files and exit"
     Write-Host "  -Help, -h      Show this help"
     Write-Host ""
@@ -124,11 +124,11 @@ if ($isClean) {
         else { Write-Host "  pio clean returned $LASTEXITCODE -- continuing" -ForegroundColor Yellow }
     }
     else { Write-Host "  - .pio/build (already clean)" -ForegroundColor DarkGray }
-    # ftc-cli PC-client build output (.pio = the pio staging, holds the ftc-<os>-<arch> binaries too). The
+    # oknx PC-tool build output (.pio = the pio staging, holds the oknx-<os>-<arch> binaries too). The
     # shared zig cache in the PlatformIO core dir is intentionally KEPT (re-downloading zig on every clean is wasteful).
-    $ftcCliPio = "lib/OFM-FileTransferModule/ftc-cli/.pio"
-    if (Test-Path $ftcCliPio) { Remove-Item $ftcCliPio -Recurse -Force; Write-Host "  removed $ftcCliPio/" -ForegroundColor Green }
-    else { Write-Host "  - $ftcCliPio/ (already clean)" -ForegroundColor DarkGray }
+    $oknxPio = "lib/OFM-FileTransferModule/oknx/.pio"
+    if (Test-Path $oknxPio) { Remove-Item $oknxPio -Recurse -Force; Write-Host "  removed $oknxPio/" -ForegroundColor Green }
+    else { Write-Host "  - $oknxPio/ (already clean)" -ForegroundColor DarkGray }
     Write-Host ""
     Write-Host "Clean done." -ForegroundColor Green
     exit 0
@@ -168,24 +168,27 @@ if ($isDev) {
     Write-Host ""
 }
 
-# ---- PC FileTransferClient (ftc-cli / ftc) -- built FIRST -----------------------------------
-# Build the whole PC-client OS/arch matrix (Windows x86/x64/arm64, macOS x64/arm64, Linux x64/arm64/armhf) with
-# a single `pio run`: the ftc-cli platformio.ini defines one env per target and a pre-build hook that pulls a
-# project-local zig for the cross targets, so pio itself cross-builds everything into ftc-cli/.pio/build/. Done
-# up front so a client build failure aborts BEFORE the firmware build. Skip with -SkipHostCli.
-# The release layout Tools/ftc-cli/<OS>/<arch>/ftc[.exe] is assembled centrally by OGM-Common's
+# ---- PC tool oknx -- built FIRST ------------------------------------------------------------
+# Build the whole PC-tool OS/arch matrix (Windows x86/x64/arm64, macOS x64/arm64, Linux x64/arm64/armhf) with
+# a single `pio run`: the oknx platformio.ini defines one env per target and a pre-build hook that pulls a
+# project-local zig for the cross targets, so pio itself cross-builds everything into oknx/.pio/build/. Done
+# up front so a tool build failure aborts BEFORE the firmware build. Skip with -SkipHostCli.
+# The release layout Tools/oknx/<OS>/<arch>/oknx[.exe] is assembled centrally by OGM-Common's
 # Build-Release-Postprocess.ps1 -- nothing to copy here.
-$ftcCliDir = "lib/OFM-FileTransferModule/ftc-cli"
-if (-not $isSkipHostCli) {
-    if (Test-Path (Join-Path $ftcCliDir "platformio.ini")) {
-        Write-Host "Building the PC FileTransferClient matrix (pio run -> ftc, all OS/arch)..." -ForegroundColor Cyan
-        pio run -d $ftcCliDir
-        if (!$?) { Write-Host "ftc-cli build failed" -ForegroundColor Red; exit 1 }
+$oknxDir = "lib/OFM-FileTransferModule/oknx"
+# Also skipped by -SkipFirmware: that mode regenerates configs only, and the PC tool is a compile step.
+if (-not $isSkipHostCli -and -not $isSkipFirmware) {
+    if (Test-Path (Join-Path $oknxDir "platformio.ini")) {
+        Write-Host "Building the oknx PC tool matrix (pio run -> oknx, all OS/arch)..." -ForegroundColor Cyan
+        pio run -d $oknxDir
+        if (!$?) { Write-Host "oknx build failed" -ForegroundColor Red; exit 1 }
     } else {
-        Write-Host "  - ftc-cli project not found ($ftcCliDir) -- skipping" -ForegroundColor DarkGray
+        Write-Host "oknx project not found ($oknxDir) -- the release would ship without the PC tool" -ForegroundColor Red
+        Write-Host "  check out the OFM-FileTransferModule submodule, or pass -SkipHostCli to leave it out on purpose" -ForegroundColor Red
+        exit 1
     }
 } else {
-    Write-Host "Skipping PC client build (SkipHostCli)" -ForegroundColor Yellow
+    Write-Host "Skipping PC tool build (SkipHostCli)" -ForegroundColor Yellow
 }
 
 # ---- generic pre-build steps ---------------------------------------------------------------

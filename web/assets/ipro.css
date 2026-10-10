@@ -123,3 +123,35 @@ tr.tn-d > td { background: #f6f6f6; border-top: 0; padding: 0 12px 10px 30px }
 .tn-why > summary em { margin-left: 0 !important }
 tr.tn-d .ii-p { padding: 5px 0 2px; max-width: none }
 .tn-why b { color: #333; font-weight: 600 }
+/* Filter table: routing mode per direction, then a main group > middle group tree with one occupancy strip per middle group. */
+.ft-head { border: 1px solid #e8e8e8; background: #fafafa; padding: 6px 12px; margin: 0 0 10px }
+.ft-dir { display: flex; gap: 18px; padding: 3px 0; font-size: .85em; align-items: baseline; flex-wrap: wrap }
+.ft-dir > i { font-style: normal; color: #888; flex: 0 0 7.5em }
+.ft-dir > b { font-weight: 400 }
+.ft-dir .m-pass { color: #8a6d3b } .ft-dir .m-route { color: #2e7d32 } .ft-dir .m-lock { color: #c62828 } .ft-dir .m-unk { color: #888 }
+.ft-note { padding: 8px 12px; font-size: .85em; margin: 0 0 10px }
+.ft-note.warn { background: #fff8e1; border-left: 3px solid #e0a000 }
+.ft-note.err { background: #ffebee; border-left: 3px solid #c62828 }
+.ft-sum { margin: 0 0 8px }
+.ft-check { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; font-size: .85em }
+.ft-check .k { color: #888 }
+.ft-check input { width: 9em; height: 28px; border: 1px solid #d0d0d0; padding: 0 8px; font-variant-numeric: tabular-nums }
+.ft-v { padding: 2px 8px; border-radius: 3px; white-space: nowrap }
+.ft-v.ok { background: #e8f5e9; color: #2e7d32 } .ft-v.no { background: #ffebee; color: #c62828 } .ft-v.unk { background: #f3f3f3; color: #666 }
+.ft-tree details { border-bottom: 1px solid #f0f0f0 }
+.ft-tree summary { cursor: pointer; padding: 5px 0; font-size: .9em; display: flex; gap: 10px; align-items: baseline; list-style: none }
+.ft-tree summary::-webkit-details-marker { display: none }
+.ft-tree summary::before { content: '\25B8'; color: #999; width: 1em }
+.ft-tree details[open] > summary::before { content: '\25BE' }
+.ft-tree .hg { font-weight: 600; min-width: 2.2em; font-variant-numeric: tabular-nums }
+.ft-tree .cnt { color: #888; font-size: .9em; font-variant-numeric: tabular-nums }
+.ft-tree .wtag { color: #b26a00; font-size: .85em }
+.ft-mg { display: grid; grid-template-columns: 3.4em 2.6em minmax(120px, 1fr) minmax(0, 1.2fr); gap: 10px; align-items: center;
+         padding: 3px 0 3px 22px; font-size: .85em; border-top: 1px solid #f7f7f7 }
+.ft-mg .mg { font-weight: 400; font-variant-numeric: tabular-nums }
+.ft-mg .rg { color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums }
+.ft-strip { width: 100%; height: 10px; display: block }
+.ft-strip .bg { fill: #eef1ee } .ft-strip rect { fill: #449841 } .ft-strip .w { fill: #e08000 }
+.ft-tree.idle .ft-strip rect:not(.bg):not(.w) { fill: #a9c9a7 }
+.ft-warn { padding: 2px 0 4px 22px; margin-left: calc(3.4em + 2.6em + 20px); font-size: .8em; color: #b26a00 }
+@media (max-width: 640px) { .ft-mg { grid-template-columns: 3em 2.4em 1fr } .ft-mg .rg { grid-column: 1 / -1 } .ft-warn { margin-left: 0 } }

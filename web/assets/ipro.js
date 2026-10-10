@@ -542,30 +542,194 @@
     let rtAll = false;
 
 
-    // The list is capped, so the addresses in the ranges that are not shown have to be named -- a
-    // single hidden range can hold more addresses than all listed ones together.
+    // --- Filter table: routing mode per direction first, then main group > middle group > ranges ---
+    // LCGRPCONFIG (PID 54 IP->line, PID 55 line->IP): bits 0-1 main groups 0-13, bits 2-3 main groups
+    // 14-31; 1 pass all, 2 lock, 3 by filter table. The table only matters where a part says 3.
+    const FT_AUTO_OPEN = 12;
+    const FT_MODE = { 1: 'pass', 2: 'lock', 3: 'route' };
+    const FT_MODE_TXT = { pass: 'alle durchlassen', lock: 'alle sperren', route: 'nach Filtertabelle', unk: 'unbekannt' };
+    let ftSig = '', ftOpen = null, ftData = null;
+
+    function escA(s) { return esc(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
     function gaRaw(t) {
-        const p = t.split('/');
-        return (+p[0]) * 2048 + (+p[1]) * 256 + (+p[2]);
+        const p = String(t).trim().split('/');
+        if (p.length !== 3 || p.some(function (x) { return !/^\d+$/.test(x); })) return -1;
+        const a = +p[0], b = +p[1], c = +p[2];
+        return a <= 31 && b <= 7 && c <= 255 ? a * 2048 + b * 256 + c : -1;
     }
-    function filterView(f) {
-        let shown = 0;
-        f.ranges.forEach(function (r) {
+    function gaText(r) { return (r >> 11) + '/' + ((r >> 8) & 7) + '/' + (r & 255); }
+    function rangeText(lo, hi) { return lo === hi ? gaText(lo) : gaText(lo) + '&nbsp;&ndash; ' + gaText(hi); }
+    function nWord(n, one, many) { return n + '&nbsp;' + (n === 1 ? one : many); }
+    function ftMode(cfg, raw) {
+        if (cfg === undefined || cfg === null) return 'unk';
+        return FT_MODE[raw < 0x7000 ? (cfg & 3) : ((cfg >> 2) & 3)] || 'unk';
+    }
+    function ftUsesTable(g) {
+        return !!g && ['main', 'sub'].some(function (k) { return ftMode(g[k], 0) === 'route' || ftMode(g[k], 0x7000) === 'route'; });
+    }
+    function ftRanges(f) {
+        return (f.ranges || []).map(function (r) {
             const p = r.split(' - ');
-            shown += p.length > 1 ? gaRaw(p[1]) - gaRaw(p[0]) + 1 : 1;
+            const lo = gaRaw(p[0]), hi = p.length > 1 ? gaRaw(p[1]) : lo;
+            return lo < 0 || hi < lo ? null : [lo, hi];
+        }).filter(Boolean);
+    }
+    function ftComplete(f) { return (f.ranges_total || 0) <= (f.ranges || []).length; }
+
+    function ftHead(f) {
+        const g = f.lcgrp;
+        if (!g) return '';
+        const row = function (label, cfg) {
+            const lo = ftMode(cfg, 0), hi = ftMode(cfg, 0x7000);
+            return '<div class="ft-dir"><i>' + label + '</i><b class="m-' + lo + '">0&ndash;13: ' + FT_MODE_TXT[lo] +
+                '</b><b class="m-' + hi + '">14&ndash;31: ' + FT_MODE_TXT[hi] + '</b></div>';
+        };
+        return '<div class="ft-head">' + row('IP &rarr; Linie', g.main) + row('Linie &rarr; IP', g.sub) + '</div>';
+    }
+
+    // What the router does with one address, per direction - the same decision as isRoutedGroupAddress().
+    function ftVerdict(f, raw) {
+        const g = f.lcgrp || {}, ranges = ftRanges(f);
+        const one = function (label, cfg) {
+            const m = ftMode(cfg, raw);
+            let res = 'unbekannt', cls = 'unk';
+            if (m === 'pass') { res = 'kommt durch (alle durchlassen)'; cls = 'ok'; }
+            else if (m === 'lock') { res = 'wird verworfen (gesperrt)'; cls = 'no'; }
+            else if (m === 'route') {
+                // an unloaded or unused table answers "not in table" for every address (router_object.cpp)
+                if (!f.loaded || f.inUse === false) { res = 'wird verworfen (Tabelle nicht in Benutzung)'; cls = 'no'; }
+                else if (f.building !== undefined) { res = 'Tabelle wird noch gelesen'; }
+                else if (ranges.some(function (r) { return raw >= r[0] && raw <= r[1]; })) { res = 'kommt durch (steht in der Tabelle)'; cls = 'ok'; }
+                else if (ftComplete(f)) { res = 'wird verworfen (nicht in der Tabelle)'; cls = 'no'; }
+                else res = 'nicht sicher - die Liste ist gek&uuml;rzt';
+            }
+            return '<span class="ft-v ' + cls + '">' + label + ': ' + res + '</span>';
+        };
+        return one('IP &rarr; Linie', g.main) + one('Linie &rarr; IP', g.sub);
+    }
+    function ftCheck() {
+        const inp = $('ft-in'), out = $('ft-out');
+        if (!inp || !out || !ftData) return;
+        const v = inp.value.trim(), raw = gaRaw(v);
+        out.innerHTML = !v ? '' : raw < 0 ? '<span class="ft-v unk">keine Gruppenadresse a/b/c</span>' : ftVerdict(ftData, raw);
+    }
+
+    function ftNotes(f) {
+        const used = ftUsesTable(f.lcgrp), known = !!f.lcgrp;
+        if (!f.loaded)
+            return used ? '<p class="ft-note err">Die Filtertabelle ist nicht geladen. Wo &bdquo;nach Filtertabelle&ldquo; ' +
+                'eingestellt ist, kommt deshalb kein Gruppentelegramm durch.</p>'
+                : '<p class="meta">Die Filtertabelle ist nicht geladen' + (known ? ' - sie wird auch nicht gebraucht, keine ' +
+                'Richtung filtert nach Tabelle.' : '.') + '</p>';
+        if (known && used && f.inUse === false)
+            return '<p class="ft-note err">Eine Richtung steht auf &bdquo;nach Filtertabelle&ldquo;, die Tabelle ist aber ' +
+                'nicht in Benutzung - dort kommt kein Gruppentelegramm des betroffenen Bereichs durch.</p>';
+        if (known && !used)
+            return '<p class="ft-note warn">Die Filtertabelle ist geladen, wird aber in keiner Richtung angewendet - ' +
+                'der Router l&auml;sst alle Gruppentelegramme durch. Unten steht, was g&auml;lte, wenn eine Richtung ' +
+                'auf &bdquo;nach Filtertabelle&ldquo; steht (ETS-Parameter des Routers).</p>';
+        if (used && f.inUse !== false && !f.count && f.building === undefined)
+            return '<p class="ft-note err">Die Filtertabelle ist leer - wo &bdquo;nach Filtertabelle&ldquo; eingestellt ist, ' +
+                'kommt kein Gruppentelegramm durch.</p>';
+        return '';
+    }
+
+    function ftStrip(node) {
+        const segs = node.segs.map(function (s) {
+            return '<rect x="' + (s[0] & 255) + '" y="0" width="' + ((s[1] & 255) - (s[0] & 255) + 1) + '" height="10"/>';
+        }).join('');
+        const ticks = node.warn.map(function (w) { return '<rect class="w" x="' + (w.raw & 255) + '" y="0" width="1" height="10"/>'; }).join('');
+        return '<svg class="ft-strip" viewBox="0 0 256 10" preserveAspectRatio="none" aria-hidden="true">' +
+            '<rect class="bg" x="0" y="0" width="256" height="10"/>' + segs + ticks + '</svg>';
+    }
+
+    function ftTree(f, topF) {
+        const tree = {};
+        const put = function (raw) {
+            const hg = raw >> 11, mg = (raw >> 8) & 7;
+            tree[hg] = tree[hg] || {};
+            return (tree[hg][mg] = tree[hg][mg] || { segs: [], warn: [] });
+        };
+        ftRanges(f).forEach(function (r) {   // split at middle-group borders
+            for (let lo = r[0]; lo <= r[1];) {
+                const end = Math.min(r[1], lo | 255);
+                put(lo).segs.push([lo, end]);
+                lo = end + 1;
+            }
         });
-        const hidden = f.count - shown;
-        const share = Math.round(f.count * 100 / 65535);
-        return '<p class="meta" style="margin:0 0 8px">' + f.ranges_total + '&nbsp;Bereiche &middot; ' +
-            f.count + ' von 65535 Adressen (' + share + '&nbsp;%) l&auml;sst der Router durch.</p>' +
-            '<div class="ii-grid">' +
-            f.ranges.map(function (r) { return '<div class="ii-row"><b>' + esc(r) + '</b></div>'; }).join('') +
-            '</div><p class="meta" style="margin:8px 0 0">' +
-            (f.ranges_total > f.ranges.length
-                ? 'Aufgef&uuml;hrt sind die ersten ' + f.ranges.length + ' Bereiche mit ' + shown +
-                  ' Adressen. In den &uuml;brigen ' + (f.ranges_total - f.ranges.length) + ' liegen ' +
-                  hidden + ' weitere Adressen.'
-                : 'Alles andere verwirft er.') + '</p>';
+        (topF || []).forEach(function (e) {
+            const raw = gaRaw(e.ga);
+            if (raw >= 0) put(raw).warn.push({ raw: raw, ga: e.ga, n: e.n, toIp: e.toIp });
+        });
+        const hgs = Object.keys(tree).map(Number).sort(function (a, b) { return a - b; });
+        let lines = hgs.length;
+        hgs.forEach(function (h) { lines += Object.keys(tree[h]).length; });
+        if (ftOpen === null) {   // first draw: open it all when it is short, else only the main groups
+            ftOpen = {};
+            hgs.forEach(function (h) { ftOpen[h] = lines <= FT_AUTO_OPEN; });
+        }
+        const complete = ftComplete(f);
+        const withAddr = hgs.filter(function (h) { return Object.keys(tree[h]).some(function (m) { return tree[h][m].segs.length; }); });
+        let h = '<p class="meta ft-sum">' + nWord(f.count || 0, 'Adresse', 'Adressen') + ' in der Tabelle &middot; ' +
+            (complete ? '' : 'mindestens ') + nWord(withAddr.length, 'Hauptgruppe', 'Hauptgruppen') + ' &middot; ' +
+            nWord(f.ranges_total || 0, 'Bereich', 'Bereiche') + '</p>';
+        h += '<div class="ft-tree' + (f.lcgrp && !ftUsesTable(f.lcgrp) ? ' idle' : '') + '">';
+        hgs.forEach(function (hg) {
+            const mgs = Object.keys(tree[hg]).map(Number).sort(function (a, b) { return a - b; });
+            let n = 0, w = 0, used = 0;
+            mgs.forEach(function (m) {
+                tree[hg][m].segs.forEach(function (s) { n += s[1] - s[0] + 1; });
+                if (tree[hg][m].segs.length) used++;
+                w += tree[hg][m].warn.length;
+            });
+            h += '<details data-hg="' + hg + '"' + (ftOpen[hg] ? ' open' : '') + '><summary><b class="hg">' + hg + '</b><span class="cnt">' +
+                nWord(n, 'Adresse', 'Adressen') + (used > 1 ? ' in ' + used + ' Mittelgruppen' : '') + '</span>' +
+                (w ? '<span class="wtag">&#9888; ' + w + '</span>' : '') + '</summary>';
+            mgs.forEach(function (mg) {
+                const node = tree[hg][mg];
+                let c = 0;
+                node.segs.forEach(function (s) { c += s[1] - s[0] + 1; });
+                const all = node.segs.map(function (s) { return rangeText(s[0], s[1]); });
+                h += '<div class="ft-mg" title="' + escA(all.join(', ').replace(/&nbsp;&ndash;/g, ' -')) + '"><b class="mg">' + hg + '/' + mg +
+                    '</b><span class="cnt">' + c + '</span>' + ftStrip(node) + '<span class="rg">' +
+                    (!c ? '<span class="gray">keine</span>' : node.segs.length <= 3 ? all.join(', ') : nWord(node.segs.length, 'Bereich', 'Bereiche')) +
+                    '</span></div>';
+                node.warn.forEach(function (x) {
+                    h += '<div class="ft-warn">&#9888; ' + esc(x.ga) + ' wird gefiltert, ist aber aktiv (' + humanCount(x.n) + '&times;, ' +
+                        (x.toIp ? 'Linie &rarr; IP' : 'IP &rarr; Linie') + ')</div>';
+                });
+            });
+            h += '</details>';
+        });
+        h += '</div><p class="meta">' + (complete ? 'Alles, was nicht in der Tabelle steht, gilt als nicht enthalten.'
+            : 'Das Ger&auml;t schickt nur die ersten ' + (f.ranges || []).length + ' von ' + f.ranges_total +
+              ' Bereichen - der Baum ist unvollst&auml;ndig, die Adressenzahl oben ist vollst&auml;ndig.') + '</p>';
+        return h;
+    }
+
+    function renderFilter(f, topF) {
+        const pane = $('ii-rp-filt');
+        if (!$('ft-in')) {   // built once: the check field and the open groups survive the polls
+            pane.innerHTML = '<div id="ft-head"></div><div id="ft-notes"></div><div class="ft-check"><span class="k">GA pr&uuml;fen</span>' +
+                '<input type="text" id="ft-in" placeholder="z.&nbsp;B. 1/4/30" spellcheck="false" autocomplete="off"><span id="ft-out"></span></div>' +
+                '<div id="ft-body"></div>';
+            $('ft-in').addEventListener('input', ftCheck);
+            $('ft-body').addEventListener('toggle', function (e) {
+                const hg = e.target.getAttribute && e.target.getAttribute('data-hg');
+                if (hg !== null && ftOpen) ftOpen[hg] = e.target.open;
+            }, true);
+        }
+        ftData = f;
+        const sig = JSON.stringify([f, (topF || []).map(function (e) { return [e.ga, e.n, e.toIp]; })]);
+        if (sig === ftSig) return;
+        ftSig = sig;
+        $('ft-head').innerHTML = ftHead(f);
+        $('ft-notes').innerHTML = ftNotes(f);
+        $('ft-body').innerHTML = !f.loaded ? ''
+            // The device reads the 8 kB bitfield in slices so it never blocks its loop.
+            : f.building !== undefined ? '<p class="meta">Die Filtertabelle wird gelesen &hellip; ' + f.building + '&nbsp;%</p>'
+            : ftTree(f, topF);
+        ftCheck();
     }
 
     function renderRoute(d) {
@@ -618,19 +782,7 @@
         // 64 small ranges under a headline of 64.2k, with the big block hidden by the cap.
         $('ii-tab-filt').textContent = 'Filtertabelle' +
             (f.ranges_total !== undefined ? ' (' + f.ranges_total + ')' : '');
-        $('ii-rp-filt').innerHTML = !f.loaded
-            ? '<p class="meta">Die Filtertabelle ist nicht geladen - sie wurde noch nicht programmiert.</p>'
-            // The device reads the 8 kB bitfield in slices so it never blocks its loop.
-            : f.building !== undefined
-                ? '<p class="meta">Die Filtertabelle wird gelesen &hellip; ' + f.building + '&nbsp;%</p>'
-            : !f.inUse
-                ? '<p class="meta">Die Filtertabelle ist abgeschaltet - es wird nichts gefiltert.</p>'
-                : !f.count
-                    // Loaded, in use and empty: nothing passes. That is exactly what the list next door
-                    // shows, so say it here instead of promising addresses that do not exist.
-                    ? '<p class="meta">Die Filtertabelle ist leer - kein Gruppentelegramm kommt durch. ' +
-                      'Entweder ist nichts eingetragen oder sie wurde nicht programmiert.</p>'
-                : filterView(f);
+        renderFilter(f, d.topF);
     }
 
     // --- Bus + diagnostics (only fetched while the section is open) ---

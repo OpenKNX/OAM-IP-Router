@@ -15,7 +15,7 @@
 
     Section 4.3 is the highest-risk block of the whole prufvorschrift: twelve cases that
     drive the device-management state machine with transport-layer frames it may never
-    have seen. The distinction that decides each verdict is narrow - some expect an ACK
+    have seen. The distinction that decides each result is narrow - some expect an ACK
     AND a following request, some expect ONLY an ACK, some expect complete silence.
     Getting "only ACK" wrong by accepting any answer would pass a broken device.
 
@@ -24,6 +24,7 @@
 #>
 
 Set-StrictMode -Version Latest
+Import-Module (Join-Path (Split-Path -Parent $PSScriptRoot) 'lib/KnxDevice.psm1') -Force -DisableNameChecking
 
 function Send-RawDeviceConfiguration {
     <#
@@ -65,6 +66,100 @@ function Get-PropertyBytes {
     return , ([byte[]]$r.Parsed.Data)
 }
 
+function Invoke-KnxMReset {
+    <#
+    .SYNOPSIS
+        Sends M_Reset.req on a device-management connection; collects the ACK, an M_Reset.ind and a server DISCONNECT_REQUEST.
+    .DESCRIPTION
+        M_Reset is a Basic Restart (03_06_03 4.1.7.5.1 p.111). M_Reset.ind is optional for a KNXnet/IP server (p.112);
+        the restart closes every KNXnet/IP connection (03_05_02 3.7.1.1.1 p.78) by t1 = 1 s (p.79). The socket stays
+        open so the caller can check the old channel once the device is back (Test-KnxChannelGone).
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$WaitMs = 1200)
+    $K = Get-KnxConstants
+    $frame = New-KnxDeviceConfigurationRequest -Channel $Connection.Channel -Sequence $Connection.SeqSend -Cemi (New-CemiMReset)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    Send-KnxFrame -Socket $Connection.Socket -Frame $frame -Ip $Connection.Ip -Port $Connection.Port
+    $acked = $false; $ind = $false; $closedBy = 'none'
+    while ($sw.ElapsedMilliseconds -lt $WaitMs -and $closedBy -eq 'none') {
+        $r = Wait-KnxService -Socket $Connection.Socket -TimeoutMs ([int]([Math]::Max(1, $WaitMs - $sw.ElapsedMilliseconds))) `
+                             -Service @($K.Service.DEVICE_CONFIGURATION_ACK, $K.Service.DEVICE_CONFIGURATION_REQUEST, $K.Service.DISCONNECT_REQUEST)
+        if ($r.TimedOut) { break }
+        $b = $r.Header.Body
+        if ($r.Header.Service -eq $K.Service.DEVICE_CONFIGURATION_ACK) { $acked = ($b.Length -ge 4 -and $b[3] -eq 0) }
+        elseif ($r.Header.Service -eq $K.Service.DEVICE_CONFIGURATION_REQUEST) {
+            # Any server request is acknowledged; only an F0h cEMI is the indication (an M_PropInfo.ind may come first).
+            if ($b.Length -ge 4) { Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDeviceConfigurationAck -Channel $b[1] -Sequence $b[2]) -Ip $Connection.Ip -Port $Connection.Port }
+            if ($b.Length -ge 5 -and $b[4] -eq $K.Cemi.M_RESET_IND) { $ind = $true }
+        }
+        else {
+            if ($b.Length -ge 1) { Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $b[0] -Status 0) -Ip $Connection.Ip -Port $Connection.Port }
+            $closedBy = 'DISCONNECT_REQUEST'
+        }
+    }
+    [pscustomobject]@{ Acked = $acked; Indication = $ind; ClosedBy = $closedBy; Watch = $sw }
+}
+
+function Test-KnxChannelGone {
+    <#
+    .SYNOPSIS
+        True when the server ended a channel: it sent DISCONNECT_REQUEST, or a CONNECTIONSTATE for it answers E_CONNECTION_ID.
+    .DESCRIPTION
+        Call once the device answers again. Only 21h proves the channel is gone; 27h (no KNX connection) is sent for a live one.
+    #>
+    param([Parameter(Mandatory)]$Connection, [string]$ClosedBy = 'none')
+    if ($ClosedBy -eq 'DISCONNECT_REQUEST') { return $true }
+    $K = Get-KnxConstants
+    try {
+        $csr = New-KnxConnectionStateRequest -Channel $Connection.Channel -ControlIp $Connection.LocalIp -ControlPort $Connection.LocalPort
+        $st = Invoke-KnxRequest -Socket $Connection.Socket -Frame $csr -Ip $Connection.Ip -Port $Connection.Port -Expect @($K.Service.CONNECTIONSTATE_RESPONSE) -TimeoutMs 2000
+        return (-not $st.TimedOut -and $st.Header.Body.Length -ge 2 -and $st.Header.Body[1] -eq $K.Error.E_CONNECTION_ID)
+    }
+    catch { return $false }
+}
+
+function Close-KnxResetConnection {
+    <#
+    .SYNOPSIS
+        Frees a connection after an M_Reset: a DISCONNECT_REQUEST when the server kept it, then the socket.
+    #>
+    param($Connection, [bool]$Gone)
+    if ($null -eq $Connection -or $null -eq $Connection.Socket) { return }
+    if (-not $Gone) { try { [void](Close-KnxConnection -Connection $Connection -TimeoutMs 1000) } catch { } }
+    try { $Connection.Socket.Dispose() } catch { }
+}
+
+function Wait-KnxDeviceBack {
+    <#
+    .SYNOPSIS
+        Waits until the device answers DESCRIPTION_REQUEST again; returns the seconds waited, or -1 after the limit.
+    #>
+    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$LimitS = 30)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    while ($sw.Elapsed.TotalSeconds -lt $LimitS) {
+        $d = $null
+        try { $d = Get-KnxDescription -Ip $Ip -Port $Port -TimeoutMs 200 } catch { }   # a rebooting host can make SendTo throw
+        if ($null -ne $d) { return [Math]::Round($sw.Elapsed.TotalSeconds, 1) }
+        Start-Sleep -Milliseconds 50
+    }
+    return -1
+}
+
+function Open-KnxDmRetry {
+    <#
+    .SYNOPSIS
+        Opens a device-management connection, retrying while the single slot may still be held by a closing one.
+    #>
+    param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$Tries = 4)
+    $K = Get-KnxConstants
+    for ($i = 1; $i -le $Tries; $i++) {
+        $c = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1
+        if ($c.Ok) { return $c }
+        Start-Sleep -Seconds 2
+    }
+    return $c
+}
+
 function Invoke-KnxSuiteDevMgmt {
     param([Parameter(Mandatory)]$Ctx, [string]$SuiteTitle = '4 Device Management')
 
@@ -79,7 +174,7 @@ function Invoke-KnxSuiteDevMgmt {
     # ── 4.1 Connection Handling ─────────────────────────────────────────────────
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.1.1' -Title 'Connection Handling - Multiplicity' -Clause 'TSSH 4.1.1, p.24 (fn 20101)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - exhausting the connection pool disturbs other clients' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - exhausting the connection pool disturbs other clients' }
         $open = @()
         $refusal = -1
         try {
@@ -202,7 +297,7 @@ function Invoke-KnxSuiteDevMgmt {
     }
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.3' -Title 'Write to read-only device property' -Clause 'TSSH 4.2.3, p.30 (fn 20205)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case attempts a property write' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - this case attempts a property write' }
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
         try {
@@ -247,7 +342,7 @@ function Invoke-KnxSuiteDevMgmt {
     }
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.5' -Title 'Get/set programming mode by device property' -Clause 'TSSH 4.2.5, p.33 (fn 20207)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case toggles programming mode' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - this case toggles programming mode' }
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
         $restore = $null
@@ -286,9 +381,9 @@ function Invoke-KnxSuiteDevMgmt {
     }
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.6' -Title 'Get/set programming mode by memory access' -Clause 'TSSH 4.2.6, p.35 (fn 20208)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - this case writes device memory' }
-        if (-not $Ctx.TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp): the memory access runs over the KNX bus, not over the management connection' }
-        if (-not $Ctx.BdutPa) { Set-KnxTestSkip 'BDUT individual address unknown (-BdutPa)' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - this case writes device memory' }
+        if (-not $Ctx.TrafficIp) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'needs a second interface (-TrafficIp): the memory access runs over the KNX bus, not over the management connection' }
+        if (-not $Ctx.BdutPa) { Set-KnxTestNotRun -MissingInput '-BdutPa' -Reason 'BDUT individual address unknown (-BdutPa)' }
 
         # Measured 2026-08-15 against BOTH certified references and our device: all three
         # fail this case identically. Three devices do not share one defect - the test does.
@@ -347,7 +442,7 @@ function Invoke-KnxSuiteDevMgmt {
             @{ Id = 'H-4.2.8'; Title = 'Change individual address by IP property'; Clause = 'TSSH 4.2.8, p.37 (fn 20210)' })) {
         Invoke-KnxTestCase -Suite $SuiteTitle -Id $case.Id -Title $case.Title -Clause $case.Clause -Body {
             if (-not $Ctx.AllowDestructive) {
-                Set-KnxTestSkip 'changes the device individual address - needs -IncludeDestructive with profile Full'
+                Set-KnxTestNotRun -MissingInput '-IncludeDestructive' -Reason 'changes the device individual address - needs -IncludeDestructive with profile Full'
             }
             $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
             Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
@@ -452,7 +547,7 @@ function Invoke-KnxSuiteDevMgmt {
         # Both halves are asserted, and the FIRST one is the important one: without an open device
         # management connection a T_Connect must still be accepted silently. That is the path ETS uses to
         # program this device, and a mode implemented as "hold the layer" would break it.
-        if (-not $Ctx.BdutPa) { Set-KnxTestSkip 'BDUT individual address unknown (-BdutPa)' }
+        if (-not $Ctx.BdutPa) { Set-KnxTestNotRun -MissingInput '-BdutPa' -Reason 'BDUT individual address unknown (-BdutPa)' }
         if (-not (Test-KnxCemiTransportServed -Ip $ip -Port $port -ConnType $DMGMT)) {
             Set-KnxTestNotApplicable 'device does not serve the cEMI Transport Layer (03_08_03 4.2.5 p.23: X at Device Management v1), so there is no mode to enter'
         }
@@ -466,7 +561,10 @@ function Invoke-KnxSuiteDevMgmt {
 
             # --- no device management connection: the connect must be accepted (no T_Disconnect back) ---
             [void](Send-KnxTunnelCemi -Connection $tun -Cemi $connectCemi)
-            $refusedWhenIdle = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -TimeoutMs 2000
+            # -Source, like the sibling cases: without it a third party's transport connection running
+            # into the six second timeout of 03_03_04 5.1 is read as this device refusing - and on the
+            # second call below, as this device refusing when it did not.
+            $refusedWhenIdle = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -Source $target -TimeoutMs 2000
             [void](Send-KnxTunnelCemi -Connection $tun -Cemi $disconnectCemi)
             Add-KnxEvidence -Note "without a device management connection the T_Connect was $(if ($null -ne $refusedWhenIdle) { 'REFUSED' } else { 'accepted' })"
             Assert-KnxTrue ($null -eq $refusedWhenIdle) 'a T_Connect was refused although no device management connection was open - connection-oriented access to the device is broken'
@@ -474,10 +572,10 @@ function Invoke-KnxSuiteDevMgmt {
             # --- device management connection open: the connect must be refused ---
             $dm = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
             Assert-KnxTrue $dm.Ok "could not open a device management connection ($($dm.StatusName))"
-            Start-Sleep -Milliseconds 700   # the device picks the mode up in its next loop pass
+            [void](Wait-KnxTunnel -Connection $tun -Ms 700)   # the device picks the mode up in its next loop pass
 
             [void](Send-KnxTunnelCemi -Connection $tun -Cemi $connectCemi)
-            $refusedInMode = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -TimeoutMs 3000
+            $refusedInMode = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0x81 -Source $target -TimeoutMs 3000
             Add-KnxEvidence -Note "with a device management connection open the T_Connect was $(if ($null -ne $refusedInMode) { 'refused with T_Disconnect' } else { 'ACCEPTED' })"
             Assert-KnxTrue ($null -ne $refusedInMode) 'no T_Disconnect while a device management connection holds the transport layer (03_08_03 2.6.1.2 p.18)'
         }
@@ -487,12 +585,84 @@ function Invoke-KnxSuiteDevMgmt {
         }
     }
 
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'P-4.2.15' -Title 'Device management accepted while the REQUESTING client holds the transport connection' -Clause '03_08_03 2.6.1.2 p.18; product decision, see config.h KNX_CEMI_TRANSPORT_STRICT' -Body {
+        # The counterpart to H-4.2.15, and the reason this product does not refuse unconditionally.
+        # 2.6.1.2 p.18 prescribes no refusal at all - it only describes the implicit mode switch. The
+        # refusal comes from the tool case, whose stimulus is a FOREIGN peer. Counting the client's own
+        # connection locks ETS out of its own device: ETS reads the group address tables over a T_Connect
+        # through its tunnel and then asks for device management, which would be refused until the six
+        # second connection timeout of 03_03_04 5.1 releases a connection it never closed.
+        # KNX_CEMI_TRANSPORT_STRICT restores the unconditional refusal for a certification run.
+        if (-not $Ctx.BdutPa) { Set-KnxTestNotRun -MissingInput '-BdutPa' -Reason 'BDUT individual address unknown (-BdutPa)' }
+        if (-not (Test-KnxCemiTransportServed -Ip $ip -Port $port -ConnType $DMGMT)) {
+            Set-KnxTestNotApplicable 'device does not serve the cEMI Transport Layer'
+        }
+
+        $own = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer 0x02
+        Assert-KnxTrue $own.Ok "could not open a tunnelling connection ($($own.StatusName))"
+        $held = $false
+        try {
+            $target = ConvertTo-KnxPa -Address $Ctx.BdutPa
+            $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination $target -Tpdu (New-TpduConnect) -Priority 0
+            [void](Send-KnxTunnelCemi -Connection $own -Cemi $cemi)
+            $held = $true
+
+            # Prove the transport connection before concluding anything from the next answer - the same
+            # flaw this case carried and H-4.2.15 below already had removed: a T_Connect is not
+            # acknowledged at transport level, so firing it and sleeping proves nothing, and the case
+            # would report "accepted while THIS client holds the connection" while holding none.
+            # 43 00 is A_DeviceDescriptor_Read at sequence 0, answered with T_ACK.
+            $proof = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination $target -Tpdu ([byte[]]@(0x43, 0x00)) -Priority 0
+            [void](Send-KnxTunnelCemi -Connection $own -Cemi $proof)
+            $ack = Wait-KnxTpduFromTunnel -Connection $own -Tpci 0xC2 -Source $target -TimeoutMs 4000
+            Add-KnxEvidence -Note "transport connection proven: $(if ($null -ne $ack) { 'device sent T_ACK' } else { 'NO T_ACK - the connection never came up' })"
+            if ($null -eq $ack) {
+                Set-KnxTestSkip 'the transport connection could not be proven (no T_ACK); without it there is no stimulus and no result about the device'
+            }
+            [void](Wait-KnxTunnel -Connection $own -Ms 300)
+
+            $dm = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+            if ($null -ne $dm.Response) { Add-KnxEvidence -Received $dm.Response }
+            Add-KnxEvidence -Note "device management while THIS client holds the transport connection -> $(if ($dm.Ok) { "accepted on channel $($dm.Channel)" } else { $dm.StatusName })"
+            # KNX_TUNNELING_DEVMGMT is 1, so there is exactly ONE management slot. Releasing it and
+            # giving the device a moment to reap it keeps the next case from meeting a busy server -
+            # a leftover here reads as E_NO_MORE_CONNECTIONS three cases later.
+            if ($dm.Ok) { [void](Close-KnxConnection -Connection $dm); [void](Wait-KnxTunnel -Connection $own -Ms 600) }
+            Assert-KnxTrue $dm.Ok 'the device refused device management to the very client that holds the transport connection - that is the state which locks ETS out of its own device'
+        }
+        finally {
+            if ($held) {
+                $d = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination (ConvertTo-KnxPa -Address $Ctx.BdutPa) -Tpdu (New-TpduDisconnect) -Priority 0
+                [void](Send-KnxTunnelCemi -Connection $own -Cemi $d -TimeoutMs 2000)
+            }
+            [void](Close-KnxConnection -Connection $own)
+
+            # The transport connection outlives the tunnel that carried it. Once the tunnel is gone the
+            # device no longer recognises that peer as this client's own, so it refuses device management
+            # to EVERYONE until the six second connection timeout of 03_03_04 5.1 releases it - which the
+            # next cases then report as E_NO_MORE_CONNECTIONS. Wait for the server to be free again rather
+            # than guessing a delay, and leave the slot closed.
+            $deadline = [DateTime]::UtcNow.AddSeconds(10)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                $probe = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+                if ($probe.Ok) { [void](Close-KnxConnection -Connection $probe); Start-Sleep -Milliseconds 400; break }
+                Start-Sleep -Milliseconds 500
+            }
+        }
+    }
+
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.15' -Title 'Device management refused while a transport connection is open' -Clause 'TSSH 8.3.2, p.158 (fn 60202) part 2; 03_08_03 2.6.1.2 p.18' -Body {
         # Part 2 of the same tool case: a transport connection is opened FIRST, then a device management
         # connection is requested. Opening one switches the Transport Layer into cEMI Transport Layer mode
         # (03_08_03 2.6.1.2 p.18), which a layer that already carries a connection cannot do, so the request
         # must be answered with E_NO_MORE_CONNECTIONS rather than silently serving two transport peers.
-        if (-not $Ctx.BdutPa) { Set-KnxTestSkip 'BDUT individual address unknown (-BdutPa)' }
+        #
+        # WHOSE connection it is decides the answer, and the prufvorschrift is explicit: on p.158 the test
+        # controller sends the T_Connect in as a ROUTING_INDICATION from 1.1.255, so the peer holding the
+        # layer is NOT the client that afterwards asks for device management. The T_Connect is therefore
+        # driven through the TRAFFIC interface - it reaches the BDUT over the bus, from an address the
+        # requesting client does not own. The opposite situation is P-4.2.15 and must be ACCEPTED.
+        if (-not $Ctx.BdutPa) { Set-KnxTestNotRun -MissingInput '-BdutPa' -Reason 'BDUT individual address unknown (-BdutPa)' }
         if (-not (Test-KnxCemiTransportServed -Ip $ip -Port $port -ConnType $DMGMT)) {
             Set-KnxTestNotApplicable 'device does not serve the cEMI Transport Layer (03_08_03 4.2.5 p.23: X at Device Management v1), so a management connection never takes the transport layer'
         }
@@ -503,20 +673,47 @@ function Invoke-KnxSuiteDevMgmt {
         [void](Close-KnxConnection -Connection $probe)
         Start-Sleep -Milliseconds 300
 
-        $tun = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer 0x02
-        Assert-KnxTrue $tun.Ok "could not open a tunnelling connection ($($tun.StatusName))"
+        if (-not $Ctx.TrafficIp) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'needs a second interface to hold the transport connection (-TrafficIp); otherwise the peer IS the requesting client' }
+        # The shared traffic connection, and it is LEFT OPEN. Two wrong ways were tried here: closing it
+        # in the finally took the channel away from every later case in suites 5 and 6, and opening a
+        # second, independent tunnel instead simply fails - the traffic interface grants one channel and
+        # does not free it at once, so the case then skipped on every run. What this case needs from the
+        # peer is only that the transport connection is held by somebody ELSE than the requesting client,
+        # and the T_Disconnect in the finally is what releases that.
+        $tun = Get-KnxTrafficConnection -Ip $Ctx.TrafficIp -Port $port
+        if ($null -eq $tun) { Set-KnxTestSkip 'no tunnel available on the traffic interface' }
         $connected = $false
         try {
             $target = ConvertTo-KnxPa -Address $Ctx.BdutPa
             $cemi = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination $target -Tpdu (New-TpduConnect) -Priority 0
             [void](Send-KnxTunnelCemi -Connection $tun -Cemi $cemi)
             $connected = $true
-            Start-Sleep -Milliseconds 400   # the device picks the state up in its next loop pass
+
+            # Prove the connection is really up before drawing any conclusion from the next answer.
+            # A T_Connect is not acknowledged at transport level, so firing it and hoping was the flaw
+            # here: the case then reported "device management accepted while a connection was open"
+            # when in truth no connection had been established. One numbered service settles it -
+            # 43 00 is A_DeviceDescriptor_Read at sequence 0, exactly as ETS sends it - and the device
+            # answers with T_ACK and a DeviceDescriptorResponse.
+            $probe = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination $target -Tpdu ([byte[]]@(0x43, 0x00)) -Priority 0
+            [void](Send-KnxTunnelCemi -Connection $tun -Cemi $probe)
+            $ack = Wait-KnxTpduFromTunnel -Connection $tun -Tpci 0xC2 -Source $target -TimeoutMs 4000
+            Add-KnxEvidence -Note "transport connection proven: $(if ($null -ne $ack) { 'device sent T_ACK' } else { 'NO T_ACK - the connection never came up' })"
+            if ($null -eq $ack) {
+                # SKIP, not FAIL: without a proven transport connection the case has no stimulus, and
+                # reporting the device as accepting "while a connection was open" would be a false result.
+                # The shared traffic connection can carry transport state from an earlier case, so the
+                # sequence this case starts at is not always 0 - it is drained in the finally below. Verified separately on a FRESH tunnel:
+                # T_Connect -> A_DeviceDescriptor_Read answered (T_ACK + 0x340) -> device management
+                # refused with E_NO_MORE_CONNECTIONS, which is what this case is meant to establish.
+                Set-KnxTestSkip 'the transport connection could not be proven on the shared traffic connection (no T_ACK); the stimulus is missing, so no result about the device is drawn here'
+            }
+            [void](Wait-KnxTunnel -Connection $tun -Ms 300)
 
             $dm = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
             if ($null -ne $dm.Response) { Add-KnxEvidence -Received $dm.Response }
             Add-KnxEvidence -Note "device management connect while a transport connection is open -> $(if ($dm.Ok) { "ACCEPTED on channel $($dm.Channel)" } else { $dm.StatusName })"
-            if ($dm.Ok) { [void](Close-KnxConnection -Connection $dm) }
+            if ($dm.Ok) { [void](Close-KnxConnection -Connection $dm); [void](Wait-KnxTunnel -Connection $tun -Ms 600) }
             Assert-KnxTrue (-not $dm.Ok) 'the device accepted a device management connection although its transport layer already carried a connection (08_TSSH 8.3.2 p.158)'
             Assert-KnxStatus $K.Error.E_NO_MORE_CONNECTIONS $dm.Status 'wrong status when the transport layer is occupied'
         }
@@ -525,7 +722,22 @@ function Invoke-KnxSuiteDevMgmt {
                 $d = New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Source 0 -Destination (ConvertTo-KnxPa -Address $Ctx.BdutPa) -Tpdu (New-TpduDisconnect) -Priority 0
                 [void](Send-KnxTunnelCemi -Connection $tun -Cemi $d -TimeoutMs 2000)
             }
-            [void](Close-KnxConnection -Connection $tun)
+            # Left open on purpose - see above. What this case took from the connection is the transport
+            # state, and the T_Disconnect above gives that back; the parked leftovers go too, so the
+            # next case starts from nothing. The drain is generous because the device repeats its
+            # unacknowledged DeviceDescriptor_Response on the ~3 s layer-4 timer.
+            [void](Clear-KnxTunnelTraffic -Connection $tun -QuietMs 400 -MaxMs 6000)
+
+            # The T_Disconnect above is fire-and-forget. If it was lost, the device's transport layer
+            # stays busy for the six second connection timeout of 03_03_04 5.1 and refuses device
+            # management to EVERYONE - which the next case then reports as a defect. Wait for the device
+            # to be free again rather than guessing, exactly as P-4.2.15 does.
+            $deadline = [DateTime]::UtcNow.AddSeconds(10)
+            while ([DateTime]::UtcNow -lt $deadline) {
+                $probe2 = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
+                if ($probe2.Ok) { [void](Close-KnxConnection -Connection $probe2); Start-Sleep -Milliseconds 400; break }
+                Start-Sleep -Milliseconds 500
+            }
         }
     }
 
@@ -608,9 +820,9 @@ function Invoke-KnxSuiteDevMgmt {
     }
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-4.2.12' -Title 'Bus connection interrupted - device state indications' -Clause 'TSSH 4.2.12, p.40 (fn 20212)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - the load switch writes to the bus' }
-        if (-not $Ctx.LoadSwitchGa) { Set-KnxTestSkip 'this rig has no load switch - pass -LoadSwitchGa/-LoadSwitchPa when one is fitted (TSSH 1.2.2 specifies 1/1/50 on 1.1.50)' }
-        if (-not $Ctx.LoadSwitchVia) { Set-KnxTestSkip 'no interface to drive the load switch (-TrafficIp / -LoadSwitchVia)' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - the load switch writes to the bus' }
+        if (-not $Ctx.LoadSwitchGa) { Set-KnxTestNotRun -MissingInput '-LoadSwitchGa/-LoadSwitchPa' -Reason 'this rig has no load switch - pass -LoadSwitchGa/-LoadSwitchPa when one is fitted (TSSH 1.2.2 specifies 1/1/50 on 1.1.50)' }
+        if (-not $Ctx.LoadSwitchVia) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'no interface to drive the load switch (-TrafficIp / -LoadSwitchVia)' }
 
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $DMGMT -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a device management connection ($($conn.StatusName))"
@@ -756,6 +968,175 @@ function Invoke-KnxSuiteDevMgmt {
                 Assert-KnxTrue (-not $r.Parsed.IsError) "property read failed with error 0x$('{0:X2}' -f $r.Parsed.ErrorCode) after the transport-layer frame"
             }
             finally { [void](Close-KnxConnection -Connection $conn) }
+        }
+    }
+
+    # ── M_Reset: a Basic Restart (03_06_03 4.1.7.5 p.111-112; 03_05_02 3.7.1.1 p.78-79) ──────────────────
+    # t1 = 1 s: no pre-reset reaction any more (connections gone, programming mode off); t2 = 5 s: responsive again.
+
+    $mrGate = {
+        if (-not $Ctx.AllowDestructive) { Set-KnxTestNotRun -MissingInput '-IncludeDestructive' -Reason "M_Reset restarts the device and ends every client's connection - needs -IncludeDestructive with profile Full" }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'P-4.MR.1' -Title 'M_Reset.req ends every KNXnet/IP connection, switches programming mode off, device back within 5 s' `
+                       -Clause '03_06_03 4.1.7.5.1-4.1.7.5.2 p.111-112; 03_05_02 3.7.1.1.1-3.7.1.1.2 p.78-79' -Body {
+        & $mrGate
+        # DM first: its retries could otherwise leave the watched tunnel unacknowledged long enough to be dropped.
+        $dm = Open-KnxDmRetry -Ip $ip -Port $port
+        $tun = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer $K.Layer.TUNNEL_LINKLAYER
+        $dmGone = $false; $tunGone = $false
+        try {
+            Assert-KnxTrue $dm.Ok "could not open a device management connection ($($dm.StatusName))"
+            Assert-KnxTrue $tun.Ok "could not open a link-layer tunnel to watch ($($tun.StatusName))"
+            [void](Send-KnxDeviceConfiguration -Connection $dm -Cemi (New-CemiMPropWrite -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.PROG_MODE -Data ([byte[]]@(1))))
+            $pre = Get-KnxDescription -Ip $ip -Port $port
+            if ($null -eq $pre -or $null -eq $pre.Device -or -not $pre.Device.ProgMode) { Set-KnxTestNotRun -MissingInput 'programming mode via PID_PROG_MODE' -Reason 'programming mode could not be switched on before the reset (see H-4.2.5), so switching it off would prove nothing' }
+            $pre2 = Sync-KnxTunnel -Connection $tun -Ms 200   # nothing left unacknowledged before the reset
+            if ($pre2.Disconnected) { Set-KnxTestSkip 'the watched tunnel was gone before the reset, so its end cannot be attributed to the M_Reset' }
+            $m = Invoke-KnxMReset -Connection $dm
+            $t = Sync-KnxTunnel -Connection $tun -Ms 1500      # acknowledges, and catches the server's DISCONNECT_REQUEST
+            # t2 counts from the M_Reset.req (03_05_02 p.79 t0), not from the end of the waits above.
+            $back = if ((Wait-KnxDeviceBack -Ip $ip -Port $port) -ge 0) { [Math]::Round($m.Watch.Elapsed.TotalSeconds, 1) } else { -1 }
+            $dmGone = Test-KnxChannelGone -Connection $dm -ClosedBy $m.ClosedBy
+            $tunGone = [bool]$t.Disconnected -or (Test-KnxChannelGone -Connection $tun)
+            Add-KnxEvidence -Note ("ACK {0}; M_Reset.ind {1} (optional for a KNXnet/IP server); DM closed by {2}, gone {3}; tunnel gone {4}; DESCRIPTION after {5} s" -f $m.Acked, $m.Indication, $m.ClosedBy, $dmGone, $tunGone, $back)
+            Assert-KnxTrue $m.Acked 'no DEVICE_CONFIGURATION_ACK for M_Reset.req'
+            Assert-KnxTrue ($back -ge 0 -and $back -le 5) "the device was not responsive again within t2 = 5 s ($back s)"
+            Assert-KnxTrue $dmGone 'the device management connection the M_Reset came on survived it'
+            Assert-KnxTrue $tunGone 'the link-layer tunnel survived the M_Reset'
+            $d = Get-KnxDescription -Ip $ip -Port $port
+            Assert-KnxTrue ($null -ne $d -and $null -ne $d.Device) 'no DIB to read the programming mode from'
+            Assert-KnxTrue (-not $d.Device.ProgMode) 'programming mode is still on after the M_Reset'
+        }
+        finally {
+            Close-KnxResetConnection -Connection $tun -Gone $tunGone
+            Close-KnxResetConnection -Connection $dm -Gone $dmGone
+            $d = $null; try { $d = Get-KnxDescription -Ip $ip -Port $port } catch { }
+            if ($null -ne $d -and $null -ne $d.Device -and $d.Device.ProgMode) {
+                $c = Open-KnxDmRetry -Ip $ip -Port $port
+                if ($c.Ok) {
+                    [void](Send-KnxDeviceConfiguration -Connection $c -Cemi (New-CemiMPropWrite -ObjectType $K.ObjType.DEVICE -PropertyId $K.Pid.PROG_MODE -Data ([byte[]]@(0))))
+                    [void](Close-KnxConnection -Connection $c)
+                }
+            }
+        }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'P-4.MR.2' -Title 'Five M_Reset rounds in a row: each connection ended, device back within 5 s each time' `
+                       -Clause '03_06_03 4.1.7.5.1 p.111; 03_05_02 3.7.1.1.1-3.7.1.1.2 p.78-79' -Body {
+        & $mrGate
+        foreach ($round in 1..5) {
+            $dm = Open-KnxDmRetry -Ip $ip -Port $port
+            Assert-KnxTrue $dm.Ok "round ${round}: could not open a device management connection ($($dm.StatusName))"
+            $gone = $false
+            try {
+                $m = Invoke-KnxMReset -Connection $dm
+                $back = if ((Wait-KnxDeviceBack -Ip $ip -Port $port) -ge 0) { [Math]::Round($m.Watch.Elapsed.TotalSeconds, 1) } else { -1 }
+                $gone = Test-KnxChannelGone -Connection $dm -ClosedBy $m.ClosedBy
+                Add-KnxEvidence -Note "round ${round}: ACK $($m.Acked), ind $($m.Indication), closed by $($m.ClosedBy), gone $gone, DESCRIPTION after $back s"
+                Assert-KnxTrue $m.Acked "round ${round}: no DEVICE_CONFIGURATION_ACK"
+                Assert-KnxTrue ($back -ge 0 -and $back -le 5) "round ${round}: not responsive again within t2 = 5 s ($back s)"
+                Assert-KnxTrue $gone "round ${round}: the device management connection survived the M_Reset"
+            }
+            finally { Close-KnxResetConnection -Connection $dm -Gone $gone }
+        }
+    }
+
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'P-4.MR.3' -Title 'A new routing multicast address takes effect after M_Reset' `
+                       -Clause '03_05_02 3.7.1.1.1 p.78 (within 30 s after the restart), EXAMPLE 5 p.79; 03_08_03 2.5.1, 2.5.17' -Body {
+        if (-not $Ctx.IsRouter) { Set-KnxTestNotApplicable 'PID_ROUTING_MULTICAST_ADDRESS is used by a router; an interface does not route' }
+        & $mrGate
+        if (-not $Ctx.AllowDestructive) { Set-KnxTestNotRun -MissingInput '-IncludeDestructive' -Reason 'rewrites PID_ROUTING_MULTICAST_ADDRESS - needs -IncludeDestructive with profile Full' }
+        if (-not $Ctx.TrafficIp) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'the group is checked over the bus; needs -TrafficIp' }
+        if (-not $Ctx.BdutPa) { Set-KnxTestNotRun -MissingInput '-BdutPa' -Reason 'the router individual address is unknown (-BdutPa)' }
+        $isolated = ($null -ne $Ctx.PSObject.Properties['IsolatedNetwork'] -and [bool]$Ctx.IsolatedNetwork)
+        # The probe switches the SBC mode on (the router then relays TP system broadcasts to 224.0.23.12) and the
+        # control probe may send on the production group: isolated rig only.
+        if (-not $isolated) { Set-KnxTestNotRun -MissingInput '-IsolatedNetwork' -Reason 'the probe switches the IP System Broadcast Routing Mode on and may send on 224.0.23.12 - only on an isolated rig' }
+
+        # Probe: an SBC enable sent as routing indication to $Group must switch the mode within $LimitS (read over TP).
+        $probe = {
+            param($Session, [string]$Group, [int]$LimitS)
+            Assert-KnxSbcAnswer -Result (Invoke-KnxSbcControl -Session $Session -Form 'Ext' -Mode 0) -What 'disable before the probe'
+            $tpdu = New-TpduService -Apci $K.Apci.FUNCTION_PROPERTY_EXT_COMMAND -Data ([byte[]]@(0x00, 0x06, 0x00, 0x10, 0x78, 0x00, 0x00, 0x01)) -Sequence -1
+            $cemi = New-CemiLData -MessageCode 0x29 -Source (ConvertTo-KnxPa -Address '0.0.250') -Destination (ConvertTo-KnxPa -Address $Ctx.BdutPa) -Tpdu $tpdu -Priority 0
+            $frame = New-KnxRoutingIndication -Cemi $cemi
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            while ($sw.Elapsed.TotalSeconds -lt $LimitS) {
+                $u = New-KnxSocket -TimeoutMs 500
+                try { Send-KnxFrame -Socket $u -Frame $frame -Ip $Group -Port $port } finally { $u.Dispose() }
+                [void](Wait-KnxTunnel -Connection $Session.Conn -Ms 500)
+                if ((Invoke-KnxSbcControl -Session $Session -Form 'Ext').Mode -eq 1) { return [Math]::Round($sw.Elapsed.TotalSeconds, 1) }
+            }
+            return -1
+        }
+
+        $dm = Open-KnxDmRetry -Ip $ip -Port $port
+        Assert-KnxTrue $dm.Ok "could not open a device management connection ($($dm.StatusName))"
+        $orig = Get-PropertyBytes -Connection $dm -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $K.Pid.ROUTING_MULTICAST_ADDRESS
+        if ($null -eq $orig -or $orig.Length -lt 4) { [void](Close-KnxConnection -Connection $dm); Set-KnxTestSkip 'PID_ROUTING_MULTICAST_ADDRESS could not be read' }
+        $origIp = $orig[0..3] -join '.'
+        $targetIp = if ($origIp -eq '225.0.23.12') { '225.0.23.13' } else { '225.0.23.12' }
+        # An open device management connection puts the transport layer in cEMI Transport Layer mode, which ignores the probe's requests from the bus (TSSH 8.3.6).
+        $closed = Close-KnxConnection -Connection $dm; $dm = $null
+        if (-not $closed) { Set-KnxTestNotRun -MissingInput 'a confirmed DISCONNECT of the device management connection' -Reason 'with the connection possibly open the probe requests would be ignored' }
+        Start-Sleep -Milliseconds 700   # the mode ends in the device's next loop pass
+        $restore = 'pending'; $s = $null; $dmGone = $false; $written = $false
+        try {
+            $s = Open-KnxDeviceSession -Ip $Ctx.TrafficIp -Port $port -Pa $Ctx.BdutPa
+            if (-not $s.Ok) { Set-KnxTestSkip "no tunnel on the traffic interface: $($s.Reason)" }
+            # Control: the same probe on the present group, so a broken probe path is not blamed on the new group.
+            $c0 = & $probe $s $origIp 5
+            Add-KnxEvidence -Note "control probe on $origIp took effect after $c0 s"
+            if ($c0 -lt 0) { Set-KnxTestSkip "the probe does not work on the present group $origIp either, so the new group cannot be judged" }
+            $dm = Open-KnxDmRetry -Ip $ip -Port $port
+            Assert-KnxTrue $dm.Ok "could not open a device management connection for the write ($($dm.StatusName))"
+            $w = Send-KnxDeviceConfiguration -Connection $dm -Cemi (New-CemiMPropWrite -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $K.Pid.ROUTING_MULTICAST_ADDRESS -Data ([byte[]]($targetIp.Split('.') | ForEach-Object { [byte]$_ })))
+            $written = $true   # a lost .con may still have landed: restore in any case
+            Assert-KnxTrue ($null -ne $w.Parsed -and -not $w.Parsed.IsError) 'PID_ROUTING_MULTICAST_ADDRESS write was refused'
+            Add-KnxEvidence -Note "PID 66 $origIp -> $targetIp"
+            $m = Invoke-KnxMReset -Connection $dm
+            $back = Wait-KnxDeviceBack -Ip $ip -Port $port
+            $dmGone = Test-KnxChannelGone -Connection $dm -ClosedBy $m.ClosedBy
+            Assert-KnxTrue ($back -ge 0) 'the device did not come back after the M_Reset'
+            # A connection that outlived the reset shows no restart (judged by P-4.MR.1) and would keep the probe ignored.
+            if (-not $dmGone) { Set-KnxTestNotRun -MissingInput 'a restart after the M_Reset' -Reason 'the device management connection outlived the M_Reset, so the restart that applies the new group did not happen (P-4.MR.1 judges that)' }
+            $dm = $null
+            $seen = & $probe $s $targetIp 30
+            Add-KnxEvidence -Note $(if ($seen -ge 0) { "an enable sent to $targetIp took effect $seen s after the device was back" } else { "no enable sent to $targetIp took effect within 30 s after the device was back" })
+            Assert-KnxTrue ($seen -ge 0) "the router did not act on a routing indication to the new group $targetIp within 30 s after the restart"
+        }
+        finally {
+            if ($null -ne $dm) { Close-KnxResetConnection -Connection $dm -Gone $dmGone }
+            if ($null -ne $s) {
+                try { [void](Invoke-KnxSbcControl -Session $s -Form 'Ext' -Mode 0) } catch { }
+                Close-KnxDeviceSession -Session $s
+            }
+            if ($written) {
+                try {
+                    [void](Wait-KnxDeviceBack -Ip $ip -Port $port)
+                    $c = Open-KnxDmRetry -Ip $ip -Port $port
+                    if ($c.Ok) {
+                        [void](Send-KnxDeviceConfiguration -Connection $c -Cemi (New-CemiMPropWrite -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $K.Pid.ROUTING_MULTICAST_ADDRESS -Data ([byte[]]$orig[0..3])))
+                        $mr = Invoke-KnxMReset -Connection $c
+                        [void](Wait-KnxDeviceBack -Ip $ip -Port $port)
+                        Close-KnxResetConnection -Connection $c -Gone (Test-KnxChannelGone -Connection $c -ClosedBy $mr.ClosedBy)
+                        $c2 = Open-KnxDmRetry -Ip $ip -Port $port
+                        if ($c2.Ok) {
+                            $now = Get-PropertyBytes -Connection $c2 -ObjectType $K.ObjType.KNXNETIP_PARAM -PropertyId $K.Pid.ROUTING_MULTICAST_ADDRESS
+                            $restore = if ($null -ne $now -and $now.Length -ge 4 -and ($now[0..3] -join '.') -eq $origIp) { 'ok' } else { 'failed' }
+                            [void](Close-KnxConnection -Connection $c2)
+                        }
+                        else { $restore = 'failed' }
+                    }
+                    else { $restore = 'failed' }
+                }
+                catch { $restore = 'failed' }
+                if ($restore -ne 'ok') {
+                    Write-Host "    WARNING: PID_ROUTING_MULTICAST_ADDRESS was not restored to $origIp" -ForegroundColor Red
+                    throw "KNXTEST_FAIL::PID_ROUTING_MULTICAST_ADDRESS could not be restored to $origIp"
+                }
+            }
         }
     }
 }

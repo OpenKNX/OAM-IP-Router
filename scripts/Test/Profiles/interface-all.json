@@ -1,0 +1,50 @@
+{
+  "name": "interface-all",
+  "description": "Everything the rig can judge on the IP-Interface (ipif), destructive included",
+  "what": "All",
+  "device": {
+    "ip": "11.11.0.210",
+    "pa": "1.1.13",
+    "role": "Interface",
+    "hardwareBusmonitor": "yes"
+  },
+  "rig": {
+    "trafficIp": "11.11.0.126",
+    "witnessIp": "11.11.0.2",
+    "p2pTarget": "1.1.5",
+    "deviceTargets": "1.1.5,1.1.8",
+    "testGa": "",
+    "serialPort": "/dev/cu.usbmodem3101",
+    "ftcTarget": "1.1.8",
+    "referenceIp": "11.11.0.2",
+    "multicast": "224.0.23.13",
+    "speedTarget": "1.1.8",
+    "speedKb": "50",
+    "referenceIps": "11.11.0.2,11.11.0.5",
+    "powerGuard": "on",
+    "powerRelayWrite": "0/3/100,0/3/110",
+    "powerRelayStatus": "0/3/101,0/3/111",
+    "powerRelayVia": "11.11.0.2",
+    "protectedTargets": "1.1.3",
+    "powerRelayFeeds": "11.11.0.126"
+  },
+  "flags": {
+    "guided": false,
+    "includeDestructive": true,
+    "iterations": 0
+  },
+  "requires": [
+    "-BdutPa",
+    "-TrafficIp",
+    "-P2pTarget",
+    "-DeviceTargets",
+    "-IncludeDestructive"
+  ],
+  "safety": {
+    "allowedLines": [
+      "1.1"
+    ],
+    "note": "line 1.1 is the isolated test rig; 1.0.x and 2.0.x are the live installation - a test must never address them"
+  },
+  "notes": "The interface must NOT advertise ROUTING - section 6 is the negative test, so it runs here too. The device reports 1.1.13."
+}

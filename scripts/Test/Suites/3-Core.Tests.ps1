@@ -107,7 +107,13 @@ function Invoke-KnxSuiteCore {
             # certified references fail this case while our device passed - they are right
             # to ignore it there. Send it where the specification puts it and pick the BDUT's
             # answer out of the responses, since every device on the group replies.
-            $group = if ($Ctx.PSObject.Properties['Multicast'] -and $Ctx.Multicast) { $Ctx.Multicast } else { '224.0.23.12' }
+            # Discovery lives on the SYSTEM SETUP multicast address, 224.0.23.12 - 03_08_02 8.5.2.1
+            # names it, and a device joins it whatever routing group it was configured with. Searching
+            # on the run's lab routing group instead asked on a group the device never joined and
+            # reported "no SEARCH_RESPONSE" about a device that answers every ETS search.
+            # A SEARCH_REQUEST is read-only, so using the standard group is not the hazard the routing
+            # suite's group gate guards against.
+            $group = '224.0.23.12'
 
             # Searched up to three times, and the hit rate is recorded either way. One
             # sample cannot tell "this device does not answer discovery" from "this one
@@ -115,7 +121,7 @@ function Invoke-KnxSuiteCore {
             # defect or a lost packet. Measured on this rig: two references and one of our
             # two devices answer 40 of 40, the third answers 30 of 40 - in multi-second
             # blocks, while unicast stays at 12 of 12. That is worth a number in the report,
-            # not a coin flip in the verdict. ETS rescans too.
+            # not a coin flip in the result. ETS rescans too.
             $attempts = 3
             $hits = 0
             $r = $null
@@ -290,6 +296,44 @@ function Invoke-KnxSuiteCore {
         finally { $s.Dispose() }
     }
 
+    Invoke-KnxTestCase -Suite $SuiteTitle -Id 'P-3.4.3' -Title 'Connect Request - truncated CRI is discarded, never answered "connection type unsupported"' -Clause '03_08_02 6.2 p.15; error codes Table 8 p.39' -Body {
+        # A CONNECT_REQUEST too short to carry its tunnelling CRI cannot say which layer is wanted.
+        # 03_08_02 6.2 p.15: "If an invalid data packet is received, the implementation shall ignore the
+        # data packet without taking any further action." Silence is therefore correct, and a truthful
+        # error is tolerated - but two answers are not: E_CONNECTION_TYPE states the REQUESTED type is
+        # unsupported, which is untrue for TUNNEL_CONNECTION, and accepting the frame outright would open
+        # a tunnel whose layer the client never stated.
+        $s = New-KnxSocket -TimeoutMs 2500
+        try {
+            $local = Get-LocalEndpointFor -DestinationIp $ip -Port $port
+            $lp = Get-SocketLocalPort -Socket $s
+            $hpai = New-KnxHpai -Ip $local -Port $lp
+            # 24 octets total, two short of the 26 a tunnelling CONNECT_REQUEST needs: the CRI stops
+            # before the layer octet.
+            $cri = [byte[]]@(0x02, $K.ConnType.TUNNEL_CONNECTION)
+            $f = New-KnxFrame -Service $K.Service.CONNECT_REQUEST -Body ([byte[]]($hpai + $hpai + $cri))
+            Add-KnxEvidence -Sent $f
+            $r = Invoke-KnxRequest -Socket $s -Frame $f -Ip $ip -Port $port -Expect @($K.Service.CONNECT_RESPONSE) -TimeoutMs 2500
+            if ($r.TimedOut) {
+                # Silence only counts as a discard while the device is still alive - otherwise a dead or
+                # unplugged device would certify itself here.
+                Assert-KnxTrue (Test-KnxAlive -Ip $ip -Port $port -TimeoutMs 2000) 'no answer to the malformed frame AND no answer to a DESCRIPTION_REQUEST - the device is not reachable, so its silence proves nothing'
+                Add-KnxEvidence -Note 'no answer, device still alive - the frame was discarded (03_08_02 6.2 p.15)'
+                return
+            }
+            Add-KnxEvidence -Received $r.Packet.Bytes
+            $cr = Read-KnxConnectResponse -Body $r.Header.Body
+            # An accepted connection must not be left behind for the following cases.
+            if ($cr.Status -eq $K.Error.E_NO_ERROR) {
+                $bye = New-KnxDisconnectRequest -Channel $cr.Channel -ControlIp $local -ControlPort $lp
+                [void](Invoke-KnxRequest -Socket $s -Frame $bye -Ip $ip -Port $port -Expect @($K.Service.DISCONNECT_RESPONSE) -TimeoutMs 2000)
+            }
+            Assert-KnxTrue ($cr.Status -ne $K.Error.E_NO_ERROR) 'the server ACCEPTED a CONNECT_REQUEST that is too short to state its tunnelling layer'
+            Assert-KnxTrue ($cr.Status -ne $K.Error.E_CONNECTION_TYPE) 'answered E_CONNECTION_TYPE for a connection type the server does support'
+        }
+        finally { $s.Dispose() }
+    }
+
     # ── 3.5 Connectionstate Request ─────────────────────────────────────────────
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-3.5.1' -Title 'Connectionstate Request - Standard Case' -Clause 'TSSH 3.5.1, p.19 (fn 10501)' -Body {
@@ -340,7 +384,17 @@ function Invoke-KnxSuiteCore {
             $sec = [Math]::Round($sw.Elapsed.TotalSeconds, 1)
             Add-KnxEvidence -Note "measured $sec s"
             Assert-KnxTrue $dropped 'device never dropped the idle connection (no DISCONNECT_REQUEST within 140 s)'
+            Add-KnxEvidence -Received $r.Packet.Bytes
             Assert-KnxTrue ($sec -ge 110 -and $sec -le 130) "reaper fired after $sec s, outside the accepted 110...130 s window"
+            # 08_TSSH 3.5.3 p.21: the request carries the channel and the HPAI IP_BDUT, CPORT_BDUT (03_08_02 Figure 39 p.41).
+            $b = [byte[]]$r.Header.Body
+            Assert-KnxTrue ($b.Length -ge 10) "the DISCONNECT_REQUEST body is $($b.Length) octets, expected 10"
+            Assert-KnxEqual $conn.Channel $b[0] 'the DISCONNECT_REQUEST names a different channel'
+            $hpai = '{0}.{1}.{2}.{3}:{4}' -f $b[4], $b[5], $b[6], $b[7], (([int]$b[8] -shl 8) -bor [int]$b[9])
+            Add-KnxEvidence -Note "HPAI $hpai"
+            Assert-KnxEqual 0x08 $b[2] 'HPAI structure length'
+            Assert-KnxEqual 0x01 $b[3] 'HPAI host protocol code is not IPV4_UDP'
+            Assert-KnxEqual ('{0}:{1}' -f [System.Net.IPAddress]::Parse($ip), $port) $hpai 'the HPAI does not name the device control endpoint (IP_BDUT, CPORT_BDUT)'
         }
         finally {
             # If the reaper did not fire, the slot is still ours - release it, or every
@@ -351,9 +405,9 @@ function Invoke-KnxSuiteCore {
     }
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-3.5.4' -Title 'Connectionstate Request - Bus connection interrupted' -Clause 'TSSH 3.5.4, p.21 (fn 10503)' -Body {
-        if ($Ctx.ReadOnly) { Set-KnxTestSkip 'profile ReadOnly - the load switch writes to the bus' }
-        if (-not $Ctx.LoadSwitchGa) { Set-KnxTestSkip 'this rig has no load switch - pass -LoadSwitchGa/-LoadSwitchPa when one is fitted (TSSH 1.2.2 specifies 1/1/50 on 1.1.50)' }
-        if (-not $Ctx.LoadSwitchVia) { Set-KnxTestSkip 'no interface to drive the load switch (-TrafficIp / -LoadSwitchVia)' }
+        if ($Ctx.ReadOnly) { Set-KnxTestNotRun -MissingInput '-RunProfile Full' -Reason 'profile ReadOnly - the load switch writes to the bus' }
+        if (-not $Ctx.LoadSwitchGa) { Set-KnxTestNotRun -MissingInput '-LoadSwitchGa/-LoadSwitchPa' -Reason 'this rig has no load switch - pass -LoadSwitchGa/-LoadSwitchPa when one is fitted (TSSH 1.2.2 specifies 1/1/50 on 1.1.50)' }
+        if (-not $Ctx.LoadSwitchVia) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'no interface to drive the load switch (-TrafficIp / -LoadSwitchVia)' }
 
         $conn = Open-KnxConnection -Ip $ip -Port $port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1
         Assert-KnxTrue $conn.Ok "could not open a connection ($($conn.StatusName))"
@@ -372,7 +426,7 @@ function Invoke-KnxSuiteCore {
             Assert-KnxStatus $K.Error.E_KNX_CONNECTION $r.Header.Body[1] 'device did not report E_KNX_CONNECTION while its bus connection was open'
         }
         finally {
-            # Restoring the bus matters more than the verdict - every later case needs it.
+            # Restoring the bus matters more than the result - every later case needs it.
             if ($opened) {
                 $on = Invoke-KnxLoadSwitch -Via $Ctx.LoadSwitchVia -On $true -GroupAddress $Ctx.LoadSwitchGa
                 if (-not $on.Ok) { Write-Host "    WARNING: could not re-close the load switch - $($on.Reason)" -ForegroundColor Red }

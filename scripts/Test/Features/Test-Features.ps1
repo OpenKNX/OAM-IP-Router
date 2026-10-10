@@ -31,15 +31,14 @@
     The device is built with OPENKNX_HW_BUSMON and must accept a busmonitor tunnel.
 
 .PARAMETER BusmonExclusive
-    Declares the intended design for X-BM-2, because the firmware and CLAUDE.md currently
-    disagree and only you can settle which is right:
+    Declares the intended design for X-BM-2:
 
       set     an active busmonitor blocks EVERY tunnel, including link layer. This is what
-              the firmware does today - it answers with an explicit message
-              ("HW busmonitor active (bus TX paused)"), so it is deliberate, not a slip.
-      unset   only a SECOND busmonitor is refused; a link-layer tunnel stays available.
-              This is what CLAUDE.md describes, and it keeps the device programmable while
-              somebody is watching the bus.
+              the firmware does - it answers with an explicit message
+              ("HW busmonitor active (bus TX paused)") - and what doc/reference/ARCHITECTURE.md
+              section 6 describes (03_08_04 section 2.2.4).
+      unset   only a SECOND busmonitor is refused; a link-layer tunnel stays available, which
+              keeps the device programmable while somebody is watching the bus.
 
     The case reports which expectation it applied, so the report never hides the choice.
 
@@ -80,11 +79,8 @@ if (-not $ReportDir) { $ReportDir = Join-Path $here 'Reports' }
 $K = Get-KnxConstants
 $SUITE = 'X Features and behaviour'
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Feature and behaviour tests' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+Write-KnxLogo -Title 'Feature and behaviour tests'
 
 $st = Invoke-KnxSelfTest -Quiet
 if (-not $st.Ok) {
@@ -117,7 +113,7 @@ Write-Host ('  ' + ('-' * $SUITE.Length)) -ForegroundColor DarkGray
 
 # ─── Identity ───────────────────────────────────────────────────────────────────
 
-Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-1' -Title 'Mask version matches the product role' -Clause 'CLAUDE.md architecture decision; platformio.custom.ini MASK_VERSION' -Body {
+Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-1' -Title 'Mask version matches the product role' -Clause 'doc/reference/ARCHITECTURE.md section 2; platformio.custom.ini MASK_VERSION' -Body {
     # The Extended Device Information DIB is "Not allowed" in a DESCRIPTION_RESPONSE
     # (03_08_02 Table 5, p.31) - it only appears in SEARCH_RESPONSE_EXTENDED. Looking for the
     # mask there therefore always failed, and the earlier "it is optional" reasoning was
@@ -137,7 +133,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-1' -Title 'Mask version matches the p
     else { Assert-KnxEqual '0x07B0' $mask 'the IP-Interface must report mask 07B0 - 091A would make it a routing device and forbid the busmonitor' }
 }
 
-Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-2' -Title 'Advertised service families match the product' -Clause '03_08_02 Core; CLAUDE.md "router vs interface is a capability"' -Body {
+Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-2' -Title 'Advertised service families match the product' -Clause '03_08_02 Core; doc/reference/ARCHITECTURE.md section 1 "router vs interface is a capability"' -Body {
     Assert-KnxTrue ($null -ne $desc) 'no description'
     $names = ($desc.Families | ForEach-Object { $_.Name }) -join ', '
     Add-KnxEvidence -Note "advertised: $names"
@@ -171,6 +167,76 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-ID-3' -Title 'Maximum APDU length is rep
     Assert-KnxTrue ($apdu -ge 15) "reported maximum APDU length $apdu is below the KNX minimum of 15"
 }
 
+# ─── Property read helpers ──────────────────────────────────────────────────────
+
+function Read-KnxPropertyRetry {
+    <#
+    .SYNOPSIS
+        M_PropRead with one resend when the device does not answer at all.
+    .DESCRIPTION
+        A lost datagram and an element that does not exist look the same to the caller, and
+        only the first of the two is worth asking again. An error confirmation is the
+        device's answer, so it is returned as it is. Returns $null when nothing came back
+        twice.
+    #>
+    param(
+        [Parameter(Mandatory)]$Connection,
+        [Parameter(Mandatory)][int]$ObjectType,
+        [Parameter(Mandatory)][int]$PropertyId,
+        [int]$ElementCount = 1,
+        [int]$StartIndex = 1
+    )
+    $r = Read-KnxProperty -Connection $Connection -ObjectType $ObjectType -PropertyId $PropertyId `
+                          -ElementCount $ElementCount -StartIndex $StartIndex
+    if ($null -ne $r -and $null -ne $r.Parsed) { return $r }
+    # A late confirmation of the first attempt would otherwise be read as the answer to the second.
+    if ($null -ne $Connection.Socket) { Clear-KnxSocket -Socket $Connection.Socket }
+    $r = Read-KnxProperty -Connection $Connection -ObjectType $ObjectType -PropertyId $PropertyId `
+                          -ElementCount $ElementCount -StartIndex $StartIndex
+    if ($null -ne $r -and $null -ne $r.Parsed) { return $r }
+    return $null
+}
+
+function Get-KnxPropertyElementCount {
+    <#
+    .SYNOPSIS
+        Number of elements a property currently holds, read from start index 0.
+    .DESCRIPTION
+        03_03_07: a read at start index 0 answers with the current number of elements instead
+        of data, and it answers even when the property holds none. Returns -1 when the
+        property did not answer or is not implemented - which is not the same as "it holds
+        nothing", and the caller must keep the two apart.
+    #>
+    param(
+        [Parameter(Mandatory)]$Connection,
+        [Parameter(Mandatory)][int]$ObjectType,
+        [Parameter(Mandatory)][int]$PropertyId
+    )
+    $r = Read-KnxPropertyRetry -Connection $Connection -ObjectType $ObjectType -PropertyId $PropertyId -ElementCount 1 -StartIndex 0
+    if ($null -eq $r -or $null -eq $r.Parsed -or $r.Parsed.IsError) { return -1 }
+    if ($r.Parsed.Data.Length -lt 2) { return -1 }
+    return (Get-Uint16 -Bytes $r.Parsed.Data -Offset 0)
+}
+
+function Get-KnxPropertyBlocks {
+    <#
+    .SYNOPSIS
+        Splits an element count into read blocks of at most 15 elements.
+    .DESCRIPTION
+        The cEMI element-count field is four bits, so 16 wraps to 0 and a block never asks
+        for more than 15. Each block carries its absolute start index.
+    #>
+    param([Parameter(Mandatory)][int]$Count)
+    $b = @()
+    $i = 1
+    while ($i -le $Count) {
+        $n = [Math]::Min(15, $Count - $i + 1)
+        $b += @{ s = $i; n = $n }
+        $i += $n
+    }
+    return , $b
+}
+
 # ─── Tunnelling capacity ────────────────────────────────────────────────────────
 
 Invoke-KnxTestCase -Suite $SUITE -Id 'X-TUN-1' -Title 'Configured number of tunnels is actually granted' -Clause 'platformio.custom.ini KNX_TUNNELING' -Body {
@@ -185,20 +251,101 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-TUN-1' -Title 'Configured number of tunn
     # are actually assigned, not by the build flag. A project may leave an entry empty - ETS
     # shows it as "5.0.- Tunnel 1" - and then the device correctly grants one fewer. Asking
     # the device turns a configuration state into evidence instead of a firmware defect.
-    # The element count field is 4 bits, so 16 wraps to 0: read 15 + 1, never 16 at once.
     $assigned = @()
+    $reservedElsewhere = 0     # slots this client can never be given: reserved for a DIFFERENT IP
     $mgmt = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.DEVICE_MGMT_CONNECTION -Layer -1
     if ($mgmt.Ok) {
         try {
-            foreach ($blk in @(@{ s = 1; n = 15 }, @{ s = 16; n = 1 })) {
-                $pr = Read-KnxProperty -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
-                                       -PropertyId $K.Pid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount $blk.n -StartIndex $blk.s
-                if ($null -eq $pr.Parsed -or $pr.Parsed.IsError) { continue }
-                $d = $pr.Parsed.Data
-                for ($o = 0; ($o + 1) -lt $d.Length; $o += 2) {
-                    $raw = Get-Uint16 -Bytes $d -Offset $o
-                    if ($raw -gt 0) { $assigned += (ConvertFrom-KnxPa -Raw $raw) }
+            # Ask the device how many elements the property holds before reading it. A read that starts
+            # past the last element answers with element count 0, which the parser reports as an error -
+            # the same shape a failed read has. Sizing the blocks from the reported count keeps the two
+            # apart: within the count, a block that does not come back leaves the pool half-known and the case must not
+            # judge on it; an unreadable count means the property is not there and the expected number
+            # falls back to the build flag.
+            $paaCount = Get-KnxPropertyElementCount -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                    -PropertyId $K.Pid.ADDITIONAL_INDIVIDUAL_ADDRESSES
+            if ($paaCount -lt 0) {
+                Add-KnxEvidence -Note "PID_ADDITIONAL_INDIVIDUAL_ADDRESSES did not report an element count - the pool is unknown, so $TunnelCount from the build flag is used as the expectation"
+            }
+            else {
+                if ($paaCount -eq 0) {
+                    Add-KnxEvidence -Note "PID_ADDITIONAL_INDIVIDUAL_ADDRESSES holds no elements - the pool is empty, so $TunnelCount from the build flag is used as the expectation"
                 }
+                foreach ($blk in (Get-KnxPropertyBlocks -Count $paaCount)) {
+                    $pr = Read-KnxPropertyRetry -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                -PropertyId $K.Pid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount $blk.n -StartIndex $blk.s
+                    if ($null -eq $pr -or $pr.Parsed.IsError) {
+                        Set-KnxTestNotApplicable "PID_ADDITIONAL_INDIVIDUAL_ADDRESSES reports $paaCount element(s) but slots $($blk.s)..$($blk.s + $blk.n - 1) did not read back - the address pool is unknown, so the number of grantable tunnels cannot be derived"
+                    }
+                    $d = $pr.Parsed.Data
+                    for ($o = 0; ($o + 1) -lt $d.Length; $o += 2) {
+                        $raw = Get-Uint16 -Bytes $d -Offset $o
+                        if ($raw -gt 0) { $assigned += (ConvertFrom-KnxPa -Raw $raw) }
+                    }
+                }
+            }
+
+            # A slot reserved for another client (control bit 7, the client IP in property 202) is withheld from this one; control byte and IP are paired per block by absolute slot number, so a failed half-read shifts nothing.
+            # Element counts first, as for the address pool: a slot is tied to a client IP only when both properties answer (otherwise nothing counts as reserved), and only as many slots as both hold are paired.
+            $slots = @()
+            $ctrlCount = Get-KnxPropertyElementCount -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                     -PropertyId $K.Pid.CUSTOM_RESERVED_TUNNELS_CTRL
+            $ipCount = Get-KnxPropertyElementCount -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                   -PropertyId $K.Pid.CUSTOM_RESERVED_TUNNELS_IP
+            if (($ctrlCount -lt 0) -ne ($ipCount -lt 0)) {
+                Add-KnxEvidence -Note "only one half of the tunnel reservation answered (control $ctrlCount element(s), IP $ipCount) - a slot cannot be tied to a client IP, so none is counted as withheld"
+            }
+            if ($ctrlCount -ge 0 -and $ipCount -ge 0) {
+                $resCount = [Math]::Min($ctrlCount, $ipCount)
+                if ($ctrlCount -ne $ipCount) {
+                    Add-KnxEvidence -Note "tunnel reservation control holds $ctrlCount element(s) and IP holds $ipCount - only the first $resCount slot(s) can be paired"
+                }
+                foreach ($blk in (Get-KnxPropertyBlocks -Count $resCount)) {
+                    $pc = Read-KnxPropertyRetry -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                -PropertyId $K.Pid.CUSTOM_RESERVED_TUNNELS_CTRL -ElementCount $blk.n -StartIndex $blk.s
+                    $pi = Read-KnxPropertyRetry -Connection $mgmt -ObjectType $K.ObjType.KNXNETIP_PARAM `
+                                                -PropertyId $K.Pid.CUSTOM_RESERVED_TUNNELS_IP -ElementCount $blk.n -StartIndex $blk.s
+                    $cOk = ($null -ne $pc -and -not $pc.Parsed.IsError)
+                    $iOk = ($null -ne $pi -and -not $pi.Parsed.IsError)
+                    # Plain assignments, not "$c = if (...) { @() }": an if-statement that yields an
+                    # empty collection assigns $null, and the .Count below then throws under StrictMode
+                    # and the case ends as an unhandled error instead of a result.
+                    $c = @()
+                    $pip = @()
+                    if ($cOk) { $c = @($pc.Parsed.Data) }
+                    if ($iOk) { $pip = @($pi.Parsed.Data) }
+                    # One control byte and four IP octets per slot. That ratio is the invariant, not the
+                    # requested length: a block that answers with fewer slots than asked is still pairable
+                    # over the slots it did return, and demanding $blk.n octets rejected it.
+                    if (-not $cOk -or -not $iOk -or $c.Count -eq 0 -or $pip.Count -ne (4 * $c.Count)) {
+                        Set-KnxTestNotApplicable "the tunnel reservation of slots $($blk.s)..$($blk.s + $blk.n - 1) cannot be paired (control $($c.Count) octet(s), IP $($pip.Count) - four IP octets per control byte are needed) - which slots are withheld from this client is unknown, so the grantable count cannot be derived"
+                    }
+                    if ($c.Count -lt $blk.n) {
+                        Add-KnxEvidence -Note "tunnel reservation slots $($blk.s)..$($blk.s + $blk.n - 1) answered with $($c.Count) slot(s); the rest is read as not reserved"
+                    }
+                    for ($j = 0; $j -lt $c.Count; $j++) {
+                        $slots += [pscustomobject]@{
+                            Slot = $blk.s + $j
+                            Ctrl = [int]$c[$j]
+                            Ip   = '{0}.{1}.{2}.{3}' -f $pip[4 * $j], $pip[4 * $j + 1], $pip[4 * $j + 2], $pip[4 * $j + 3]
+                        }
+                    }
+                }
+            }
+            $mine = [string]$mgmt.LocalIp
+            # The reservation is an OpenKNX extension, not KNX: the stack applies it only when BOTH tables hold
+            # exactly KNX_TUNNELING elements (ip_tunnel_server.cpp reservedTunnelsCtrl/Ip). A partial table is
+            # ignored there and every slot is grantable, so withholding slots for it here was a false FAIL.
+            $resActive = ($ctrlCount -eq $TunnelCount -and $ipCount -eq $TunnelCount)
+            if (-not $resActive -and @($slots | Where-Object { ($_.Ctrl -band 0x80) -ne 0 }).Count -gt 0) {
+                Add-KnxEvidence -Note "tunnel reservation is inactive (control $ctrlCount, IP $ipCount element(s), the device applies it only at $TunnelCount each) - no slot is counted as withheld"
+            }
+            foreach ($sl in $slots) {
+                if (-not $resActive) { break }
+                if (($sl.Ctrl -band 0x80) -eq 0) { continue }
+                if ($sl.Ip -eq $mine) { continue }
+                $reservedElsewhere++
+                Add-KnxEvidence -Note "tunnel slot $($sl.Slot) is reserved for $($sl.Ip), so it is not offered to this client ($mine)"
             }
         }
         finally { [void](Close-KnxConnection -Connection $mgmt) }
@@ -207,9 +354,9 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-TUN-1' -Title 'Configured number of tunn
     # same individual address (03_08_04 section 2.2.4). An unassigned ETS entry shows up here
     # as a duplicate of its neighbour, so counting non-zero entries overstates the capacity.
     $distinct = @($assigned | Sort-Object -Unique)
-    $expected = $TunnelCount
+    $expected = $TunnelCount - $reservedElsewhere
     if ($assigned.Count -gt 0) {
-        $expected = $distinct.Count
+        $expected = $distinct.Count - $reservedElsewhere
         if ($distinct.Count -lt $assigned.Count) {
             Add-KnxEvidence -Note "pool holds $($assigned.Count) entries but only $($distinct.Count) distinct addresses - duplicates cannot be granted, and exhausting them is the E_NO_MORE_UNIQUE_CONNECTIONS case"
         }
@@ -227,21 +374,59 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-TUN-1' -Title 'Configured number of tunn
         }
         $addrs = @($open | ForEach-Object { $_.TunnelPa })
         Add-KnxEvidence -Note "$($open.Count) of $TunnelCount tunnels granted: $($addrs -join ', ')"
-        # Naming the addresses that never appeared turns a shortfall from a bare verdict into a
+        # Each stage of a full run is its own process, so a tunnel the PREVIOUS stage left open is not
+        # closed by Close-KnxTrafficConnection above - the device only reaps it after the 120 s heartbeat.
+        # Counting once therefore reported a firmware defect three times for a slot that was simply still
+        # held; run alone, the same device grants the whole pool every time. Retry past the reap window
+        # and judge the BETTER pass, so a shortfall that survives it is the real thing.
+        $granted = $open.Count
+        $resultRefusal = $refusal
+        $resultAddrs = $addrs
+        if ($open.Count -lt $expected) {
+            Add-KnxEvidence -Note "first pass granted $($open.Count) of $expected - releasing and waiting out the 120 s heartbeat reap before counting again"
+            foreach ($c in $open) { [void](Close-KnxConnection -Connection $c) }
+            $open = @()
+            $refusal = -1
+            Start-Sleep -Seconds 125
+            for ($i = 0; $i -lt ($TunnelCount + 2); $i++) {
+                $c = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer $K.Layer.TUNNEL_LINKLAYER -TimeoutMs 2500
+                if ($c.Ok) { $open += $c; continue }
+                $refusal = $c.Status
+                break
+            }
+            $addrs2 = @($open | ForEach-Object { $_.TunnelPa })
+            Add-KnxEvidence -Note "second pass granted $($open.Count) of ${expected}: $($addrs2 -join ', ')"
+            # The better pass decides, not the later one. Taking the second unconditionally handed the
+            # result to whichever run a foreign client happened to hold a slot during, and charged the
+            # device for it. Count first, then the refusal: Open-KnxConnection reports a timeout as
+            # status -1, so a pass that ended without an answer says nothing about the refusal code and
+            # must lose to a pass of the same size that ended in a real CONNECT_RESPONSE status.
+            # Count, refusal status and address list are carried over together so they keep describing
+            # the same pass.
+            $takeSecond = $open.Count -gt $granted
+            if (-not $takeSecond -and $open.Count -eq $granted -and $resultRefusal -lt 0 -and $refusal -ge 0) {
+                $takeSecond = $true
+                Add-KnxEvidence -Note "both passes granted $granted; the first ended without an answer, the second with a refusal status - judging the second"
+            }
+            if ($takeSecond) { $granted = $open.Count; $resultRefusal = $refusal; $resultAddrs = $addrs2 }
+            else { Add-KnxEvidence -Note "judging the first pass: it granted $granted, the second $($open.Count)" }
+        }
+        # Naming the addresses that never appeared turns a shortfall from a bare result into a
         # lead: a slot reserved for a different client withholds its address, and a foreign client
         # holds one invisibly - neither is visible over KNXnet/IP, so the names are what let the
-        # operator tell a configuration from a defect.
-        $missing = @($distinct | Where-Object { $addrs -notcontains $_ })
+        # operator tell a configuration from a defect. Computed from the pass the result judges,
+        # so the names belong to the run that is being reported on.
+        $missing = @($distinct | Where-Object { $resultAddrs -notcontains $_ })
         if ($missing.Count -gt 0) {
             Add-KnxEvidence -Note "never offered: $($missing -join ', ') - reserved for another client, or held by one during the run"
         }
-        Assert-KnxTrue ($open.Count -gt 0) 'no tunnel could be opened'
-        Assert-KnxEqual $expected $open.Count "the device has $expected assignable tunnel address(es) but grants $($open.Count)"
-        Assert-KnxTrue ($refusal -ge 0) "device accepted $($open.Count) tunnels without ever refusing"
+        Assert-KnxTrue ($granted -gt 0) 'no tunnel could be opened'
+        Assert-KnxEqual $expected $granted "the device has $expected tunnel address(es) assignable to this client but grants $granted"
+        Assert-KnxTrue ($resultRefusal -ge 0) "device accepted $granted tunnels without ever refusing"
         # Both codes are accepted here for the same reason as in H-5.1.2: this case reaches A limit
         # without setting up WHICH one. H-5.3.4 and H-5.3.5 are the cases that separate them.
         Assert-KnxStatusAny -Accept @($K.Error.E_NO_MORE_CONNECTIONS, $K.Error.E_NO_MORE_UNIQUE_CONNECTIONS) `
-                            -Actual $refusal `
+                            -Actual $resultRefusal `
                             -Message 'the tunnel past the configured maximum was refused with the wrong status'
     }
     finally { foreach ($c in $open) { [void](Close-KnxConnection -Connection $c) } }
@@ -323,6 +508,8 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-BM-1' -Title 'Busmonitor tunnel matches 
         }
         else {
             Add-KnxEvidence -Note "busmonitor tunnel refused ($($c.StatusName)) - device has no hardware busmonitor"
+            # 08_TSSH 5.1.4 p.65 and 03_08_04 Figure 6 p.27 (step 4.a) give E_CONNECTION_OPTION; the text of
+            # step 4.a p.28 gives E_TUNNELLING_LAYER. This product follows the figure and the test specification.
             Assert-KnxStatus $K.Error.E_CONNECTION_OPTION $c.Status 'busmonitor refusal uses the wrong status code'
         }
     }
@@ -353,8 +540,8 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-BM-2' -Title 'A second busmonitor connec
             Assert-KnxTrue (-not $link.Ok) 'a link-layer tunnel was accepted although the busmonitor is declared exclusive'
         }
         else {
-            Add-KnxEvidence -Note 'expectation: only a second BUSMONITOR is refused (CLAUDE.md); pass -BusmonExclusive if the firmware behaviour is intended'
-            Assert-KnxTrue $link.Ok 'a normal link-layer tunnel was refused while the busmonitor was active - only a second BUSMONITOR may be refused. If that block is intended, run with -BusmonExclusive and update CLAUDE.md'
+            Add-KnxEvidence -Note 'expectation: only a second BUSMONITOR is refused (-BusmonExclusive not set); pass -BusmonExclusive if the firmware behaviour is intended'
+            Assert-KnxTrue $link.Ok 'a normal link-layer tunnel was refused while the busmonitor was active - only a second BUSMONITOR may be refused. If that block is intended, run with -BusmonExclusive'
         }
     }
     finally {
@@ -367,7 +554,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-BM-2' -Title 'A second busmonitor connec
 Invoke-KnxTestCase -Suite $SUITE -Id 'X-BM-3' -Title 'Busmonitor delivers byte-exact LPDUs with a valid FCS' -Clause '03_06_03 section 4.1.4.1; 03_02_02 section 2.2.4.6' -Body {
     # Gate on what X-BM-1 actually observed, not on the command-line switch.
     if (-not $script:BusmonAvailable) { Set-KnxTestNotApplicable 'device refused a busmonitor tunnel (no hardware busmonitor) - see X-BM-1' }
-    if (-not $TrafficIp) { Set-KnxTestSkip 'needs a second interface (-TrafficIp) to generate bus traffic' }
+    if (-not $TrafficIp) { Set-KnxTestNotRun -MissingInput '-TrafficIp' -Reason 'needs a second interface (-TrafficIp) to generate bus traffic' }
     # Traffic tunnel first: the wait for a slot happens with no busmonitor open, so an exclusive
     # channel is not left unserviced while it runs.
     $src = Get-KnxTrafficConnection -Ip $TrafficIp
@@ -461,11 +648,8 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'X-ROB-2' -Title 'Device survives a burst o
 $out = Export-KnxTestReport -Directory $ReportDir
 $sum = $out.Summary
 Write-Host ''
-Write-Host "  Total $($sum.Total)   " -NoNewline
-Write-Host "PASS $($sum.Pass)  " -ForegroundColor Green -NoNewline
-Write-Host "FAIL $($sum.Fail)  " -ForegroundColor $(if ($sum.Fail -gt 0) { 'Red' } else { 'DarkGray' }) -NoNewline
-Write-Host "SKIP $($sum.Skip)  " -ForegroundColor Yellow -NoNewline
-Write-Host "N-A $($sum.NA)" -ForegroundColor DarkGray
+# Shared printer, so the console carries the same buckets as the Markdown table and the JSON.
+Write-KnxRunSummary
 Write-Host ''
 Write-Host "  Report: $($out.Markdown)" -ForegroundColor Cyan
 Write-Host ''

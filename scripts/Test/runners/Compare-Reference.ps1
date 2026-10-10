@@ -16,7 +16,7 @@
     A conformance suite is only as good as its expectations, and an expectation derived
     from a specification can still be wrong - the wrong clause, the wrong property, the
     wrong numeric value. A certified device settles it, because it has already passed the
-    KNX Association's own run of these cases. So each case ID gets one of four verdicts:
+    KNX Association's own run of these cases. So each case ID gets one of four results:
 
       OUR DEFECT      failed on ours, passed on the reference
                       -> the strongest signal this tool produces. Fix the firmware.
@@ -136,11 +136,8 @@ $ourDir = Join-Path $cmpDir 'ours'
 $refDir = Join-Path $cmpDir 'reference'
 foreach ($d in @($cmpDir, $ourDir, $refDir)) { [void](New-Item -ItemType Directory -Path $d -Force) }
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Reference comparison' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+Write-KnxLogo -Title 'Reference comparison'
 
 if (-not $TrafficIp) { $TrafficIp = $ReferenceIp }
 if ($ReferenceTrafficIp -eq $ReferenceIp) {
@@ -178,18 +175,21 @@ function Invoke-Run {
     if ($Pa) { $a += @('-BdutPa', $Pa) }
     if ($Quick) { $a += '-SkipSlow' }
 
-    # Out-Host, not a bare call: the child's stdout would otherwise become part of THIS
-    # function's return value, and the caller would receive an array of console lines with
-    # the parsed report buried at the end.
-    & pwsh -NoProfile -File (Join-Path $here 'runners/Invoke-Conformance.ps1') @a | Out-Host
+    # The report goes back through $script:RunReport, not through the return value, and the caller
+    # invokes this as a statement. Both halves are needed: a captured return value makes PowerShell
+    # redirect the child's stdout, and a redirected stdout is one PowerShell writes without colour -
+    # every PASS/FAIL from the child arrived grey. Piping to Out-Host redirects it just the same.
+    $script:RunReport = $null
+    & pwsh -NoProfile -File (Join-Path $here 'runners/Invoke-Conformance.ps1') @a
     $json = Get-ChildItem -Path $Dir -Filter '*.json' -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if ($null -eq $json) { return $null }
-    try { return (Get-Content -Path $json.FullName -Raw | ConvertFrom-Json) } catch { return $null }
+    if ($null -eq $json) { return }
+    try { $script:RunReport = (Get-Content -Path $json.FullName -Raw | ConvertFrom-Json) } catch { }
 }
 
 if ($ReferencePort -le 0) { $ReferencePort = $Port }
-$ours = Invoke-Run -Label 'RUN 1 of 2  our device' -Bdut $Ip -BdutPort $Port -Traffic $TrafficIp -Pa $BdutPa -Dir $ourDir
+Invoke-Run -Label 'RUN 1 of 2  our device' -Bdut $Ip -BdutPort $Port -Traffic $TrafficIp -Pa $BdutPa -Dir $ourDir
+$ours = $script:RunReport
 if ($null -eq $ours) {
     Write-Host ''
     Write-Host '  ABORT: the run against our device produced no report.' -ForegroundColor Red
@@ -198,7 +198,8 @@ if ($null -eq $ours) {
 
 $totalRuns = 2
 if ($Reference2Ip) { $totalRuns = 3 }
-$ref = Invoke-Run -Label "RUN 2 of $totalRuns  reference A" -Bdut $ReferenceIp -BdutPort $ReferencePort -Traffic $ReferenceTrafficIp -Pa $ReferencePa -Dir $refDir
+Invoke-Run -Label "RUN 2 of $totalRuns  reference A" -Bdut $ReferenceIp -BdutPort $ReferencePort -Traffic $ReferenceTrafficIp -Pa $ReferencePa -Dir $refDir
+$ref = $script:RunReport
 if ($null -eq $ref) {
     Write-Host ''
     Write-Host '  ABORT: the run against the reference produced no report.' -ForegroundColor Red
@@ -210,7 +211,8 @@ if ($Reference2Ip) {
     if ($Reference2Port -le 0) { $Reference2Port = $Port }
     $ref2Dir = Join-Path $cmpDir 'reference2'
     [void](New-Item -ItemType Directory -Path $ref2Dir -Force)
-    $ref2 = Invoke-Run -Label 'RUN 3 of 3  reference B' -Bdut $Reference2Ip -BdutPort $Reference2Port -Traffic $ReferenceTrafficIp -Pa $Reference2Pa -Dir $ref2Dir
+    Invoke-Run -Label 'RUN 3 of 3  reference B' -Bdut $Reference2Ip -BdutPort $Reference2Port -Traffic $ReferenceTrafficIp -Pa $Reference2Pa -Dir $ref2Dir
+    $ref2 = $script:RunReport
     if ($null -eq $ref2) {
         Write-Host ''
         Write-Host '  WARNING: the second reference produced no report - continuing with one reference.' -ForegroundColor Yellow

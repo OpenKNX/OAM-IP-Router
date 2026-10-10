@@ -18,7 +18,7 @@ Fragt alles ab, erklärt jede Eingabe, merkt sich die Antworten für den nächst
 **Ich kenne meine Werte:**
 
 ```
-pwsh ./Run-Tests.ps1 -What All -Ip 11.11.0.210 -BdutPa 5.0.10 -TrafficIp 11.11.0.126 -P2pTarget 5.0.3
+pwsh ./Run-Tests.ps1 -What All -Ip 11.11.0.210 -BdutPa 1.1.13 -TrafficIp 11.11.0.126 -P2pTarget 1.1.5
 ```
 
 **Ich will nur schnell wissen, ob das Gerät lebt und sich richtig meldet** (~30 s):
@@ -50,9 +50,9 @@ Die vier Werte, die fast alles steuern:
 | | |
 |---|---|
 | `-Ip` | das Gerät, das beurteilt wird |
-| `-BdutPa` | dessen physikalische Adresse, z. B. `5.0.10` |
+| `-BdutPa` | dessen physikalische Adresse, z. B. `1.1.13` |
 | `-TrafficIp` | **zweite** Schnittstelle, erzeugt Bustelegramme — muss auf **derselben TP-Linie** sitzen |
-| `-P2pTarget` | ein Gerät auf der Linie, das auf Punkt-zu-Punkt antwortet, z. B. `5.0.3` |
+| `-P2pTarget` | ein Gerät auf der Linie, das auf Punkt-zu-Punkt antwortet, z. B. `1.1.5` |
 
 Läuft unter **PowerShell 7** (macOS/Linux/Windows) und **Windows PowerShell 5.1**.
 
@@ -69,20 +69,20 @@ Läuft unter **PowerShell 7** (macOS/Linux/Windows) und **Windows PowerShell 5.1
 │ Prüfling     │   │ Verkehrs-    │   │ Referenz     │                   │
 │ IP-Interface │   │ quelle       │   │ Siemens/MDT  │                   │
 │ 11.11.0.210  │   │ 11.11.0.126  │   │ 11.11.0.5    │                   │
-│ PA 5.0.10    │   │ 2. Interface │   │ optional     │                   │
+│ PA 1.1.13    │   │ 2. Interface │   │ optional     │                   │
 └──┬───────────┘   └─────┬────────┘   └────────┬─────┘                   │
    │                     │                     │                        │
-═══╪═════════════════════╪═════════════════════╪════════════════  TP1  Linie 5.0
+═══╪═════════════════════╪═════════════════════╪════════════════  TP1  Linie 1.1
    │                                           │
 ┌──┴───────────┐                      ┌────────┴─────┐
 │ P2P-Ziel     │  antwortet auf       │ Lastschalter │  optional
-│ 5.0.3        │  Punkt-zu-Punkt      │ Aktor        │  (Busspannung)
+│ 1.1.5        │  Punkt-zu-Punkt      │ Aktor        │  (Busspannung)
 └──────────────┘  (z. B. KNeoPix)     └──────────────┘
 ```
 
 **Die eine Regel, an der die meisten Fehlläufe hingen:** Prüfling und Verkehrsquelle müssen
-auf **derselben TP-Linie** sitzen. Ein Interface auf Linie 1.0 kann kein Telegramm zu einem
-Prüfling auf Linie 5.0 bringen — dann scheitern alle „from KNX"-Fälle aus einem Rig-Grund und
+auf **derselben TP-Linie** sitzen. Ein Interface auf einer anderen Linie (z. B. 1.0) kann kein Telegramm zu einem
+Prüfling auf Linie 1.1 bringen — dann scheitern alle „from KNX"-Fälle aus einem Rig-Grund und
 sehen wie Gerätefehler aus. `Run-Tests.ps1` liest die PA der Verkehrsquelle und **bricht ab**,
 wenn die Linie nicht passt.
 
@@ -103,6 +103,15 @@ Die Routing-Suite braucht `-Multicast`. **Sie wird automatisch verworfen, wenn `
 gesetzt ist** — auf der Produktivgruppe wird nicht getestet. Für Routing-Fälle eine eigene
 Gruppe verwenden, z. B. `-Multicast 224.0.23.99`.
 
+Die ROUTING_BUSY-Fälle P-6.BUSY.1-4, .9 und .10 messen Abstände im Millisekundenbereich. PowerShell stempelt
+ein Datagramm erst beim Lesen; ein Hänger des Rechners verschiebt den Stempel. Diese Fälle nehmen deshalb
+mit Wiresharks `dumpcap` Kernel-Zeitstempel auf, auf einer kabelgebundenen Karte (macOS: ChmodBPF aus der
+Wireshark-Installation, Windows: Npcap, sonst `KNX_DUMPCAP` auf den Pfad setzen). BUSY.1, .2, .3, .9 und .10
+verlangen wie das Validation Tool nach jedem BUSY t_d ≥ tw; BUSY.1 und .2 zusätzlich t_d ≤ tw + N·50 ms nach
+dem (letzten) BUSY. Anders als das Tool übergehen sie Telegramme, die innerhalb 1 ms nach dem BUSY eintreffen
+und damit schon unterwegs waren.
+Ohne `dumpcap` oder im WLAN enden diese fünf als NOT-RUN; BUSY.4 (höchstens 50 pro Sekunde) fällt auf die Lesestempel zurück.
+
 Die Busmonitor-Stufe erkennt am Gerät, ob ein Busmonitor vorhanden ist, und läuft beim Router
 folgerichtig leer — kein Schalter nötig.
 
@@ -112,7 +121,7 @@ folgerichtig leer — kein Schalter nötig.
 
 | Stufe | Umfang | Dauer |
 |---|---|---|
-| **Selbsttest** | 54 Vektoren, offline — läuft vor jedem Urteil | 1 s |
+| **Selbsttest** | 65 Vektoren plus 12 Ergebnis-Prüfungen (`Tools/Test-ResultContract.ps1`), offline — läuft vor jedem Urteil | ~2 s |
 | **Conformance** | TSSH §3–§8, 117 Fälle | ~4 min |
 | **Features** | Produktverhalten ohne Spezifikationsvorlage (`X-*`) | ~30 s |
 | **Busmonitor** | 14 Randfälle inkl. Angriffsfälle (`B-*`) | ~4 min |
@@ -141,7 +150,7 @@ etwas anderes: ein ganz normales Busgerät — einen NeoPixel, einen Nuki, einen
 **Volume 3**. Die Schnittstelle ist hier nicht der Prüfling, sie ist das Fenster.
 
 ```
-pwsh ./Run-Tests.ps1 -What Devices -Ip 11.11.0.126 -DeviceTargets 5.0.3,5.0.9
+pwsh ./Run-Tests.ps1 -What Devices -Ip 11.11.0.126 -DeviceTargets 1.1.5,1.1.8
 ```
 
 Das entscheidet, was ein roter Fall bedeutet: Er sagt „das **Gerät** an dieser Adresse verhält
@@ -157,6 +166,15 @@ Fenster lässt jedes Gerät kaputt aussehen. Der Runner bricht ab, wenn das Fens
 | `D-4` | Robustheit: abgeschnittene und überlange Anfragen, Slot-Lecks |
 | `D-5` | Adressierung: antwortet es für seine Adresse — und nur für die |
 
+**Busmonitor-Zeuge.** `-WitnessIp` nennt eine zweite Schnittstelle im Busmonitor-Modus. `D-30.*`
+beurteilen Quittungen auf dem Bus und enden ohne sie als NOT-RUN; `D-19.2` urteilt ohne Zeugen nur
+über die sendende Schnittstelle und vermerkt das.
+
+**`D-30.2` nur im Prüfaufbau von 08_02_02.** Ob ein Gerät einen Rahmen an eine fremde Adresse quittiert,
+ist nur zuzuordnen, wenn außer dem Prüfling und den eigenen Schnittstellen niemand an der Linie hängt.
+`-IsolatedLine` sichert diesen Aufbau zu (ein Ziel, kein Koppler oder Router unter den Schnittstellen,
+die Nachbaradresse gehört keiner von ihnen). Ohne den Schalter bleibt `D-30.2` NOT-RUN.
+
 **Jeder Fall passt sich der Maskenversion an.** Ein BCU1 hat keine Interface-Objekte, also melden
 die Property-Fälle **N-A mit der Maske als Grund** statt einer Wand aus Rot für ein Gerät, das
 sie nie implementieren musste.
@@ -165,6 +183,61 @@ sie nie implementieren musste.
 steht in keiner Spezifikation — kein Test kann das „konform" nennen. Prüfbar ist die KNX-Schicht
 darunter, und genau die ist es, die eine Firmware-Änderung kaputtmachen kann, ohne dass es
 jemandem auffällt.
+
+---
+
+## 2b. Rig-Stromwächter (power guard)
+
+Ein Gerät am Prüfstand kann die Relais tragen, die den Prüfstand versorgen (hier 1.1.3: Relais auf
+`0/3/100`/`0/3/110`, Status `0/3/101`/`0/3/111`, u. a. die TP-Seite des Routers). Ein Neustart dieses
+Geräts schaltet die Relais ab, und jeder folgende Fall wirft dem falschen Gerät „antwortet nicht" vor.
+
+| Parameter | Profilfeld (`rig`) | |
+|---|---|---|
+| `-PowerGuard on\|off` | `powerGuard` | Schalter; Parameter vor Profil, ohne beides `off` |
+| `-PowerRelayWrite` | `powerRelayWrite` | Schalt-GAs, z. B. `0/3/100,0/3/110` (Wert 1 = EIN) |
+| `-PowerRelayStatus` | `powerRelayStatus` | Status-GAs, gleiche Reihenfolge, z. B. `0/3/101,0/3/111` |
+| `-PowerRelayVia` | `powerRelayVia` | Schnittstelle für **alle** Wächter-Telegramme — nicht `-TrafficIp`, die kann selbst an den Relais hängen |
+| `-ProtectedTargets` | `protectedTargets` | PAs, die den Prüfstand versorgen, z. B. `1.1.3` |
+| `-PowerRelayFeeds` | `powerRelayFeeds` | IPs der Prüflinge, deren TP die Relais trennen, z. B. `11.11.0.126` (nicht in `quick-check`). Die **erste** Schalt-GA muss das TP **jedes** gelisteten Geräts trennen; `powerRelayVia` darf nicht in der Liste stehen (sonst Abbruch, Exit 3) |
+
+- **`off`**: kein Relais-Telegramm, keine geschützten Ziele — alles wie ohne Wächter.
+- **`on`** ohne Relais-GAs, mit ungleich langen Listen oder ohne `powerRelayVia`: der Lauf startet nicht (Exit 3).
+- `Assert-KnxRigPower` (`lib/KnxDevice.psm1`) liest jeden Status über `powerRelayVia`; bei 0 oder ohne
+  Antwort schreibt es 1 auf die Schalt-GA, liest erneut und wartet danach bis 30 s, bis der Prüfling auf
+  seiner PA wieder antwortet.
+- Der Gesamtlauf ruft den Wächter vor jeder Stufe am Prüfstand; ein Wiedereinschalten steht als
+  **Rig event** im Bericht.
+- In der Devices-Stufe läuft er vor den Neustart- und „antwortet nicht mehr"-Urteilen; musste er
+  einschalten, endet der Fall als SKIP („result … void"). Antwortet das Ziel nur über `-TrafficIp`,
+  geht der FAIL an den Prüfling („lost its bus access").
+- Geschützte Ziele bekommen keinen Neustart, Master-Reset, keine Adress-, Speicher- oder Property-Schreibung
+  (SKIP „powers the rig (protected)"). Das Broadcast-Adressschreiben in `D-21.3` läuft weiter; antwortet
+  danach ein Gerät auf `15.15.254`, nennt der FAIL dessen Seriennummer. Antwortet dort schon **vor** dem
+  Schreiben ein Gerät (Rest eines früheren Laufs), wird nicht geschrieben (SKIP mit Seriennummer).
+
+**KNX-Fehler per Relais (Stufe „Device state", `Tools/Test-DeviceStateIndication.ps1`).** Nur mit Wächter `on`,
+konfigurierten Relais, `-Ip` in `powerRelayFeeds`, `powerRelayVia` nicht darin und `-IncludeDestructive`; sonst
+NOT-RUN mit dem fehlenden Parameter. Ablauf: DM-Verbindung (CRI 3) auf den Prüfling, Vorprüfung (CONNECTIONSTATE 0x00, alle Relais EIN),
+erstes Relais über `powerRelayVia` AUS (Status muss AUS lesen, sonst Rückschalten + SKIP), CONNECTIONSTATE alle 0,5 s:
+
+| | |
+|---|---|
+| `DS-KF-1` | CONNECTIONSTATE 0x27 (E_KNX_CONNECTION) binnen 10 s nach dem Trennen (03_08_02, TSSH 10503) |
+| `DS-KF-2` | M_PropInfo.ind Objekt 11 PID 69 Bit 0 = 1 binnen 20 s, M_PropRead bestätigt Bit 0 = 1 (03_08_03 2.5.20, TSSH 20212) |
+| `DS-KF-3` | nach dem Wiedereinschalten binnen 5 s: M_PropInfo.ind Bit 0 = 0, CONNECTIONSTATE 0x00, M_PropRead Bit 0 = 0 |
+
+Das Wiedereinschalten steht in einem `finally` (auch nach FAIL oder Ausnahme): Schreiben wird bis ~10 s
+wiederholt, bis der Tunnel quittiert, danach wird der Status bis ~10 s auf EIN geprüft, dann `Assert-KnxRigPower`.
+War das erste Wiedereinschalten nicht quittiert, brauchte es ein zweites oder musste der Wächter ein Relais
+einschalten, endet `DS-KF-3` als SKIP — ein Prüfstandsfehler wird nie dem Prüfling angelastet. Ein FAIL setzt
+voraus, dass das Fenster bis zum Budget abgefragt wurde; war es durch Prüfstands-Aufwand nicht abgedeckt, SKIP.
+Alle Zeiten (mit Abfrage-Auflösung) stehen als `timing:`-Notiz im Bericht `device-state_*.json`; die Budgets sind
+Konstanten (`$script:KnxFault*`) neben den Wächter-Werten in `lib/KnxDevice.psm1`.
+
+Stufenergebnis (Exit des Tools): `0` PASS nur mit Bericht und allen drei Fällen PASS; `1` FAIL (ein Fall oder eine
+Property-Prüfung fehlgeschlagen); `2` FAIL **RIG FAULT** — das Relais ist nach dem Trennen nicht als EIN bestätigt,
+die Stufe nennt „relay X is OFF, switch on via …"; `3` SKIPPED, nicht alle Fälle liefen (Grund im Stufentext).
 
 ---
 
@@ -219,6 +292,12 @@ und damit auch diesen Abschnitt nicht.
 | **FAIL** | geprüft und abweichend |
 | **SKIP** | konnte nicht geprüft werden — Aufbau oder Client fehlt |
 | **N-A** | gilt für dieses Produkt nicht |
+| **NOT-RUN** | dem Lauf fehlte eine Eingabe, die der Fall braucht (z. B. `-WitnessIp`) — eine Lücke im Lauf, nicht im Gerät |
+| **NO-PROOF** | der Fall lief durch, ohne eine einzige Zusicherung zu prüfen — er sagt nichts über das Gerät |
+
+Nur PASS und FAIL zählen als beurteilt. `-What All` endet mit Exit 3 („unvollständig"), wenn eine Stufe
+übersprungen, eine Suite verworfen wurde oder ein Fall NO-PROOF ist; ein FAIL oder ein unlesbarer Bericht
+ergibt Exit 1.
 
 ### SKIP — Aufbau fehlt
 
@@ -270,6 +349,7 @@ Ergebnisse statt still N-A zu bleiben.
 | Stabilität | `./Run-Tests.ps1 -What Endurance -Iterations 29` |
 | Gegen ein zertifiziertes Gerät | `./Run-Tests.ps1 -What Reference -ReferenceIp …` |
 | Bibliothek offline prüfen | `pwsh runners/Invoke-Conformance.ps1 -SelfTest` |
+| Ergebnislogik offline prüfen | `pwsh Tools/Test-ResultContract.ps1` |
 | Geräte im Netz finden | `pwsh Tools/Find-KnxDevices.ps1` |
 
 `wreck` aus der Stress-Stufe läuft **nie** automatisch: Er kann den Watchdog auslösen, und
@@ -282,8 +362,10 @@ OpenKNX-Auto-Erase löscht dann die KNX-Konfiguration. Bei Bedarf direkt:
 
 ```
 Run-Tests.ps1     der eine Einstieg, fragt den Aufbau ab
-lib/              KnxTest.psm1 (Frames, Parser, Urteilslogik, Selbsttest)
+lib/              KnxTest.psm1 (Frames, Parser, Ergebnislogik, Selbsttest)
+                  KnxDevice.psm1 (Gerätedienste am TP für die Devices-Stufe)
                   KnxSerial.psm1 (Ports finden, Gerät erkennen, Konsole bedienen)
+                  KnxLogo.ps1 (Logo-Kopf aller Skripte)
                   Sync-TestLib.ps1 (Abgleich mit dem Router-Repo)
 runners/          Invoke-AllTests · Invoke-Conformance · Invoke-Endurance
                   Invoke-DeviceTests · Compare-Reference
@@ -294,9 +376,14 @@ stress/           Invoke-Stress.ps1 — Last, Lecks, Robustheit
 legacy/           Test-Tunnels · Test-Soak · Test-Fuzz
 Tools/            Find-KnxDevices · Start-FakeKnxDevice (Offline-Gerät)
                   Clear-Reports.ps1 — Berichte aufräumen (zeigt erst, fragt dann)
+                  Test-ResultContract.ps1 — prüft offline, welches Ergebnis ein Fall bekommt
+                  New-TestReport.ps1 — HTML-Bericht aus den Lauf-Daten
 viewer/           BusmonViewer.html · Start-BusmonBridge
 repro/            Einzelfall-Reproduktionen
-Reports/          Markdown + JSON je Lauf
+Reports/          über Run-Tests je Lauf ein Ordner <What>_<Zeit>/: Gesamtbericht (MD + JSON),
+                  settings.json, HTML-Bericht; Devices, Features, Busmonitor und Hardening
+                  schreiben ihre Stufenberichte noch direkt nach Reports/
+QA-ACCEPTANCE.md  wann ein Testfall fertig ist
 ```
 
 `lib/Sync-TestLib.ps1` hält Interface- und Router-Repo byte-gleich. **Vor jedem Testen im
@@ -400,3 +487,60 @@ Vergleich über zwei Firmwarestände sieht aus wie ein Gerätebefund und ist kei
 ```
 pio device monitor --raw -b 115200 -p /dev/cu.usbmodem3101   →  v  →  Buildtime:
 ```
+
+---
+
+## 10. Das KNX/IP Validation Tool — Vorbereitung ist Pflicht
+
+Das Werkzeug der KNX Association prüft gegen dieselbe Vorschrift wie die Conformance-Stufe, aber
+mit einem eigenen Aufbau. Seine Konfigurationen liegen in `config/`:
+
+```
+config/KNX-IP-Validation-config-IPIF-Test.yml        Prüffälle Interface
+config/KNX-IP-Validation-config-IPIF-Test-Setup.yml  Gerät + Aufbau (Adressen, SN, Schnittstelle)
+config/KNX-IP-Validation-config-IPIF-NAT-Only.yml    nur die NAT-Fälle
+config/KNX-IP-Validation-config-IPRO-Test.yml        Prüffälle Router
+config/KNX-IP-Validation-config-IPRO-Test-Setup.yml  Gerät + Aufbau Router
+```
+
+Der YAML-Leser des Werkzeugs **wirft bei unbekannten Schlüsseln** statt sie zu überspringen — das
+ist die Meldung „The selected file is not a valid configuration file!". Schlüssel und Reihenfolge
+also nicht umsortieren.
+
+### Vor dem Lauf: zwei Schritte, beide nicht optional
+
+**1. Den Bus ruhig stellen — und das prüfen, nicht annehmen.**
+Mehrere Prüffälle erwarten auf dem Tunnel bzw. der Routing-Gruppe **Stille** und melden den
+ersten Rahmen, den sie sehen — ganz gleich, von wem er kommt. Ein einziges Gerät im Sekundentakt
+macht sie damit unbestehbar. Also: alle nicht benötigten TP-Geräte abstecken, dann 90 s passiv
+mithören und auf Null prüfen.
+
+**2. Die Gruppenadressen der KOs des Prüflings entfernen.**
+Zyklisches Senden abschalten genügt **nicht**. `TunnelActive` ist *ereignisgesteuert* und feuert
+bei jedem Tunnel-Auf- und Abbau — und genau das tut das Werkzeug permanent. Für einen Lauf, dessen
+Ergebnis etwas bedeutet, darf an diesen KOs keine Gruppenadresse hängen.
+
+### Was es gekostet hat, das nicht zu tun
+
+Zwei Läufe, **gleiche Firmware**, 193 Prüffälle, nur der Bus war unterschiedlich:
+
+| Prüffall | lauter Bus | ruhiger Bus |
+|---|---|---|
+| `30212` Broadcast von TP getunnelt | Failure | Success |
+| `60205` T_Data_Connected | Failure | Success |
+| `60206` T_Data_Individual | Failure | Success |
+
+Der Störer war ein fremdes `5.0.7`, das `0/7/0` im Sekundentakt schickte: 118 Rahmen in 150 s.
+Dazu die vier KOs des Prüflings alle 10 s. Drei rote Fälle, kein Gerätefehler.
+
+### Einen gemeldeten Rahmen zuordnen, bevor man das Gerät verdächtigt
+
+Das Werkzeug druckt den Rahmen mit, der ihm nicht gefallen hat. Zwei Prüfungen entscheiden
+schneller als jede Codesuche:
+
+- **Quelladresse gegen die Geräteadresse des Prüflings.** Steht dort eine andere, ist es fremder
+  Verkehr, den ein Interface weiterleiten *muss*. Die eigene Adresse liest `curl -s
+  http://<ip>/ipif/state` als `pa`.
+- **APCI gegen die erwartete Antwort.** `0x080` ist ein `A_GroupValue_Write` — niemals die Antwort
+  auf einen `A_PropertyValue_Read`. Eine Geräteantwort ist individuell adressiert; ein
+  Gruppentelegramm zählt nicht als Antwort.

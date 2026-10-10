@@ -16,13 +16,10 @@
 #  the interface reports 0.0.0.0 here because it does no routing at all - do not
 #  copy one into the other.
 #
-#  busconnection: LEAVE THIS TO THE TOOL. In the 2026-09-06 run it was empty, and
-#  that alone produced 22 of the 138 errors - 17x "Falcon connection failed" and
-#  5x "Falcon: Missing Second Connection settings". It knocked out every
-#  tunnelling standard case and all six NAT cases, which our own suite measures
-#  green. Configure the second bus connection in the tool's own dialog once and
-#  save; the tool then writes the keys it expects. I am deliberately not guessing
-#  them here - a wrong key does not degrade, it refuses the whole file.
+#  busconnection: the second (Falcon) connection to the TP line behind the DUT.
+#  Copied from the IPIF setup, where the tool wrote it: the MDT SCN-IP000.03
+#  (11.11.0.2) on line 1.1 over TCP. Empty, the 2026-09-06 and 2026-10-05 runs
+#  failed every TP-side case with "Falcon connection failed".
 
 testdevice:
   dutaddress: 11.11.0.126
@@ -30,10 +27,11 @@ testdevice:
   multicastaddress: 224.0.23.12
   serialnumber: $00 $fa $13 $2f $85 $31
   port: 3671
-  individualaddress: 5.0.0
+  individualaddress: 1.1.0
   friendlyname: 'OpenKNX: IP-Router REG2'
   macaddress: D25113318531
 networkinterface:
   name: Ethernet 2
   interfaceaddress: 11.11.0.19
-busconnection: {}
+busconnection:
+  parameters: Type=KnxIpTunneling;HostAddress=11.11.0.2;ProtocolType=Tcp;UseNat=True;Name="SCN-IP000.03 IP Interface mit "

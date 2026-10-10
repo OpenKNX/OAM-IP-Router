@@ -13,7 +13,7 @@
 .DESCRIPTION
     The suite lives as an identical copy in both product repositories: each stays
     self-contained and runnable on its own, at the price of a duplicate that has to be
-    kept honest. This script is what keeps it honest.
+    kept identical. This script compares the copies and syncs them.
 
     By default it only REPORTS: which files differ, which are missing on either side,
     and which are identical. Nothing is written without -Apply, and -Apply always states
@@ -62,9 +62,12 @@ $shared = @(
     'Run-Tests.ps1',
     'stress/Invoke-Stress.ps1',
     'README.md',
+    'lib/KnxLogo.ps1',    # every script with a logo dot-sources it; syncing without it breaks the copy
     'lib/KnxTest.psm1',
+    'lib/KnxDevice.psm1',   # D-Device, 4, 5, 6, 6b and Invoke-EtsReadback import it; syncing a suite without it breaks the copy
     'lib/Sync-TestLib.ps1',
     'lib/KnxSerial.psm1',
+    'lib/KnxTcp.psm1',      # the TCP suite imports it
     'runners/Invoke-Conformance.ps1',
     'runners/Invoke-AllTests.ps1',
     'runners/Invoke-Endurance.ps1',
@@ -76,11 +79,16 @@ $shared = @(
     'Suites/4-DeviceManagement.Tests.ps1',
     'Suites/5-Tunnelling.Tests.ps1',
     'Suites/6-Routing.Tests.ps1',
+    'Suites/6b-SystemBroadcast.Tests.ps1',   # registered as 'Sbc' in the runner
     'Suites/7-RemoteDiag.Tests.ps1',
     'Suites/8-IpMedium.Tests.ps1',
+    'Suites/9-Tcp.Tests.ps1',             # suites 9-11: Invoke-Conformance loads them by name
+    'Suites/10-Properties.Tests.ps1',
+    'Suites/11-TunnellingV2.Tests.ps1',
     'Suites/D-Device.Tests.ps1',
     'Tools/Clear-Reports.ps1',
-    'Tools/Start-FakeKnxDevice.ps1'
+    'Tools/Start-FakeKnxDevice.ps1',
+    'Tools/Test-ResultContract.ps1'   # Invoke-AllTests runs it in the self-test stage
 )
 
 function Get-FileHashOrNull {
@@ -89,11 +97,8 @@ function Get-FileHashOrNull {
     return (Get-FileHash -Path $Path -Algorithm SHA256).Hash
 }
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Shared test library sync' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot 'KnxLogo.ps1')
+Write-KnxLogo -Title 'Shared test library sync'
 
 if (-not $Other) {
     # Guess the sibling product from where this copy lives.

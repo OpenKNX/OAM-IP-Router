@@ -445,11 +445,8 @@ function Get-PropertyData {
 
 # ─── Listen ─────────────────────────────────────────────────────────────────────
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Fake KNXnet/IP device' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+Write-KnxLogo -Title 'Fake KNXnet/IP device'
 Write-Host "  Role          : $Role (mask 0x$('{0:X4}' -f $maskVersion))"
 Write-Host "  Listening     : 0.0.0.0:$Port"
 Write-Host "  Address       : $IndividualAddress"

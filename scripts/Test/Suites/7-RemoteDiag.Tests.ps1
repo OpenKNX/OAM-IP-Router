@@ -56,7 +56,7 @@ function Invoke-KnxSuiteRemoteDiag {
 
     # ── 7.1.1 The gate ──────────────────────────────────────────────────────────
 
-    # The gate is decided BEFORE the test case runs, not inside it: a verdict body must not
+    # The gate is decided BEFORE the test case runs, not inside it: a result body must not
     # be the only place a later decision is computed - a skipped or failing body would
     # leave the flag undefined and silently change every following case.
     $desc = Get-KnxDescription -Ip $ip -Port $port
@@ -169,7 +169,7 @@ function Invoke-KnxSuiteRemoteDiag {
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-7.5.8' -Title 'REMOTE_RESET_REQUEST - Soft Reset' -Clause 'TSSH 7.5.8, p.152' -Body {
         if (-not $supported) { Set-KnxTestNotApplicable 'device does not advertise the Remote Configuration and Diagnosis service family (see H-7.1.1)' }
-        if (-not $Ctx.AllowDestructive) { Set-KnxTestSkip 'restarts the device - needs -IncludeDestructive with profile Full' }
+        if (-not $Ctx.AllowDestructive) { Set-KnxTestNotRun -MissingInput '-IncludeDestructive' -Reason 'restarts the device - needs -IncludeDestructive with profile Full' }
 
         # Reset mode 0x01 = soft reset (restart, configuration kept).
         $sel = New-KnxProgModeSelector
@@ -189,7 +189,7 @@ function Invoke-KnxSuiteRemoteDiag {
         if (-not $Ctx.IncludeHardReset) {
             Set-KnxTestSkip 'forces factory configuration and needs an ETS download afterwards - run separately with -IncludeHardReset (TSSH 1.5)'
         }
-        if (-not $Ctx.AllowDestructive) { Set-KnxTestSkip 'also needs -IncludeDestructive with profile Full' }
+        if (-not $Ctx.AllowDestructive) { Set-KnxTestNotRun -MissingInput '-IncludeDestructive' -Reason 'also needs -IncludeDestructive with profile Full' }
 
         # Reset mode 0x02 = factory reset.
         $sel = New-KnxProgModeSelector

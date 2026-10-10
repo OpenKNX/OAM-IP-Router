@@ -43,6 +43,10 @@
     prove - it does not fail them.
 .PARAMETER Seconds
     Capture window for the load cases. Default 15.
+.PARAMETER ExpectRouting
+    The device under test is a router. It only renames the report's product, so a router's bundle
+    does not carry a bench labelled as an interface.
+
 .PARAMETER ReportDir
     Output directory. Default: scripts/Test/Reports.
 
@@ -56,6 +60,7 @@ param(
     [int]$Port = 3671,
     [Parameter(Mandatory)][string]$TrafficIp,
     [int]$Seconds = 15,
+    [switch]$ExpectRouting,
     [string]$ReportDir = ''
 )
 
@@ -69,18 +74,20 @@ if (-not $ReportDir) { $ReportDir = Join-Path $here 'Reports' }
 $K = Get-KnxConstants
 $SUITE = 'B Busmonitor'
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Busmonitor edge cases' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+Write-KnxLogo -Title 'Busmonitor edge cases'
 
 $st = Invoke-KnxSelfTest -Quiet
 if (-not $st.Ok) { Write-Host "  ABORT: library self-test failed" -ForegroundColor Red; exit 2 }
 if (-not (Test-KnxAlive -Ip $Ip -Port $Port -TimeoutMs 2000)) { Write-Host "  ABORT: $Ip does not answer" -ForegroundColor Red; exit 3 }
 if (-not (Test-KnxAlive -Ip $TrafficIp -Port $Port -TimeoutMs 2000)) { Write-Host "  ABORT: traffic interface $TrafficIp does not answer" -ForegroundColor Red; exit 3 }
 
-[void](Start-KnxTestRun -Product 'IP-Interface-busmonitor' -BdutIp $Ip -RunProfile 'Busmonitor' -Environment @{
+# The product names the device under test, not this suite. Hard-coding the interface put a bench
+# called "IP-Interface-busmonitor" into a router's report once the run bundle collected this file.
+$productName = 'IP-Interface'
+if ($ExpectRouting) { $productName = 'IP-Router' }
+
+[void](Start-KnxTestRun -Product "$productName-busmonitor" -BdutIp $Ip -RunProfile 'Busmonitor' -Environment @{
         'BDUT IP'    = $Ip
         'Traffic IP' = $TrafficIp
         'Window'     = "$Seconds s"
@@ -111,7 +118,7 @@ function Get-BusmonCapture {
         [void](Close-KnxConnection -Connection $bm)
         return [pscustomobject]@{ Ok = $false; Reason = "no tunnel available on the traffic interface $TrafficIp"; Frames = @() }
     }
-    Clear-KnxSocket -Socket $bm.Socket -QuietMs 600
+    [void](Clear-KnxTunnelTraffic -Connection $bm -QuietMs 600)
 
     $ga = ConvertTo-KnxGa -Address '7/7/7'
     $sent = 0
@@ -141,7 +148,7 @@ $tels = @($cap.Frames | Where-Object { -not $_.IsAck })
 
 Write-Host ("  captured $($cap.Frames.Count) frames: $($tels.Count) telegram(s), $($acks.Count) acknowledge(s)") -ForegroundColor DarkGray
 
-Invoke-KnxTestCase -Suite $SUITE -Id 'B-1' -Title 'Acknowledge frames pass through as single octets' -Clause '03_02_02 section 2.2.7 p.31' -Body {
+Invoke-KnxTestCase -Suite $SUITE -Id 'B-1' -Title 'Acknowledge frames pass through as single octets' -Clause '03_02_02 section 2.2.7 p.32' -Body {
     Assert-KnxTrue $cap.Ok "no capture: $($cap.Reason)"
     Assert-KnxTrue ($acks.Count -gt 0) 'no acknowledge frame was captured at all - a monitored bus with traffic always carries them'
     # ACK 0xCC, NAK 0x0C, BUSY 0xC0 - all match the xx00 xx00 pattern.
@@ -267,7 +274,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-10' -Title 'Busmonitor survives malforme
             Add-KnxEvidence -Note "fired 60 malformed datagrams at the open busmonitor channel"
         }
         finally { $s.Dispose() }
-        Start-Sleep -Milliseconds 500
+        [void](Wait-KnxTunnel -Connection $bm -Ms 500)
         # The channel must still be alive and the device must still answer discovery.
         $probe = New-KnxConnectionStateRequest -Channel $bm.Channel -ControlIp $bm.LocalIp -ControlPort $bm.LocalPort
         $pr = Invoke-KnxRequest -Socket $bm.Socket -Frame $probe -Ip $bm.Ip -Port $bm.Port -Expect @($K.Service.CONNECTIONSTATE_RESPONSE) -TimeoutMs 2000
@@ -361,7 +368,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
     $bm = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $K.ConnType.TUNNEL_CONNECTION -Layer $K.Layer.TUNNEL_BUSMONITOR
     Assert-KnxTrue $bm.Ok "busmonitor refused ($($bm.StatusName))"
     try {
-        Clear-KnxSocket -Socket $bm.Socket -QuietMs 600
+        [void](Clear-KnxTunnelTraffic -Connection $bm -QuietMs 600)
         $ga = ConvertTo-KnxGa -Address '7/7/7'
         $probes = @(
             @{ Name = 'system priority (0)';   Cemi = (New-CemiLData -MessageCode $K.Cemi.L_DATA_REQ -Destination $ga -IsGroup -Tpdu (New-TpduGroupValueRead) -Priority 0) }
@@ -392,8 +399,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
         }
 
         # B-12 ran just before and left its confirmations parked on this shared connection.
-        if ($null -ne $gen.PSObject.Properties['Pending']) { $gen.Pending.Clear() }
-        Clear-KnxSocket -Socket $gen.Socket -QuietMs 300
+        [void](Clear-KnxTunnelTraffic -Connection $gen -QuietMs 300)
 
         # ...and it also leaves the traffic interface busy. A source that has just carried 120
         # telegrams needs a moment before it confirms anything again, and without this wait the
@@ -403,13 +409,21 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
         $ready = $false
         $until = [DateTime]::UtcNow.AddSeconds(12)
         while (-not $ready -and [DateTime]::UtcNow -lt $until) {
+            # Drain before EVERY send, not once before the loop: the canary is byte-identical on each
+            # pass, so Test-KnxTransmitted would otherwise match the confirmation the previous pass left
+            # parked and declare the source ready while nothing new reached the bus.
+            [void](Clear-KnxTunnelTraffic -Connection $gen -QuietMs 80)
             $c = Send-KnxTunnelCemi -Connection $gen -Cemi $canary -TimeoutMs 1500
             $ready = $c.Acked -and (Test-KnxTransmitted -Connection $gen -Sent $canary -TimeoutMs 1500)
-            if (-not $ready) { Start-Sleep -Milliseconds 500 }
+            if (-not $ready) { [void](Wait-KnxTunnel -Connection $bm -Ms 500) }
         }
         Add-KnxEvidence -Note $(if ($ready) { 'traffic interface confirmed a canary before the probes' }
                                 else { 'traffic interface did not confirm a canary in the window after the load case' })
-        Clear-KnxSocket -Socket $bm.Socket -QuietMs 200
+        # The monitor is reset here - and the wait above acknowledged and PARKED every capture frame of
+        # the canary phase on this connection. Clearing only the socket left that backlog in the queue,
+        # which Receive-KnxTunnelCemi serves first: the probe capture then consisted of canary-phase
+        # leftovers, and the "the monitor reported none of them" assertion passed on those alone.
+        [void](Clear-KnxTunnelTraffic -Connection $bm -QuietMs 200)
 
         $onBus = @()
         $noConfirm = @()
@@ -418,8 +432,7 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
             # five of these probes and the canary share destination AND payload and differ only in
             # the control field, which an interface may rewrite - so the filter cannot separate
             # them. Only an empty queue makes the next L_Data.con unambiguously this probe's.
-            if ($null -ne $gen.PSObject.Properties['Pending']) { $gen.Pending.Clear() }
-            Clear-KnxSocket -Socket $gen.Socket -QuietMs 120
+            [void](Clear-KnxTunnelTraffic -Connection $gen -QuietMs 120)
             $r = Send-KnxTunnelCemi -Connection $gen -Cemi $p.Cemi -TimeoutMs 2000
             # The TUNNELLING_ACK only says the interface took the packet off the wire. What
             # proves the telegram reached TP is the device's own L_Data.con with the confirm
@@ -428,6 +441,11 @@ Invoke-KnxTestCase -Suite $SUITE -Id 'B-14' -Title 'Hostile telegrams are report
             if ($r.Acked -and (Test-KnxTransmitted -Connection $gen -Sent $p.Cemi -TimeoutMs 1500)) { $onBus += $p.Name }
             else { $noConfirm += $p.Name }
             & $drainBm 300
+            # The parked queue is bounded; if it overflowed during this probe the capture is short by
+            # that many frames and the result below must not be read as complete.
+            if ($null -ne $bm.PSObject.Properties['PendingDropped'] -and $bm.PendingDropped -gt 0) {
+                Add-KnxEvidence -Note "the capture queue overflowed: $($bm.PendingDropped) frame(s) were dropped before they could be read"
+            }
         }
         Add-KnxEvidence -Note "confirmed on the bus by L_Data.con: $($onBus -join '; ')"
         if ($noConfirm.Count -gt 0) { Add-KnxEvidence -Note "the traffic interface did not confirm transmission: $($noConfirm -join '; ')" }
@@ -524,10 +542,8 @@ Close-KnxTrafficConnection
 $out = Export-KnxTestReport -Directory $ReportDir
 $sum = $out.Summary
 Write-Host ''
-Write-Host "  Total $($sum.Total)   " -NoNewline
-Write-Host "PASS $($sum.Pass)  " -ForegroundColor Green -NoNewline
-Write-Host "FAIL $($sum.Fail)  " -ForegroundColor $(if ($sum.Fail -gt 0) { 'Red' } else { 'DarkGray' }) -NoNewline
-Write-Host "SKIP $($sum.Skip)" -ForegroundColor Yellow
+# Shared printer: this caller also dropped N-A, so a not-applicable case read as a clean run.
+Write-KnxRunSummary
 Write-Host ''
 Write-Host "  Report: $($out.Markdown)" -ForegroundColor Cyan
 Write-Host ''

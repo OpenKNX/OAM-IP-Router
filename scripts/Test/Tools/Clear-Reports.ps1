@@ -58,11 +58,8 @@ $ErrorActionPreference = 'Stop'
 $testRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
 function Show-Logo {
-    Write-Host ''
-    Write-Host '  Open ■' -ForegroundColor Green
-    Write-Host '  ┬────┴  Clear test reports' -ForegroundColor Green
-    Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-    Write-Host ''
+    . (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+    Write-KnxLogo -Title 'Clear test reports'
 }
 
 function Get-ReportTargets {

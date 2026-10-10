@@ -4,8 +4,8 @@ testdevice:
   multicastaddress: 0.0.0.0
   serialnumber: $00 $fa $38 $d6 $dd $db
   port: 3671
-  individualaddress: 5.0.13
-  friendlyname: 'OpenKNX: IP-Interface (Dev)'
+  individualaddress: 1.1.13
+  friendlyname: 'OpenKNX: IP-Interface REG1'
   macaddress: C0CDD6381B13
 networkinterface:
   name: Ethernet 2

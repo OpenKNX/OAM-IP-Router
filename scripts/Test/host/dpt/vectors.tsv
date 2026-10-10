@@ -1,0 +1,45 @@
+# Datapoint vectors. Every row covers a place in dptconvert.cpp that was changed. Expectations come from 03_07_02, not
+# from the converter; rows marked "policy" pin a design decision the spec leaves open. expected: OK | REJECT | OK=<output>.
+# id	dir	dpt	input	expected	why
+V-19-NT	dec	19.001	7A 09 12 0E 1E 00 02 00	REJECT	NT (flags octet, 02h) marks the time fields not valid (3.20 p.51); policy: the combined value is refused
+V-19-24OK	dec	19.001	7A 01 01 18 00 00 00 00	OK	hour 24 with 0 minutes and 0 seconds is allowed, 3.20 p.51
+V-19-24MIN	dec	19.001	7A 01 01 18 01 00 00 00	REJECT	hour 24 with minutes != 0 has to be ignored, 3.20 p.51
+V-19-24SEC	dec	19.001	7A 01 01 18 00 01 00 00	REJECT	hour 24 with seconds != 0 has to be ignored, 3.20 p.51
+V-19-OK	dec	19.001	7A 09 12 0E 1E 00 00 00	OK	regular date and time
+V-10-H99	enc	10.001.1	tm:0,0,0,99,0,0,0	REJECT	hour 99 was folded to 3 by the field mask
+V-10-H23	enc	10.001.1	tm:0,0,0,23,59,59,7	OK=F7 3B 3B	upper bounds; Sunday (7) in the top 3 bits of octet 3, 3.11 p.41
+V-10-M60	enc	10.001.1	tm:0,0,0,12,60,0,0	REJECT	minute 60 is out of range (3.11 p.41); it went out unchanged as 3Ch
+V-10-WD	enc	10.001.1	tm:0,0,0,12,30,15,3	OK=6C 1E 0F	weekday 3 shares octet 3 with the hour (3.11 p.41); it used to be dropped
+V-14-MAX	enc	14.000	3.4028234663852886e38	OK=7F 7F FF FF	the largest finite F32; policy: finite values only, 3.15 p.44 sets no bound
+V-14-OVER	enc	14.000	3.5e38	REJECT	above FLT_MAX used to go out as +Inf; policy: finite values only
+V-9-MIN	enc	9.002	-671088.64	OK=F8 00	spec minimum (M=-2048, E=15), used to be rejected (Fix 67)
+V-9-UNDER	enc	9.002	-671088.65	REJECT	below the minimum
+V-9-T273	enc	9.001	-273	OK	9.001 is a temperature: absolute zero is the lower bound
+V-9-T274	enc	9.001	-274	REJECT	below absolute zero
+V-9-T671	enc	9.001	-671088.64	REJECT	the wide range does NOT apply to 9.001
+V-9-7FFF	dec	9.001	7F FF	REJECT	7FFFh denotes invalid data for every 9.xxx, 3.10 p.39
+V-8010-MAX	enc	8.010	327.66	OK=7F FE	upper bound below the invalid marker
+V-8010-7FFF	enc	8.010	327.67	REJECT	would go out as 7FFFh, invalid for 8.010 (3.9 p.37 note b) although the range column lists 327,67 %
+V-8010-DEC7FFF	dec	8.010	7F FF	REJECT	7FFFh denotes invalid data for DPT_Percent_V16, 3.9 p.37 note b
+V-8010-ROUND	enc	8.010	0.29	OK=00 1D	0.29 % at 0.01 % resolution is 29; truncation of 28.999... gave 28
+V-5003-360	dec	5.003	FF	OK=360	angle 0..360 over 0..255 (3.5 p.32); the uint8_t cast folded everything above 255
+V-27-DEC	dec	27.001	80 00 00 01	OK=2147483649	B32 is a bit field, decoded unsigned; the signed read gave a negative value
+V-10-WDNEG	enc	10.001.1	tm:0,0,0,12,30,15,-1	OK=0C 1E 0F	policy: a weekday out of range becomes 0 = no day (3.11 p.41) instead of refusing the time
+V-10-WD9	enc	10.001.1	tm:0,0,0,12,30,15,9	OK=0C 1E 0F	policy: same for a weekday above 7
+V-10-WD0	enc	10.001.1	tm:0,0,0,12,30,15,0	OK=0C 1E 0F	0 = no day is a valid value, 3.11 p.41
+V-19E-OK	enc	19.001	tm:2026,9,18,12,30,15,4	OK=7E 09 12 0C 1E 0F 20 00	NWD set: the value carries no working-day information; WD=0 alone reads as bank day (3.20 p.50)
+V-19E-24OK	enc	19.001	tm:2026,9,18,24,0,0,0	OK	hour 24 with 0 minutes and 0 seconds is allowed, 3.20 p.51
+V-19E-24MIN	enc	19.001	tm:2026,9,18,24,30,0,0	REJECT	hour 24 with minutes != 0 must be refused, not encoded
+V-19E-24SEC	enc	19.001	tm:2026,9,18,24,0,30,0	REJECT	hour 24 with seconds != 0 must be refused
+V-19E-HNEG	enc	19.001	tm:2026,9,18,-1,0,0,0	REJECT	a negative hour must not be bent to 31 by the mask
+V-19E-MNEG	enc	19.001	tm:2026,9,18,12,-1,0,0	REJECT	a negative minute must not be bent by the mask
+V-19E-SNEG	enc	19.001	tm:2026,9,18,12,0,-1,0	REJECT	a negative second must not be bent by the mask
+V-19E-Y126	enc	19.001	tm:126,9,18,12,30,15,4	REJECT	tm_year is the absolute year here; 126 is below the 1900 offset (3.20 p.50)
+V-11-M13	enc	11.001	tm:2026,13,1,0,0,0,0	REJECT	month 13 does not exist; tm_mon is 1..12 in the KNX convention
+V-7007-TZ	enc	7.007	1	OK=00 01	one hour is 0001h whatever the machine's time zone; a mktime() round trip shifted it
+V-221-NUM	enc	221.001.1	305419896	OK=00 00 12 34 56 78	manufacturer code (2 octets) then the 32-bit number, 3.30 p.71; dataLength gave 1 octet and the number was masked to 16 bits
+V-251-RGBW	enc	251.600.0	287454020	OK=11 22 33 44 00 0F	R G B W, reserved octet, mR mG mB mW set (6.18 p.194); 6 octets, not 4
+V-1100-OK	enc	1.100	1	OK=01	DPT_Heat/Cool exists (p.114) and was rejected
+V-14080-OK	enc	14.080	1	OK=3F 80 00 00	DPT_Value_ApparentPower exists (3.15 p.46) and was rejected
+V-239-SET	enc	239.001.0	100	OK=FF 00	setvalue 100 % is FFh in the high octet, 2 octets in all (3.51.1 p.100); dataLength had it wrong
+V-239-CA	enc	239.001.1	1	OK=00 01	channel activation is b0 of the low octet (3.51.1 p.100)

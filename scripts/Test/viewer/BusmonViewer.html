@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<!--   
+       ■
+  ┬────┴  OAM-IP-Interface / BusmonViewer
+  ■ KNX   2026 OpenKNX - Erkan Çolak
+
+  Local, self-contained KNX Busmonitor analyzer. Load an ETS "Bus Monitor" XML
+  export (CommunicationLog / Telegram RawData="..."), decode every cEMI
+  L_Busmon.ind frame byte-by-byte like Wireshark, validate against the KNX TP1
+  spec (FCS, frame layout, address-type/APCI consistency, length, hop count),
+  and navigate the whole capture through a horizontal activity scroller.
+  Nothing leaves the machine -- the file is read entirely in the browser.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenKNX Busmon Viewer</title>
+<style>
+  :root {
+    --bg:        #070a08;
+    --bg-2:      #0a0e0c;
+    --grid:      #0e1512;
+    --panel:     #0c110e;
+    --panel-2:   #0f1611;
+    --line:      #17241d;
+    --line-2:    #21362b;
+    --txt:       #d3e4d9;
+    --txt-dim:   #7f9387;
+    --txt-mut:   #506056;
+    --accent:    #35e08a;
+    --accent-hi: #74ffb0;
+    --accent-dk: #1c6b45;
+    --bg-glow:   #0c1a12;
+    --ok:        #35e08a;
+    --fail:      #ff5d5d;
+    --warn:      #ffb454;
+    --repeat:    #ffb454;
+    --glow:      0 0 22px rgba(53,224,138,.18);
+    --surface:   #0a0f0c;   /* the recurring pill/input/button/th surface -- overridden per light/black mode */
+    --hover:     #0e1913;   /* table row hover */
+    --scanline:  .35;       /* CRT scanline overlay strength -- dialled down in light mode */
+    --f-mc:   #5a6f63; --f-ai:  #435248; --f-ctl: #4fe0d0; --f-src: #6fb0ff;
+    --f-dst:  #c78bff; --f-npci:#ffd166; --f-apci:#35e08a; --f-data:#b8c9be; --f-fcs:#ff8080;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background:
+      radial-gradient(1400px 700px at 85% -15%, var(--bg-glow) 0%, transparent 55%),
+      radial-gradient(900px 500px at 5% 0%, var(--bg-glow) 0%, transparent 50%),
+      var(--bg);
+    color: var(--txt); font-family: var(--sans); font-size: 14px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    transition: background .4s ease;
+  }
+  /* ---- accent themes: only the accent world shifts; ok/fail/warn stay semantic ---- */
+  :root[data-theme="amber"] { --accent:#ffb84d; --accent-hi:#ffd488; --accent-dk:#6b4a1c; --bg-glow:#1a140c; --glow:0 0 22px rgba(255,184,77,.18); }
+  :root[data-theme="ice"]   { --accent:#4fd6ff; --accent-hi:#9fe9ff; --accent-dk:#1c4d6b; --bg-glow:#0c151a; --glow:0 0 22px rgba(79,214,255,.18); }
+  /* ---- page mode: a second, independent axis (default dark / black / light); combines with the accent ---- */
+  :root[data-mode="black"] {
+    --bg:#000000; --bg-2:#040604; --grid:#0a0e0c; --panel:#060907; --panel-2:#090c0a;
+    --line:#131c17; --line-2:#1c2e25; --surface:#050807; --hover:#0c1611; --bg-glow:#07110c;
+  }
+  :root[data-mode="light"] {
+    --bg:#eef2ef; --bg-2:#e5ebe7; --grid:#d6ded9; --panel:#f7faf8; --panel-2:#eef4f1;
+    --line:#d0dbd4; --line-2:#b7c7be; --txt:#14201a; --txt-dim:#4a6155; --txt-mut:#7e9288;
+    --surface:#ffffff; --hover:#e7efe9; --bg-glow:#dcefe4; --scanline:.05;
+    --accent:#12a25c; --accent-hi:#0d7f45; --accent-dk:#0a6b39; --glow:0 0 22px rgba(18,162,92,.14);
+  }
+  /* light mode: repaint the remaining hard-coded dark decorative surfaces (big gradients, canvas bg, chips) */
+  :root[data-mode="light"] .dropzone { background: linear-gradient(180deg,#f7faf8,#eef3f0); }
+  :root[data-mode="light"] .dropzone.drag { background: #e6f3ec; }
+  :root[data-mode="light"] #nav { background: linear-gradient(180deg,#eef3f0,#e3eae5); }
+  :root[data-mode="light"] .detail .head { background: linear-gradient(90deg,#e9f3ec,var(--surface)); }
+  :root[data-mode="light"] .detail .ftcpanel { background: #eaf5ee; }
+  :root[data-mode="light"] .nav-head .peakbtn,
+  :root[data-mode="light"] .bar .track { background: #e8efe9; }
+  :root[data-mode="light"] .navtip { background: #f4f8f5; }
+  :root[data-mode="light"] table.pkts tr.ackrow td { background: #eef1ef; }
+  :root[data-mode="light"] .chip.g  { color:#7c3aed; border-color:#d9c9f2; background:#f3edfc; }
+  :root[data-mode="light"] .chip.p  { color:#2563c9; border-color:#c3d5f0; background:#ecf2fb; }
+  :root[data-mode="light"] .chip.ok { color:#0f8a4d; border-color:#a9dcc0; background:#e6f5ec; }
+  :root[data-mode="light"] .chip.no { color:#c8342e; border-color:#f0bdba; background:#fcecea; }
+  :root[data-mode="light"] .chip.rep{ color:#b07d13; border-color:#ecdca6; background:#fbf3dc; }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: var(--scanline);
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.10) 2px 3px);
+    mix-blend-mode: multiply;
+  }
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 22px 20px 70px; }
+  ::selection { background: rgba(53,224,138,.28); }
+
+  /* ---------- header ---------- */
+  header.top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .logo { display: flex; align-items: center; gap: 13px; }
+  .glyph {
+    display: flex; align-items: center; justify-content: center; color: var(--accent);
+    border: 1px solid var(--line-2); border-radius: 11px; padding: 7px 11px; background: #1d2822;
+    box-shadow: inset 0 0 26px rgba(255,255,255,.05), var(--glow);
+    animation: breathe 4.5s ease-in-out infinite;
+  }
+  .glyph svg { display: block; filter: drop-shadow(0 0 5px rgba(53,224,138,.5)); }
+  @keyframes breathe { 0%,100%{ box-shadow: inset 0 0 26px rgba(53,224,138,.09), 0 0 14px rgba(53,224,138,.12);} 50%{ box-shadow: inset 0 0 30px rgba(53,224,138,.16), 0 0 26px rgba(53,224,138,.26);} }
+  h1 { font-size: 18px; font-weight: 680; margin: 0; letter-spacing: .3px; }
+  h1 .sub { color: var(--txt-dim); font-weight: 400; }
+  .subline { font-size: 12px; color: var(--txt-mut); font-family: var(--mono); letter-spacing: .3px; }
+  .status-pill {
+    font-family: var(--mono); font-size: 12px; color: var(--txt-dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--surface);
+  }
+  .status-pill b { color: var(--accent); font-weight: 600; }
+  .themes { margin-left: auto; display: flex; align-items: center; gap: 7px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .themes .lab { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--txt-mut); margin-right: 1px; }
+  .themes button { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #ffffff22; background: var(--sw); cursor: pointer; padding: 0; transition: transform .12s, box-shadow .15s; }
+  .themes button:hover { transform: scale(1.15); }
+  .themes button.on { border-color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 0 10px var(--sw); }
+  /* layout width toggle: fixed centered column (default) vs. full window width */
+  .wtog { display: flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .wtog .lab { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--txt-mut); margin-right: 2px; }
+  .wtog button { font-family: var(--mono); font-size: 11px; color: var(--txt-dim); background: none; border: 1px solid transparent; border-radius: 7px; padding: 3px 8px; cursor: pointer; transition: .14s; }
+  .wtog button:hover { color: var(--accent); }
+  .wtog button.on { color: var(--accent); border-color: var(--line-2); background: color-mix(in srgb, var(--accent) 13%, transparent); }
+  body.wide .wrap { max-width: none; padding-left: 44px; padding-right: 44px; }
+
+  /* ---------- loader ---------- */
+  .loader { margin-top: 40px; animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+  .dropzone {
+    position: relative; overflow: hidden; border: 1.5px dashed var(--line-2); border-radius: 16px;
+    background: linear-gradient(180deg, #0b110d, #080c0a); padding: 54px 26px; text-align: center;
+    transition: border-color .18s, background .18s, transform .18s; cursor: pointer;
+  }
+  .dropzone::after {
+    content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(53,224,138,.06) 50%, transparent 70%);
+    transform: translateX(-100%); animation: sweep 3.6s ease-in-out infinite;
+  }
+  @keyframes sweep { 0%,100%{ transform: translateX(-120%);} 55%{ transform: translateX(120%);} }
+  .dropzone.drag { border-color: var(--accent); background: #0c150f; transform: translateY(-2px); box-shadow: var(--glow); }
+  .dropzone h2 { margin: 0 0 6px; font-size: 18px; font-weight: 650; }
+  .dropzone p { margin: 4px 0; color: var(--txt-dim); font-size: 13px; }
+  .dropzone .hint { font-family: var(--mono); font-size: 12px; color: var(--txt-mut); margin-top: 8px; }
+  .row-btns { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; position: relative; z-index: 1; }
+  .livebox { margin-top: 16px; border: 1px solid var(--line); border-radius: 13px; padding: 15px 16px; background: var(--panel); }
+  .livebox .lt { font-size: 13px; color: var(--txt-dim); } .livebox .lt b { color: var(--accent); }
+  .livebox .liverow { display: flex; gap: 9px; margin-top: 11px; flex-wrap: wrap; align-items: center; }
+  .livebox input, .livebox select { font-family: var(--mono); font-size: 12.5px; background: var(--surface); color: var(--txt); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; }
+  .livebox #liveIp { min-width: 240px; flex: 1; } .livebox #livePort { width: 74px; }
+  .livebox input:focus, .livebox select:focus { border-color: var(--accent); outline: none; }
+  .livebox .lt2 { margin-top: 11px; font-family: var(--mono); font-size: 11.5px; color: var(--txt-mut); }
+  .livebox .lt2 input { font-size: 11.5px; padding: 3px 7px; width: 180px; }
+  .livebox .lt2 #liveCap { width: 78px; }
+  .livebox .lt2 code { color: var(--txt-dim); }
+  button.act { font-family: var(--sans); font-size: 13px; color: #04130a; background: var(--accent); border: 0; border-radius: 9px; padding: 10px 18px; font-weight: 650; cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s; }
+  button.act:hover { background: var(--accent-hi); box-shadow: var(--glow); transform: translateY(-1px); }
+  button.act:active { transform: translateY(0); }
+  button.ghost { background: transparent; color: var(--txt); border: 1px solid var(--line-2); border-radius: 9px; padding: 10px 18px; font-weight: 550; cursor: pointer; font-size: 13px; transition: border-color .15s, color .15s; }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible, [tabindex]:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- app ---------- */
+  .app { display: none; }
+  .app.on { display: block; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none; } }
+  .reveal { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+
+  /* ---------- hero navigator ---------- */
+  .nav-card { margin-top: 20px; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 10px; box-shadow: var(--glow); }
+  .nav-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .nav-head h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); font-weight: 650; }
+  .nav-head .tip { font-size: 12px; color: var(--txt-mut); font-family: var(--mono); }
+  .nav-head .peakbtn { margin-left: auto; font-family: var(--mono); font-size: 11.5px; background: #0a100c; color: var(--txt-dim); border: 1px solid var(--line-2); border-radius: 7px; padding: 5px 11px; cursor: pointer; transition: .15s; }
+  .nav-head .peakbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .navwrap { position: relative; user-select: none; }
+  #nav { width: 100%; display: block; cursor: crosshair; border-radius: 8px; background: linear-gradient(180deg,#060a08,#080c0a); }
+  .navwrap::after { /* moving scan line */
+    content: ""; position: absolute; top: 0; bottom: 18px; width: 2px; left: 0;
+    background: linear-gradient(180deg, transparent, rgba(116,255,176,.55), transparent);
+    box-shadow: 0 0 12px rgba(53,224,138,.6); opacity: .5; animation: scan 7s linear infinite; pointer-events: none;
+  }
+  @keyframes scan { 0%{ left: 0; opacity: 0;} 6%{opacity:.5;} 94%{opacity:.5;} 100%{ left: 100%; opacity: 0;} }
+  .navtip { position: absolute; pointer-events: none; transform: translateY(-100%); background: #0a120d; border: 1px solid var(--line-2); border-radius: 7px; padding: 5px 9px; font-family: var(--mono); font-size: 11.5px; color: var(--txt); white-space: nowrap; opacity: 0; transition: opacity .1s; box-shadow: var(--glow); z-index: 5; }
+
+  /* ---------- stats ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px,1fr)); gap: 12px; margin-top: 16px; }
+  .stat { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; position: relative; overflow: hidden; }
+  .stat::before { content:""; position:absolute; left:0; top:0; bottom:0; width:2px; background: linear-gradient(180deg,var(--accent),transparent); opacity:.5; }
+  .stat .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .9px; color: var(--txt-dim); }
+  .stat .v { font-family: var(--mono); font-size: 23px; font-weight: 680; margin-top: 5px; color: var(--txt); font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+  .stat .v.good { color: var(--ok); } .stat .v.bad { color: var(--fail); } .stat .v.warn { color: var(--warn); }
+  .stat .u { font-size: 11px; color: var(--txt-mut); font-family: var(--mono); margin-top: 1px; }
+  .stat.clickable { cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .1s; }
+  .stat.clickable:hover { border-color: var(--line-2); transform: translateY(-1px); }
+  .stat.clickable::after { content: "filter"; position: absolute; top: 9px; right: 11px; font-family: var(--mono); font-size: 9px; letter-spacing: .5px; text-transform: uppercase; color: var(--txt-mut); opacity: 0; transition: opacity .15s; }
+  .stat.clickable:hover::after { opacity: .7; }
+  .stat.active { border-color: var(--accent); box-shadow: var(--glow); }
+  .stat.active::before { opacity: 1; width: 3px; }
+  .stat.active::after { content: "active ✕"; color: var(--accent); opacity: 1; }
+
+  /* ---------- charts ---------- */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+  .card { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 13px; padding: 15px 16px; }
+  .card h3 { margin: 0 0 13px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--txt-dim); font-weight: 650; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 7px; }
+  .card h3::before { content: "▾"; font-size: 10px; color: var(--accent); transition: transform .15s; }
+  .card h3:hover { color: var(--txt); }
+  .card.collapsed h3 { margin-bottom: 0; }
+  .card.collapsed h3::before { transform: rotate(-90deg); }
+  .card.collapsed .barlist, .card.collapsed canvas { display: none; }
+  .barlist { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 138px 1fr 54px; align-items: center; gap: 10px; font-size: 12.5px; }
+  .bar .lbl { font-family: var(--mono); color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .track { height: 10px; background: #0a100c; border-radius: 5px; overflow: hidden; box-shadow: inset 0 0 0 1px #10181330; }
+  .bar .fill { height: 100%; background: linear-gradient(90deg, var(--accent-dk), var(--accent), var(--accent-hi)); border-radius: 5px; width: 0; transition: width .7s cubic-bezier(.2,.7,.2,1); box-shadow: 0 0 10px rgba(53,224,138,.35); }
+  .bar .n { font-family: var(--mono); text-align: right; color: var(--txt-dim); font-variant-numeric: tabular-nums; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0 11px; }
+  .toolbar input[type=text], .toolbar select { font-family: var(--mono); font-size: 12.5px; background: var(--surface); color: var(--txt); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 11px; transition: border-color .15s; }
+  .toolbar input[type=text] { min-width: 210px; }
+  .toolbar input[type=text]:focus, .toolbar select:focus { border-color: var(--accent); outline: none; }
+  .chk { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--txt-dim); cursor: pointer; user-select: none; }
+  .chk input { accent-color: var(--accent); }
+  .winchip { display: none; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--accent); background: #0c1a12; border: 1px solid var(--accent-dk); border-radius: 999px; padding: 5px 11px; }
+  .winchip.on { display: inline-flex; }
+  .winchip button { background: none; border: 0; color: var(--accent); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+  .toolbar .count { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--txt-dim); }
+
+  /* ---------- packet list ---------- */
+  .listwrap { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; background: var(--panel); }
+  .tablescroll { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+  table.pkts { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  table.pkts th { position: sticky; top: 0; z-index: 2; background: var(--surface); color: var(--txt-dim); text-align: left; font-weight: 600; padding: 10px 11px; border-bottom: 1px solid var(--line-2); white-space: nowrap; letter-spacing: .3px; }
+  table.pkts td { padding: 7px 11px; border-bottom: 1px solid #101712; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.pkts tr { cursor: pointer; transition: background .08s; }
+  table.pkts tbody tr:hover { background: var(--hover); }
+  table.pkts tr.sel { background: #10281b; box-shadow: inset 3px 0 0 var(--accent); }
+  table.pkts th[data-sort] { cursor: pointer; user-select: none; }
+  table.pkts th[data-sort]:hover { color: var(--accent); }
+  table.pkts th.sortasc::after { content: " ▲"; color: var(--accent); font-size: 9px; }
+  table.pkts th.sortdesc::after { content: " ▼"; color: var(--accent); font-size: 9px; }
+  table.pkts tr.filterrow th { position: sticky; top: 35px; z-index: 2; background: var(--surface); padding: 5px 8px; border-bottom: 1px solid var(--line-2); }
+  table.pkts tr.filterrow input, table.pkts tr.filterrow select { width: 100%; min-width: 60px; font-family: var(--mono); font-size: 11px; background: var(--surface); color: var(--txt); border: 1px solid var(--line); border-radius: 5px; padding: 3px 5px; }
+  table.pkts tr.filterrow input:focus, table.pkts tr.filterrow select:focus { border-color: var(--accent); outline: none; }
+  table.pkts tr.fcsfail td { color: #ffb3b3; }
+  table.pkts tr.ackrow td { color: var(--txt-mut); background: #090d0b; font-style: italic; }
+  table.pkts tr.ackrow td:first-child { box-shadow: inset 3px 0 0 var(--repeat); }
+  table.pkts .rawhex { color: var(--txt-mut); font-size: 11px; letter-spacing: .4px; margin-top: 3px; white-space: nowrap; }
+  .chip.ftc { color: #04130a; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  table.pkts tr.ftcrow td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  /* ---------- ETS-style acknowledge colouring (toggle #fAckCol -> body.ackcol) ---------- */
+  :root{ --ets-acked:#8a97a0; --ets-unacked:#3fbf6f; --ets-repeated:#e0b53a; --ets-invalid:#e0564e; }
+  body.ackcol table.pkts tbody tr.ackst-acked    td { background: color-mix(in srgb, var(--ets-acked)    15%, transparent); }
+  body.ackcol table.pkts tbody tr.ackst-unacked  td { background: color-mix(in srgb, var(--ets-unacked)  16%, transparent); }
+  body.ackcol table.pkts tbody tr.ackst-repeated td { background: color-mix(in srgb, var(--ets-repeated) 17%, transparent); }
+  body.ackcol table.pkts tbody tr.ackst-invalid  td { background: color-mix(in srgb, var(--ets-invalid)  17%, transparent); }
+  body.ackcol table.pkts tbody tr.ackst-acked    td:first-child { box-shadow: inset 3px 0 0 var(--ets-acked); }
+  body.ackcol table.pkts tbody tr.ackst-unacked  td:first-child { box-shadow: inset 3px 0 0 var(--ets-unacked); }
+  body.ackcol table.pkts tbody tr.ackst-repeated td:first-child { box-shadow: inset 3px 0 0 var(--ets-repeated); }
+  body.ackcol table.pkts tbody tr.ackst-invalid  td:first-child { box-shadow: inset 3px 0 0 var(--ets-invalid); }
+  body.ackcol table.pkts tbody tr:hover td { filter: brightness(1.18); }
+  body.ackcol table.pkts tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .acklegend{ display:none; flex-wrap:wrap; gap:8px 16px; align-items:center; margin:12px 0 0; padding:11px 14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); font-size:12.5px; color:var(--txt-dim); }
+  body.ackcol .acklegend{ display:flex; }
+  .acklegend .lg{ display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+  .acklegend .sw{ width:15px; height:15px; padding:0; border-radius:3px; border:1px solid #ffffff26; flex:none; cursor:pointer; -webkit-appearance:none; appearance:none; background:none; }
+  .acklegend input.sw::-webkit-color-swatch-wrapper{ padding:0; }
+  .acklegend input.sw::-webkit-color-swatch{ border:none; border-radius:2px; }
+  .acklegend input.sw::-moz-color-swatch{ border:none; border-radius:2px; }
+  .acklegend .ackreset{ font-family:var(--mono); font-size:11px; color:var(--txt-dim); background:var(--surface); border:1px solid var(--line-2); border-radius:7px; padding:3px 9px; cursor:pointer; }
+  .acklegend .ackreset:hover{ color:var(--accent); border-color:var(--accent-dk); }
+  .acklegend .ttl{ color:var(--txt); font-weight:600; margin-right:4px; }
+  .acklegend .note{ flex-basis:100%; color:var(--txt-mut); font-size:11.5px; line-height:1.55; margin-top:2px; }
+  .acklegend .note b{ color:var(--txt-dim); }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; border: 1px solid transparent; }
+  .chip.g { color: #c78bff; border-color: #3a2a52; background: #150f1d; }
+  .chip.p { color: #6fb0ff; border-color: #223650; background: #0d141d; }
+  .chip.ok { color: var(--ok); border-color: #1c5a3a; background: #0a1a11; }
+  .chip.no { color: var(--fail); border-color: #5a1e1e; background: #1a0a0a; }
+  .chip.rep{ color: var(--repeat); border-color: #5a4620; background: #1a1409; }
+  .pager { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 11px; color: var(--txt-dim); font-family: var(--mono); font-size: 12px; border-top: 1px solid var(--line); }
+  .pager button { font-family: var(--mono); background: var(--surface); color: var(--txt); border: 1px solid var(--line-2); border-radius: 7px; padding: 5px 12px; cursor: pointer; transition: .15s; }
+  .pager button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pager button:disabled { opacity: .3; cursor: default; }
+
+  /* ---------- detail ---------- */
+  .detail { margin-top: 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel); overflow: hidden; }
+  .detail .empty { padding: 40px; text-align: center; color: var(--txt-mut); font-family: var(--mono); font-size: 13px; }
+  .detail .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 17px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg,#0b130e,var(--surface)); }
+  .detail .head .t { font-family: var(--mono); font-size: 14.5px; font-weight: 680; color: var(--accent); }
+  .detail .head .meta { font-family: var(--mono); font-size: 12px; color: var(--txt-dim); }
+  .detail .body { display: grid; grid-template-columns: 1.1fr .9fr; }
+  @media (max-width: 900px) { .detail .body { grid-template-columns: 1fr; } }
+  .detail .left { padding: 18px; border-right: 1px solid var(--line); min-width: 0; }
+  @media (max-width: 900px) { .detail .left { border-right: 0; border-bottom: 1px solid var(--line); } }
+  .detail .right { padding: 18px; min-width: 0; }
+  .hexrun { font-family: var(--mono); font-size: 15px; line-height: 2.1; letter-spacing: .4px; word-break: normal; overflow-wrap: break-word; }
+  .hexrun .b { display: inline; padding: 2px 2px; border-radius: 4px; border-bottom: 2px solid currentColor; transition: background .12s; white-space: normal; }
+  .hexrun .b:hover { background: rgba(255,255,255,.06); transform: translateY(-1px); }
+  .detail .ftcpanel { margin-top: 18px; border: 1px solid var(--accent-dk); border-radius: 11px; padding: 13px 15px; background: #0a1611; box-shadow: var(--glow); }
+  .detail .ftcpanel .fh { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .9px; color: var(--accent); margin-bottom: 10px; }
+  .detail .ftcpanel .fl { display: flex; gap: 12px; padding: 3px 0; font-family: var(--mono); font-size: 12.5px; align-items: baseline; }
+  .detail .ftcpanel .fk { color: var(--txt-mut); min-width: 88px; text-transform: uppercase; font-size: 10.5px; letter-spacing: .4px; flex-shrink: 0; }
+  .detail .ftcpanel .fv { color: var(--txt); overflow-wrap: anywhere; white-space: pre-wrap; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 15px; margin-top: 16px; font-size: 11.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--txt-dim); }
+  .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  table.fields { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  table.fields th { text-align: left; color: var(--txt-mut); font-weight: 600; padding: 5px 8px; border-bottom: 1px solid var(--line-2); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
+  table.fields td { padding: 6px 8px; border-bottom: 1px solid #101712; vertical-align: top; }
+  table.fields td.hx { color: var(--txt); white-space: nowrap; }
+  table.fields td.nm { color: var(--txt-dim); white-space: nowrap; } table.fields td.vl { color: var(--txt); overflow-wrap: anywhere; max-width: 420px; }
+  .fcsbox { margin-top: 14px; border: 1px solid var(--line-2); border-radius: 11px; padding: 13px 15px; background: var(--surface); font-family: var(--mono); font-size: 12.5px; }
+  .fcsbox .line { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; color: var(--txt-dim); }
+  .fcsbox .line b { color: var(--txt); font-weight: 600; }
+  .fcsbox .result { margin-top: 9px; font-weight: 700; }
+  .fcsbox .result.ok { color: var(--ok); } .fcsbox .result.no { color: var(--fail); }
+  .checks { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+  .checks li { display: flex; gap: 9px; align-items: flex-start; font-size: 12.5px; }
+  .checks li .mk { font-family: var(--mono); font-weight: 700; }
+  .checks li.ok .mk { color: var(--ok); } .checks li.warn .mk { color: var(--warn); } .checks li.no .mk { color: var(--fail); }
+  .checks li .tx { color: var(--txt-dim); } .checks li .tx b { color: var(--txt); font-weight: 600; }
+
+  footer { margin-top: 28px; padding-top: 15px; border-top: 1px solid var(--line); color: var(--txt-mut); font-size: 12px; font-family: var(--mono); }
+  a { color: var(--accent); }
+  .err { color: var(--fail); font-family: var(--mono); font-size: 13px; margin-top: 10px; }
+
+  /* ---------- live connecting overlay (initial connect only) ---------- */
+  .liveovl { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 42%, rgba(6,12,9,.86), rgba(4,7,6,.95)); backdrop-filter: blur(3px); animation: ovlIn .18s ease-out; }
+  .liveovl[hidden] { display: none; }
+  @keyframes ovlIn { from { opacity: 0; } to { opacity: 1; } }
+  .lo-box { text-align: center; font-family: var(--mono); user-select: none; }
+  /* the OpenKNX mark itself, animated: a telegram packet runs the bus line, the nodes pulse — literal "connecting" */
+  .oknx-anim { color: var(--accent); width: 132px; height: 132px; margin: 0 auto 24px; filter: drop-shadow(0 0 15px rgba(53,224,138,.20)); }
+  .oknx-anim svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .oknx-bus { fill:none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; opacity:.6; stroke-dasharray: 2.5 3; animation: oknxDash 1s linear infinite; }
+  .oknx-drop { stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; opacity:.5; }
+  .oknx-node { fill: currentColor; }
+  .oknx-node.n1 { animation: oknxPulse 1.6s ease-in-out infinite; }
+  .oknx-node.n2 { animation: oknxPulse 1.6s ease-in-out infinite .8s; }
+  .oknx-hollow { fill:none; stroke: currentColor; stroke-width: 1.5; opacity:.72; }
+  @keyframes oknxPulse { 0%,100%{ opacity:.4; } 50%{ opacity:1; } }
+  @keyframes oknxDash { to { stroke-dashoffset: -5.5; } }
+  .oknx-packet { fill: var(--accent-hi); offset-path: path("M0 16 H32"); offset-distance: 0%;
+    animation: oknxFlow 1.6s ease-in-out infinite; filter: drop-shadow(0 0 4px var(--accent)); }
+  @keyframes oknxFlow { 0%{ offset-distance:0%; opacity:0; } 12%{ opacity:1; } 88%{ opacity:1; } 100%{ offset-distance:100%; opacity:0; } }
+  /* small, subtle inline variant of the mark for the status pill while waiting for the live connection */
+  .oknx-mini { display:inline-block; width:19px; height:19px; vertical-align:-4px; margin-right:5px; opacity:.95; }
+  .oknx-mini svg { display:block; width:100%; height:100%; overflow:visible; }
+  .oknx-mini .oknx-packet { fill: currentColor; filter: drop-shadow(0 0 3px currentColor); } /* packet follows the pill state colour (red waiting / green live) */
+  .lo-txt { font-size: 15px; color: var(--txt); letter-spacing: .3px; } .lo-txt b { color: var(--accent); }
+  .lo-txt::after { content: ""; animation: loDots 1.2s steps(4,end) infinite; }
+  @keyframes loDots { 0%{content:"";} 25%{content:".";} 50%{content:"..";} 75%{content:"...";} }
+  .lo-sub { margin-top: 9px; font-size: 12px; color: var(--txt-mut); }
+  .lo-cancel { margin-top: 20px; font-family: var(--mono); font-size: 12px; background: var(--surface); color: var(--txt-dim);
+    border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 14px; cursor: pointer; transition: .15s; }
+  .lo-cancel:hover { border-color: var(--fail); color: var(--fail); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo">
+      <div class="glyph">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <line x1="7" y1="20" x2="7" y2="15" stroke="currentColor" stroke-width="2"/>
+          <line x1="25" y1="17" x2="25" y2="12" stroke="currentColor" stroke-width="2"/>
+          <line y1="16" x2="32" y2="16" stroke="currentColor" stroke-width="2"/>
+          <rect x="2" y="21" width="10" height="10" fill="currentColor"/>
+          <rect x="20" y="1" width="10" height="10" fill="currentColor"/>
+          <rect x="22" y="23" width="6" height="6" stroke="#000" stroke-width="2"/>
+          <rect x="4" y="3" width="6" height="6" stroke="#000" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Busmon Viewer <span class="sub">· OpenKNX IP-Interface</span></h1>
+        <div class="subline">cEMI L_Busmon.ind decoder · TP1 spec validation · by Erkan&nbsp;Çolak</div>
+      </div>
+    </div>
+    <div class="themes" id="themes" role="group" aria-label="Colour theme">
+      <span class="lab">theme</span>
+      <button type="button" data-t="phosphor" class="on" style="--sw:#35e08a" title="Phosphor green" aria-label="Phosphor green"></button>
+      <button type="button" data-t="amber" style="--sw:#ffb84d" title="Amber CRT" aria-label="Amber CRT"></button>
+      <button type="button" data-t="ice" style="--sw:#4fd6ff" title="Ice cyan" aria-label="Ice cyan"></button>
+    </div>
+    <div class="wtog" id="mtog" role="group" aria-label="Page mode">
+      <span class="lab">mode</span>
+      <button type="button" data-m="dark" class="on" title="Dark (default)">◐&nbsp;dark</button>
+      <button type="button" data-m="black" title="Black — darker">■&nbsp;black</button>
+      <button type="button" data-m="light" title="Light">☀&nbsp;light</button>
+    </div>
+    <div class="wtog" id="wtog" role="group" aria-label="Layout width">
+      <span class="lab">width</span>
+      <button type="button" data-w="fixed" class="on" title="Fixed centered column (default)">◱ fixed</button>
+      <button type="button" data-w="wide" title="Full window width">⛶ full</button>
+    </div>
+    <div class="status-pill" id="statusPill">no capture loaded</div>
+  </header>
+
+  <div class="loader" id="loader">
+    <div class="dropzone" id="drop" tabindex="0" role="button" aria-label="Load a busmonitor XML file">
+      <h2>Drop an Busmonitor / Group monitor XML ((ETS)) here</h2>
+      <p>or click to choose a file &mdash; everything is parsed locally, nothing is uploaded.</p>
+      <div class="row-btns">
+        <button class="act" id="btnChoose" type="button">Choose XML file</button>
+        <button class="ghost" id="btnSample" type="button">Load sample frames</button>
+        <button class="act" id="btnDemo" type="button" title="Play a simulated live busmonitor stream — every frame type: acknowledged/unacked/repeated/invalid (ETS colours), L2 ACK/NAK/BUSY, FTC file transfer + console, P2P, broadcast">▶ Demo live</button>
+      </div>
+      <div class="hint">expects &lt;CommunicationLog&gt; with &lt;Telegram RawData="…" Service="L_Busmon.ind" /&gt;</div>
+    </div>
+    <div class="livebox">
+      <span class="lt">or monitor <b>live</b> through the local bridge:</span>
+      <div class="liverow">
+        <input id="liveIp" list="ipList" placeholder="interface IP — e.g. 11.11.0.210" autocomplete="off" />
+        <datalist id="ipList"></datalist>
+        <input id="livePort" value="3671" title="KNXnet/IP port" />
+        <select id="liveLayer" title="Busmonitor = raw (all frames incl. ACK/FCS, passive). Group monitor = decoded L_Data telegrams over a normal link-layer tunnel."><option value="busmon">Busmonitor (raw)</option><option value="link">Group monitor (link layer)</option></select>
+        <button class="act" id="btnLive" type="button">● Connect live</button>
+        <button class="ghost" id="btnDiscover" type="button" title="search the network for OpenKNX devices (mDNS, via the bridge)">🔍 search</button>
+        <button class="ghost" id="btnLiveDel" type="button" title="remove this IP from the saved list">✕ forget</button>
+      </div>
+      <div class="liverow" id="foundRow" style="display:none">
+        <select id="liveFound" title="OpenKNX devices found via mDNS — pick one to fill the IP" style="min-width:340px;flex:1"></select>
+      </div>
+      <div class="lt2">bridge: <input id="liveBridge" value="http://localhost:8671" /> &nbsp;·&nbsp; buffer <input id="liveCap" value="100000" title="max frames kept in memory (ring buffer)" /> frames &nbsp;·&nbsp; run <code>pwsh scripts/Test/Start-BusmonBridge.ps1</code> first · localhost only</div>
+    </div>
+    <div class="err" id="err" hidden></div>
+    <input type="file" id="file" accept=".xml,text/xml" hidden />
+  </div>
+
+  <div class="app" id="app">
+
+    <div class="nav-card reveal" style="animation-delay:.02s">
+      <div class="nav-head">
+        <h3>Activity timeline</h3>
+        <span class="tip">drag across to focus a busy window · click to clear</span>
+        <button class="peakbtn" id="peakBtn" type="button">⤒ jump to peak</button>
+      </div>
+      <div class="navwrap" id="navwrap">
+        <canvas id="nav" height="96"></canvas>
+        <div class="navtip" id="navtip"></div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="panels">
+      <div class="card reveal" style="animation-delay:.06s">
+        <h3>Service / APCI breakdown</h3>
+        <div class="barlist" id="apciBars"></div>
+      </div>
+      <div class="card reveal" style="animation-delay:.1s">
+        <h3>Top source addresses</h3>
+        <div class="barlist" id="srcBars"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="search src/dst/apci/hex…" autocomplete="off" />
+      <select id="fApci"><option value="">all services</option></select>
+      <label class="chk"><input type="checkbox" id="fRep" /> repeats</label>
+      <label class="chk"><input type="checkbox" id="fFcs" /> FCS fails</label>
+      <label class="chk"><input type="checkbox" id="fGrp" /> group</label>
+      <label class="chk"><input type="checkbox" id="fPhy" /> physical</label>
+      <label class="chk" title="only what a group monitor would NOT show: P2P / broadcast / mgmt / ACK"><input type="checkbox" id="fBeyond" /> beyond&nbsp;GA</label>
+      <label class="chk" title="RAW bus view — show TP1 L2 ACK / NAK / BUSY as their own dim rows (MDT-style captures carry them)"><input type="checkbox" id="fShowAck" /> RAW</label>
+      <label class="chk" title="show the busmon sequence number + status per row"><input type="checkbox" id="vSeq" /> L2&nbsp;seq</label>
+      <label class="chk" title="colour each telegram by its ETS acknowledge status (grey=ACK, green=no ACK, yellow=repeated, red=invalid) — needs a capture that carries the L2 acknowledges"><input type="checkbox" id="fAckCol" /> ACK&nbsp;colours</label>
+      <span class="winchip" id="winChip"></span>
+      <button id="btnExport" class="chk" type="button" title="export all captured frames as re-loadable XML" style="cursor:pointer;border:1px solid var(--line-2);border-radius:7px;padding:6px 11px;background:var(--surface);color:var(--accent)">⭳ export</button>
+      <button id="btnLoadAnother" class="chk" type="button" title="load another capture / connect a different interface" style="cursor:pointer;border:1px solid var(--line-2);border-radius:7px;padding:6px 11px;background:var(--surface);color:var(--txt-dim)">↩ load another</button>
+      <span class="count" id="fCount"></span>
+    </div>
+
+    <div class="acklegend" id="ackLegend">
+      <span class="ttl">ETS acknowledge colours</span>
+      <span class="lg"><input type="color" class="sw" data-ackvar="--ets-acked" title="pick the acknowledged colour"> acknowledged (ACK seen)</span>
+      <span class="lg"><input type="color" class="sw" data-ackvar="--ets-unacked" title="pick the not-acknowledged colour"> <b>not</b> acknowledged (no ACK)</span>
+      <span class="lg"><input type="color" class="sw" data-ackvar="--ets-repeated" title="pick the repeated colour"> repeated (no receiver acknowledged)</span>
+      <span class="lg"><input type="color" class="sw" data-ackvar="--ets-invalid" title="pick the invalid colour"> invalid (FCS fail)</span>
+      <button type="button" class="ackreset" id="ackReset" title="reset colours to default">↺ reset</button>
+      <span class="note" id="ackNote"></span>
+    </div>
+
+    <div class="listwrap reveal" style="animation-delay:.14s">
+      <div class="tablescroll">
+        <table class="pkts">
+          <thead><tr>
+            <th data-sort="n">#</th><th data-sort="t">t (s)</th><th>Δt ms</th><th data-sort="src">src</th><th data-sort="dst">dst</th>
+            <th data-sort="type">type</th><th data-sort="svc">service / APCI</th><th data-sort="prio">prio</th><th data-sort="rep">R</th><th data-sort="len">len</th><th data-sort="fcs">FCS</th>
+          </tr>
+          <tr class="filterrow">
+            <th></th><th></th><th></th>
+            <th><input id="cSrc" placeholder="src…" autocomplete="off" /></th>
+            <th><input id="cDst" placeholder="dst…" autocomplete="off" /></th>
+            <th><select id="cType"><option value="">type</option><option>std</option><option>ext</option></select></th>
+            <th><input id="cSvc" placeholder="service…" autocomplete="off" /></th>
+            <th><select id="cPrio"><option value="">prio</option><option>system</option><option>normal</option><option>urgent</option><option>low</option></select></th>
+            <th></th><th></th>
+            <th><select id="cFcs"><option value="">FCS</option><option value="ok">ok</option><option value="fail">fail</option></select></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </div>
+
+    <div class="detail" id="detail">
+      <div class="empty">Select a frame to decode it byte&#8209;by&#8209;byte and validate it against the KNX&nbsp;TP1 spec.</div>
+    </div>
+
+    <footer>
+      OpenKNX Busmon Viewer &mdash; local analysis, no upload · FCS per KNX TP1: <b style="color:var(--txt)">FCS = NOT( XOR of all LPDU octets )</b> · <a href="#" id="reset">load another capture</a>
+      <br>© 2026 by <b style="color:var(--txt-dim)">Erkan Çolak</b>
+    </footer>
+  </div>
+
+</div>
+
+<div class="liveovl" id="liveOvl" hidden>
+  <div class="lo-box">
+    <div class="oknx-anim" aria-hidden="true">
+      <svg viewBox="0 0 32 32">
+        <line class="oknx-bus" x1="0" y1="16" x2="32" y2="16"/>
+        <line class="oknx-drop" x1="7" y1="20" x2="7" y2="16"/>
+        <line class="oknx-drop" x1="25" y1="16" x2="25" y2="12"/>
+        <rect class="oknx-node n1" x="2" y="21" width="10" height="10" rx="1"/>
+        <rect class="oknx-node n2" x="20" y="1" width="10" height="10" rx="1"/>
+        <rect class="oknx-hollow" x="4" y="3" width="6" height="6" rx=".8"/>
+        <rect class="oknx-hollow" x="22" y="23" width="6" height="6" rx=".8"/>
+        <circle class="oknx-packet" r="1.7"/>
+      </svg>
+    </div>
+    <div class="lo-txt" id="loTxt">connecting…</div>
+    <div class="lo-sub" id="loSub"></div>
+    <button class="lo-cancel" id="loCancel" type="button">✕ cancel</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ================================================================== *
+ *  KNX cEMI L_Busmon.ind + TP1 LPDU decoder
+ * ================================================================== */
+const PRIO = ["system", "normal", "urgent", "low"]; // ctrl bits 3-2 (KNX Priority: 0 system,1 normal,2 urgent,3 low)
+// cEMI message codes this tool decodes
+const MCODE = {0x2B:"L_Busmon.ind", 0x29:"L_Data.ind", 0x2E:"L_Data.con", 0x11:"L_Data.req", 0x2D:"L_Raw.ind", 0x2F:"L_Raw.con", 0x10:"L_Raw.req"};
+// authoritative APCI table -- mirrored from the knx lib (knx_types.h ApduType).
+// entry = [code,name] (exact) or [lo,hi,name] (range that carries sub-data).
+const APCI_TABLE = [
+  [0x000,"GroupValue_Read"],[0x040,0x07F,"GroupValue_Response"],[0x080,0x0BF,"GroupValue_Write"],
+  [0x0C0,"IndividualAddress_Write"],[0x100,"IndividualAddress_Read"],[0x140,"IndividualAddress_Response"],
+  [0x3DC,"IndividualAddressSerialNumber_Read"],[0x3DD,"IndividualAddressSerialNumber_Response"],[0x3DE,"IndividualAddressSerialNumber_Write"],
+  [0x1C8,"SystemNetworkParameter_Read"],[0x1C9,"SystemNetworkParameter_Response"],[0x1CA,"SystemNetworkParameter_Write"],
+  [0x3E0,"DomainAddress_Write"],[0x3E1,"DomainAddress_Read"],[0x3E2,"DomainAddress_Response"],[0x3E3,"DomainAddress_SelectiveRead"],
+  [0x3EC,"DomainAddressSerialNumber_Read"],[0x3ED,"DomainAddressSerialNumber_Response"],[0x3EE,"DomainAddressSerialNumber_Write"],
+  [0x180,0x1BF,"ADC_Read"],[0x1C0,0x1C7,"ADC_Response"],
+  [0x1CC,"PropertyValueExt_Read"],[0x1CD,"PropertyValueExt_Response"],[0x1CE,"PropertyValueExt_WriteCon"],[0x1CF,"PropertyValueExt_WriteConResponse"],[0x1D0,"PropertyValueExt_WriteUnCon"],
+  [0x1D2,"PropertyExtDescription_Read"],[0x1D3,"PropertyExtDescription_Response"],
+  [0x1D4,"FunctionPropertyExt_Command"],[0x1D5,"FunctionPropertyExt_State"],[0x1D6,"FunctionPropertyExt_StateResponse"],
+  [0x1FB,"MemoryExt_Write"],[0x1FC,"MemoryExt_WriteResponse"],[0x1FD,"MemoryExt_Read"],[0x1FE,"MemoryExt_ReadResponse"],
+  [0x200,0x20F,"Memory_Read"],[0x240,0x24F,"Memory_Response"],[0x280,0x28F,"Memory_Write"],
+  [0x2C0,"UserMemory_Read"],[0x2C1,"UserMemory_Response"],[0x2C2,"UserMemory_Write"],
+  [0x2C5,"UserManufacturerInfo_Read"],[0x2C6,"UserManufacturerInfo_Response"],
+  [0x2C7,"FunctionProperty_Command"],[0x2C8,"FunctionProperty_State"],[0x2C9,"FunctionProperty_StateResponse"],
+  [0x300,"DeviceDescriptor_Read"],[0x340,"DeviceDescriptor_Response"],
+  [0x380,"Restart"],[0x381,"Restart_MasterReset"],
+  [0x3C0,"RoutingTable_Open"],[0x3C1,"RoutingTable_Read"],[0x3C2,"RoutingTable_ReadResponse"],[0x3C3,"RoutingTable_Write"],
+  [0x3C9,"MemoryRouter_ReadResponse"],[0x3CA,"MemoryRouter_Write"],
+  [0x3D1,"Authorize_Request"],[0x3D2,"Authorize_Response"],[0x3D3,"Key_Write"],[0x3D4,"Key_Response"],
+  [0x3D5,"PropertyValue_Read"],[0x3D6,"PropertyValue_Response"],[0x3D7,"PropertyValue_Write"],
+  [0x3D8,"PropertyDescription_Read"],[0x3D9,"PropertyDescription_Response"],
+  [0x3F1,"SecureService"],
+];
+function apciName(a){ for(const e of APCI_TABLE){ if(e.length===2){ if(a===e[0]) return e[1]; } else if(a>=e[0]&&a<=e[1]) return e[2]; } return null; }
+// OpenKNX FTC command opcodes (FunctionProperty propertyId on object 159; from FileTransferModule FtmCommands)
+const FTM_CMD={0:"Format",1:"Exists",2:"Rename",40:"FileUpload",41:"FileDownload",42:"FileDelete",43:"FileInfo",44:"FileUploadFast",45:"FileReport",46:"FilesystemInfo",80:"DirList",81:"DirCreate",82:"DirDelete",90:"Cancel",100:"ModuleVersion",101:"FwUpdate",102:"CheckFeatures"};
+// human-readable decode of an FTC FunctionProperty payload (obj 159/160), per FileTransferModule
+function ftcDecode(F){
+  const p=F.ftcPayload||[]; const be32=o=>((p[o]<<24)|(p[o+1]<<16)|(p[o+2]<<8)|p[o+3])>>>0; const be16=o=>((p[o]<<8)|p[o+1]);
+  const isResp=F.apci===0x2C9, isReq=F.apci===0x2C7, isRead=F.apci===0x2C8;
+  const kb=v=>v>=1048576?(v/1048576).toFixed(2)+" MB":v>=1024?(v/1024).toFixed(1)+" KB":v+" B";
+  const asc=a=>a.map(b=>(b>=32&&b<127)?String.fromCharCode(b):"·").join("").replace(/·+/g," ").trim();
+  const dir=isResp?"◀ RESPONSE":isReq?"▶ COMMAND":isRead?"· STATE-READ":"·";
+  const L=[]; L.push([dir, "obj "+F.ftcObj+(F.ftcObj===160?" (console)":" (files)")+" · "+F.ftcCmd]);
+  if(F.ftcConsole && F.consoleText) L.push([F.ftcPid===1?"typed":"output", F.consoleText.replace(/\n+$/,"")]);
+  else if(F.ftcHint) L.push(["path", F.ftcHint]);
+  const c=F.ftcCmd;
+  if(c==="CheckFeatures"&&isResp&&p.length>=1){ const b=p[0],f=[b&1&&"Resume",b&2&&"Update",b&4&&"Fast",b&8&&"Console"].filter(Boolean); L.push(["features","0x"+hx(b)+" → "+(f.join(", ")||"none")]); }
+  else if(c==="FilesystemInfo"&&isResp&&p.length>=9){ const t=be32(1),u=be32(5); L.push(["filesystem","total "+kb(t)+" · used "+kb(u)+" · free "+kb(t>u?t-u:0)]); }
+  else if(c==="FileInfo"&&isResp){ if(p[0]===0x42) L.push(["result","file not found (0x42)"]); else if(p.length>=9) L.push(["file","size "+kb(be32(1))+" · CRC32 0x"+be32(5).toString(16).toUpperCase().padStart(8,"0")]); }
+  else if((c==="FileUpload"||c==="FileUploadFast")&&isReq&&p.length>=2){ const seq=be16(0); L.push([seq===0?"open":seq===0xFFFF?"close":"chunk", seq===0||seq===0xFFFF?("seq 0x"+hx(p[0])+hx(p[1])):("seq "+seq+" · "+(p.length-2)+" data bytes")]); }
+  else if(c==="FileDownload"&&isResp&&p.length>=3){ L.push(["chunk","seq "+be16(1)+" · "+(p.length-3)+" data bytes"]); }
+  else if(c==="DirList"&&isResp){ const s=asc(p.slice(p[0]===0?1:0)); if(s) L.push(["entry",s]); else L.push(["result","end of listing"]); }
+  else if(c==="ModuleVersion"&&isResp){ const s=asc(p); L.push(["version", s||("0x"+p.map(hx).join(""))]); }
+  else if(c==="FileReport"&&isResp&&p.length){ L.push(["report","0x"+p.map(hx).join(" ")+"  (received-bitmap / gap query)"]); }
+  else if(p.length) L.push(["payload","0x"+p.map(hx).join("")]);
+  return L;
+}
+function hexToBytes(h){ h=h.replace(/[^0-9a-fA-F]/g,""); const n=h.length>>1,o=new Uint8Array(n); for(let i=0;i<n;i++)o[i]=parseInt(h.substr(i*2,2),16); return o; }
+const hx=b=>b.toString(16).toUpperCase().padStart(2,"0");
+const fmtInd=a=>((a>>12)&0xF)+"."+((a>>8)&0xF)+"."+(a&0xFF);
+const fmtGrp=a=>((a>>11)&0x1F)+"/"+((a>>8)&0x7)+"/"+(a&0xFF);
+// decode a byte array as UTF-8 text (console output uses UTF-8, e.g. box-drawing ═), keep newlines, drop control/replacement chars
+function bytesToText(arr){ let s=""; try{ s=new TextDecoder("utf-8",{fatal:false}).decode(new Uint8Array(arr)); }catch(e){ s=Array.from(arr).map(b=>(b>=32&&b<127)?String.fromCharCode(b):"").join(""); }
+  let o=""; for(const ch of s){ const c=ch.codePointAt(0); if(c===10||(c>=32 && c!==0x7F && c!==0xFFFD)) o+=ch; } return o; }
+
+function decodeFrame(rawHex){
+  const raw=hexToBytes(rawHex);
+  const F={raw,hex:rawHex.toUpperCase(),fields:[],checks:[],ok:true};
+  let p=0;
+  const push=(len,key,label,value,color)=>{ if(len<=0)return; F.fields.push({off:p,len,key,label,value,color,bytes:Array.from(raw.slice(p,p+len)).map(hx).join(" ")}); p+=len; };
+  const warn=t=>F.checks.push({lvl:"warn",t});
+  const fail=t=>{F.checks.push({lvl:"no",t});F.ok=false;};
+  const pass=t=>F.checks.push({lvl:"ok",t});
+  if(raw.length<6){F.summary="truncated";fail("Frame too short ("+raw.length+" bytes)");F.fcs={actual:0,computed:0,ok:false};return F;}
+
+  const mc=raw[0], mcName=MCODE[mc];
+  const isBusmon=(mc===0x2B);
+  const isLData=(mc===0x29||mc===0x2E||mc===0x11||mc===0x2D||mc===0x2F||mc===0x10);
+  F.mc=mc; F.mcName=mcName; F.isBusmon=isBusmon;
+  push(1,"mc","cEMI message code",(mcName||"unknown")+" (0x"+hx(mc)+")","--f-mc");
+  mcName?pass("cEMI message code <b>"+mcName+"</b> (0x"+hx(mc)+")"):warn("Unknown cEMI message code 0x"+hx(mc));
+  const aiLen=raw[1];
+  push(1,"ail","additional-info length",aiLen+" byte(s)","--f-ai");
+  if(aiLen>0){ const s=p; push(aiLen,"ai","additional info",(isBusmon?"busmon status ":"")+"0x"+Array.from(raw.slice(s,s+aiLen)).map(hx).join(""),"--f-ai"); }
+
+  // decode the cEMI busmon status TLV (type 0x03, len 0x01): 3-bit sequence number + error/lost flags
+  if(isBusmon && aiLen>=3 && raw[2]===0x03 && raw[3]===0x01){
+    const st=raw[4]; F.seq=st&0x07; F.busStatus=st; const flags=st&0xF8;
+    if(flags){ F.statusFlag=flags; warn("Busmon status flags 0x"+hx(st)+" set — possible lost / frame / bit / parity error"); }
+  }
+
+  const lpduStart=p; F.ctlOff=lpduStart;
+  if(lpduStart>=raw.length){F.summary="no L-PDU";fail("No L-PDU after cEMI header");F.fcs=null;return F;}
+  const hasFcs=isBusmon;  // only TP1 busmon frames carry the wire FCS; cEMI L_Data does not
+
+  // TP1 layer-2 acknowledgment / control frame: a single octet (ACK 0xCC / NAK 0x0C / BUSY 0xC0),
+  // no addresses and no FCS. Some busmonitors (e.g. MDT) log these; ETS usually does not.
+  const lpduLen=raw.length-lpduStart;
+  if(isBusmon && lpduLen<6){
+    const b=raw[p];
+    const name = lpduLen===1 ? (b===0xCC?"L_ACK":b===0xC0?"L_BUSY":(b===0x0C||b===0x00)?"L_NAK":"L2 control")
+                             : "short frame";
+    push(lpduLen,"ctl","L2 acknowledgment / control","0x"+Array.from(raw.slice(p)).map(hx).join("")+" · "+name,"--f-ctl");
+    F.service=name; F.summary=name+" (0x"+hx(b)+")"; F.group=null; F.apci=null; F.repeated=false; F.prio="—"; F.hop=null; F.fcs=null; F.isAck=true;
+    pass("TP1 layer-2 "+(lpduLen===1?"acknowledgment":"control")+" frame — no addresses / no FCS");
+    return F;
+  }
+
+  const ctrl1=raw[p];
+  const ftBits=ctrl1&0xC0, standard=(ftBits===0x80), extended=(ftBits===0x00);
+  // A valid TP1 L_Data control byte is std(10xx)/ext(00xx) AND has bit4=1 AND bits1-0=00 (BC/3C qualify;
+  // console TEXT bytes like 0x20 ' ' or 0x72 'r' do not). Such "frames" (Siemens busmon during a console
+  // session) are not telegrams -> show the text, invent no PAs.
+  const ctlValid = (standard||extended) && (ctrl1&0x10)!==0 && (ctrl1&0x03)===0;
+  if(isBusmon && !ctlValid){
+    const rest=raw.slice(lpduStart);
+    const txt=bytesToText(rest).replace(/[ \t]{2,}/g," ").replace(/\n{3,}/g,"\n\n").trim();
+    push(rest.length,"data","non-LPDU / text bytes","0x"+Array.from(rest).map(hx).join(""),"--f-data");
+    F.service=txt?"text":"non-LPDU"; F.group=null; F.apci=null; F.repeated=false; F.prio="—"; F.hop=null; F.fcs=null; F.nonLpdu=true; F.textData=txt;
+    F.summary="text / non-LPDU"+(txt?' · "'+txt.slice(0,60)+'"':"");
+    pass("Non-LPDU busmon bytes (control 0x"+hx(ctrl1)+" is not a TP1 L_Data type) — decoded as text, no addresses");
+    return F;
+  }
+  const repeated=(ctrl1&0x20)===0, prio=PRIO[(ctrl1>>2)&0x03];
+  F.repeated=repeated; F.prio=prio;
+  push(1,"ctl","control field","0x"+hx(ctrl1)+" · "+(standard?"std":extended?"ext":"?")+" · prio="+prio+" · "+(repeated?"REPEATED":"original"),"--f-ctl");
+
+  let src,dst,daf,hop,dlen,dataStart;
+  if(isBusmon && standard){
+    // TP1 standard: single control byte, DAF/hop/len packed in the NPCI octet after dst
+    src=(raw[p]<<8)|raw[p+1]; push(2,"src","source address",fmtInd(src),"--f-src");
+    dst=(raw[p]<<8)|raw[p+1]; const npci=raw[p+2];
+    daf=(npci&0x80)!==0; hop=(npci>>4)&0x07; const ln=npci&0x0F;
+    push(2,"dst","destination address",daf?fmtGrp(dst)+" (group)":fmtInd(dst)+" (individual)","--f-dst");
+    push(1,"npci","addr-type / hop / length",(daf?"group":"individual")+" · hop="+hop+" · len="+ln,"--f-npci");
+    dataStart=p; dlen=ln+1;
+  } else {
+    // two control bytes: TP1 extended busmon OR any cEMI L_Data/.con/.req (ctrl2 carries DAF/hop/EFF)
+    const ctrl2=raw[p]; daf=(ctrl2&0x80)!==0; hop=(ctrl2>>4)&0x07;
+    push(1,"ctl2","addr-type / hop / EFF",(daf?"group":"individual")+" · hop="+hop+" · EFF="+(ctrl2&0x0F),"--f-ctl");
+    src=(raw[p]<<8)|raw[p+1]; push(2,"src","source address",fmtInd(src),"--f-src");
+    dst=(raw[p]<<8)|raw[p+1]; push(2,"dst","destination address",daf?fmtGrp(dst)+" (group)":fmtInd(dst)+" (individual)","--f-dst");
+    const lenByte=raw[p]; push(1,"npci","length",lenByte+" (+1 → "+(lenByte+1)+" octets)","--f-npci");
+    dataStart=p; dlen=lenByte+1;
+  }
+  F.src=fmtInd(src); F.dst=daf?fmtGrp(dst):fmtInd(dst); F.group=daf; F.hop=hop;
+
+  // ---- transport (TPCI) + application (APCI) ----
+  const data=raw.slice(dataStart, dataStart+dlen);
+  let svc="?",apci=null,seq=null,tname=null;
+  if(data.length>=1){
+    const t0=data[0], tt=t0&0xC0;
+    if(tt===0x80){ tname=(t0&0x3F)===0?"T_Connect":(t0&0x3F)===1?"T_Disconnect":"T_Ctrl 0x"+hx(t0); svc=tname; }
+    else if(tt===0xC0){ seq=(t0>>2)&0x0F; tname=(t0&0x03)===2?"T_ACK":(t0&0x03)===3?"T_NAK":"T_Ctrl 0x"+hx(t0); svc=tname+" seq="+seq; }
+    else {
+      if(tt===0x40){ seq=(t0>>2)&0x0F; tname="T_Data_Connected"; }
+      else tname=(daf?"T_Data_Group":(dst===0x0000?"T_Data_Broadcast":"T_Data_Individual"));
+      if(data.length>=2){ apci=((t0&0x03)<<8)|data[1]; const nm=apciName(apci); svc=nm||("APCI 0x"+apci.toString(16).toUpperCase().padStart(3,"0")); if(seq!==null)svc+=" [seq="+seq+"]"; }
+      else svc=tname+" (no APCI)";
+    }
+    push(Math.min(2,data.length),"apci","TPCI / APCI",svc+(apci!==null?" (0x"+apci.toString(16).toUpperCase().padStart(3,"0")+")":""),"--f-apci");
+    const rest=data.length-Math.min(2,data.length);
+    if(rest>0) push(rest,"data","application data","0x"+Array.from(data.slice(2)).map(hx).join(""),"--f-data");
+  }
+  F.service=svc; F.apci=apci; F.tpci=tname; F.summary=F.src+" → "+F.dst+"  "+svc;
+
+  // ---- OpenKNX FTC (File Transfer) detection: FunctionProperty on object 159 (files) / 160 (console) ----
+  if((apci===0x2C7||apci===0x2C8||apci===0x2C9) && data.length>=4){
+    const obj=data[2], pid=data[3];
+    if(obj===159||obj===160){
+      F.ftc=true; F.ftcObj=obj; F.ftcConsole=(obj===160); F.ftcPid=pid;
+      F.ftcCmd = obj===160 ? (pid===1?"console IN":pid===2?"console OUT":"console pid"+pid) : (FTM_CMD[pid]||("cmd"+pid));
+      // pull a printable path/hint from the command payload (file/dir ops carry the path as ASCII)
+      F.ftcPayload=Array.from(data.slice(4)); // bytes after objIndex+propId = the command/response payload
+      // FileUploadFast (cmd 44) data chunk: the seq is LITTLE-endian (FileTransferModule reads data[1]<<8|data[0]);
+      // open=0x0000, close=0xFFFF, else a data chunk (payload[2]=len, payload[3..]=chunk bytes). Reading it
+      // big-endian yields garbage 0,256,512,… -- so decode it here as the real sequence number.
+      if(obj===159 && pid===44 && apci===0x2C7 && F.ftcPayload.length>=2){
+        const seqLE=(F.ftcPayload[1]<<8)|F.ftcPayload[0]; F.fafSeq=seqLE;
+        if(seqLE===0x0000) F.fafPhase="open"; else if(seqLE===0xFFFF) F.fafPhase="close";
+        else { F.fafPhase="data"; F.fafLen=F.ftcPayload[2]; F.fafData=F.ftcPayload.slice(3); }
+        F.ftcHint="FAF "+F.fafPhase+(F.fafPhase==="data"?" #"+seqLE:"");
+      }
+      // a file path lives in the COMMAND (0x2C7), not the response — avoids junk ASCII from binary responses
+      else if(!F.ftcConsole && apci===0x2C7 && F.ftcPayload.length){ const a=F.ftcPayload.map(b=>(b>=32&&b<127)?String.fromCharCode(b):"").join("").replace(/[^\x20-\x7e]+/g," ").trim(); if(a.length>=2) F.ftcHint=a.slice(0,48); }
+      // console (obj 160): the payload IS the console text (pid 2 = OUT device output, pid 1 = IN typed line)
+      if(F.ftcConsole && F.ftcPayload.length){ const t=bytesToText(F.ftcPayload).replace(/\n{3,}/g,"\n\n").replace(/[ \t]+$/gm,""); const tt=t.trim(); if(tt){ F.consoleText=t; F.ftcHint=tt.replace(/\n/g," ").slice(0,80); } }
+      F.summary += "  · FTC "+F.ftcCmd+(F.ftcHint?" "+F.ftcHint:"");
+    }
+  }
+
+  // ---- FCS (busmon only) — but a TRUNCATED frame (declared length > bytes present, e.g. Siemens busmon
+  //      chops long extended console frames) has no valid trailing FCS, so don't flag a false FCS fail.
+  const expectTotal=dataStart+dlen+(hasFcs?1:0);
+  const truncated=expectTotal>raw.length;
+  F.truncated=truncated;
+  if(hasFcs && !truncated) fcsField(F,raw,pass,fail); else F.fcs=null;
+
+  // ---- KNX spec validation ----
+  if(hop>7) fail("Hop count "+hop+" exceeds spec maximum (7)");
+  if(truncated) warn("Frame truncated: length field declares "+dlen+" data octets, only "+(raw.length-dataStart)+" present (busmon chopped a long frame)");
+  else if(expectTotal!==raw.length) warn("Length field implies "+expectTotal+" bytes, frame has "+raw.length);
+  else pass("Length field consistent with frame size ("+raw.length+" bytes)");
+  if(src===0x0000) warn("Source address 0.0.0 is unassigned/invalid");
+  if(apci!==null){
+    if(apciName(apci)===null) warn("Unassigned / unknown APCI 0x"+apci.toString(16).toUpperCase().padStart(3,"0"));
+    const isGroupComm=(apci<=0x0BF); // GroupValue_Read/Response/Write
+    // broadcast + system-broadcast services (legitimately sent to the broadcast address 0/0/0)
+    const isBroadcast=(apci===0x0C0||apci===0x100||apci===0x140||apci===0x381||(apci>=0x1C8&&apci<=0x1CA)||(apci>=0x3DC&&apci<=0x3DE)||(apci>=0x3E0&&apci<=0x3EE));
+    const isSecure=(apci===0x3F1); // KNX Data Secure wraps an inner APDU -- valid on group AND p2p addresses
+    const isBcastAddr=(daf && dst===0x0000); // KNX broadcast address = group flag + 0/0/0
+    if(isBcastAddr){
+      if(isGroupComm) warn("GroupValue on 0/0/0 — group address 0/0/0 is reserved");
+      else if(!isBroadcast && !isSecure) warn("Broadcast address 0/0/0 used with a non-broadcast service ("+svc+")");
+      // else: legitimate broadcast (IndividualAddress_*, DomainAddress_*, MasterReset …) — OK
+    } else {
+      if(isGroupComm && !daf) warn("GroupValue service on an individual address");
+      else if(isBroadcast) warn("Broadcast/management service not sent to the broadcast address 0/0/0");
+      else if(!isGroupComm && !isSecure && daf) warn("Point-to-point service on a group address");
+    }
+  }
+
+  // Post-check: a busmon "frame" that FAILS FCS and whose body is mostly printable text is NOT a telegram —
+  // it is console/diagnostic output (Siemens busmon during a console session) that happened to parse into a
+  // control-byte-shaped header (e.g. '4' 0x34, or a 75-byte "GroupValue_Response"/"T_Ctrl"). Reclassify as
+  // text: drop the fabricated PA/APCI and the false FCS-fail. Real telegrams pass FCS, so they are untouched;
+  // genuinely corrupt binary telegrams stay flagged (their body isn't mostly text).
+  if(isBusmon && !F.nonLpdu && F.fcs && !F.fcs.ok){
+    const body=raw.slice(lpduStart), n=body.length;
+    const textLike=body.reduce((a,b)=>a+(((b>=32&&b<127)||b===10||b===13||b>=0x80)?1:0),0);
+    const ctrlBytes=body.reduce((a,b)=>a+((b<32&&b!==10&&b!==13)?1:0),0);
+    const isText=(n>=5 && textLike/n>0.8 && ctrlBytes<=1);
+    const unparseable=(apci===null || apciName(apci)===null); // FCS bad AND no recognizable APCI -> not a real telegram
+    if(isText || unparseable){
+      const txt=bytesToText(body).replace(/[ \t]{2,}/g," ").replace(/\n{3,}/g,"\n\n").trim();
+      F.src=undefined; F.dst=undefined; F.group=null; F.apci=null; F.repeated=false; F.prio="—"; F.hop=null; F.nonLpdu=true; F.fcs=null;
+      F.service=isText?"text":"fragment"; if(txt.length>=2) F.textData=txt;
+      F.summary=isText?('text · "'+txt.replace(/\n/g," ").slice(0,60)+'"'):('fragment / non-telegram ('+n+' bytes)');
+    }
+    // else: FCS bad but a KNOWN APCI -> keep it flagged; that is a genuine corrupt telegram worth seeing.
+  }
+  return F;
+}
+function fcsField(F,raw,pass,fail){
+  const fcs=raw[raw.length-1]; let x=0;
+  for(let i=(F.ctlOff||0); i<raw.length-1; i++) x^=raw[i];
+  const comp=(~x)&0xFF; F.fcs={actual:fcs,computed:comp,ok:comp===fcs,xor:x};
+  const before=F.fields.reduce((s,f)=>s+f.len,0);
+  if(before<raw.length) F.fields.push({off:raw.length-1,len:1,key:"fcs",label:"frame check (FCS)",value:"0x"+hx(fcs)+(F.fcs.ok?" ✓":" ✗ want 0x"+hx(comp)),color:"--f-fcs",bytes:hx(fcs)});
+  F.fcs.ok?pass("FCS <b>0x"+hx(fcs)+"</b> matches NOT(XOR)=<b>0x"+hx(comp)+"</b>"):fail("FCS 0x"+hx(fcs)+" ≠ computed 0x"+hx(comp));
+}
+
+/* ================================================================== *
+ *  State
+ * ================================================================== */
+let FRAMES=[], VIEW=[], SEL=-1, WIN=null, WARN=false, FTCONLY=false;
+// infinite scroll (lazy render): grow the visible window as the user scrolls instead of paging.
+// RSTART = first VIEW index in the DOM, RENDERED = how many rows are in the DOM from there.
+let RSTART=0, RENDERED=0, scrollWired=false; const CHUNK=200, LIVE_TAIL=600;
+let SORT={key:null,dir:1}; // clickable column sort; null = capture order
+const addrKey=s=>{ if(!s)return -1; const p=String(s).split(/[./]/).map(Number); return (p[0]||0)*65536+(p[1]||0)*256+(p[2]||0); };
+function sortVal(f,k){ switch(k){ case"n":return f.n; case"t":return f.t; case"len":return f.raw.length;
+  case"fcs":return f.fcs?(f.fcs.ok?1:0):-1; case"rep":return f.repeated?1:0; case"src":return addrKey(f.src); case"dst":return addrKey(f.dst);
+  case"prio":return f.prio||""; case"type":return ftype(f); case"svc":return (f.service||"").toLowerCase(); default:return f.n; } }
+const nav={cv:null,g:null,bins:[],reps:[],BINS:0,dur:1,drag:null,W:0,H:96};
+
+/* themes: accent world only (semantic ok/fail/warn stay fixed) */
+const THEMES={
+  phosphor:{a:[53,224,138], hi:[116,255,176], rep:[255,180,84]},
+  amber:   {a:[255,184,77], hi:[255,212,136], rep:[79,214,255]},
+  ice:     {a:[79,214,255], hi:[159,233,255], rep:[255,180,84]},
+};
+let TH=THEMES.phosphor;
+const rgba=(c,a)=>"rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";
+const rgb=c=>"rgb("+c[0]+","+c[1]+","+c[2]+")";
+function setTheme(name){
+  if(!THEMES[name]) name="phosphor"; TH=THEMES[name];
+  if(name==="phosphor") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme",name);
+  document.querySelectorAll("#themes button").forEach(b=>b.classList.toggle("on",b.dataset.t===name));
+  try{ localStorage.setItem("bmv-theme",name); }catch(e){}
+  if(FRAMES.length) drawNav(1);
+}
+// layout width: "fixed" = centered max-width column (default), "wide" = full window width
+function setWidth(mode){
+  if(mode!=="wide") mode="fixed";
+  document.body.classList.toggle("wide",mode==="wide");
+  document.querySelectorAll("#wtog button").forEach(b=>b.classList.toggle("on",b.dataset.w===mode));
+  try{ localStorage.setItem("bmv-width",mode); }catch(e){}
+  // the nav canvas is width-dependent -> re-measure and redraw after the reflow settles
+  if(nav.cv) requestAnimationFrame(()=>{ layoutNav(); computeNavBins(); drawNav(1); });
+}
+// page mode: a second axis over the accent theme -- "dark" (default) / "black" (darker) / "light"
+function setMode(mode){
+  if(mode!=="black"&&mode!=="light") mode="dark";
+  if(mode==="dark") document.documentElement.removeAttribute("data-mode");
+  else document.documentElement.setAttribute("data-mode",mode);
+  document.querySelectorAll("#mtog button").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
+  try{ localStorage.setItem("bmv-mode",mode); }catch(e){}
+}
+
+/* ================================================================== *
+ *  Parse
+ * ================================================================== */
+function parseXml(text){
+  const doc=new DOMParser().parseFromString(text,"application/xml");
+  if(doc.getElementsByTagName("parsererror").length) throw new Error("XML parse error");
+  const tel=doc.getElementsByTagNameNS("*","Telegram");
+  if(!tel.length) throw new Error("no <Telegram> elements found");
+  const start=doc.getElementsByTagNameNS("*","RecordStart")[0];
+  const mode=start?(start.getAttribute("Mode")||"?"):"?";
+  const frames=[]; let t0=null;
+  for(let i=0;i<tel.length;i++){
+    const el=tel[i], rawA=el.getAttribute("RawData"); if(!rawA)continue;
+    const ts=el.getAttribute("Timestamp")?Date.parse(el.getAttribute("Timestamp")):NaN;
+    if(t0===null&&!isNaN(ts)) t0=ts;
+    const F=decodeFrame(rawA); F.n=frames.length+1;
+    F.t=(!isNaN(ts)&&t0!==null)?(ts-t0)/1000:0; frames.push(F);
+  }
+  return {frames,mode};
+}
+const SAMPLE=[
+  "2B03030100BC50EF5003610300CD","2B03030101BC500350EF63034007B038","2B03030102BC50EF50036302C79F64F2",
+  "2B03030103BC500350EF6902C99F64000000010006F1","2B03030106BC50EF50036503D5000B100106",
+  "2B03030107BC500350EF6B03D6000B100100FAA7ABF5ADA5","2B030301039C500B0015E5008000006F4067",
+  "2B03030100BC500B0016E1008100004E","2B03030105BC1F01500C6143000CCF","2B03030100BCFF01000060810049"];
+function loadSample(){ demoStop(); const frames=[]; let t=0; for(let i=0;i<SAMPLE.length;i++){ const F=decodeFrame(SAMPLE[i]); F.n=i+1; F.t=t; frames.push(F); t+=0.03+Math.abs((F.raw[3]||7)%5)*0.02; } boot({frames,mode:"Busmonitor"}); }
+
+// ---------- Demo: a simulated LIVE busmonitor stream exercising every decode + ETS-colour path ----------
+// Frames are built programmatically with a correct TP1 FCS (NOT(XOR of the whole LPDU)), wrapped as
+// cEMI L_Busmon.ind, and streamed through the real live pipeline (addFrame). An L_ACK right after a
+// telegram marks it "acknowledged" (ETS grey); none -> green; repeat control 0x9C -> yellow; bad FCS -> red.
+let _demoTimer=null, _demoActive=false;
+function demoStop(){ _demoActive=false; if(_demoTimer){ clearTimeout(_demoTimer); _demoTimer=null; } }
+function demoLive(){
+  demoStop(); _demoActive=true;
+  const hx2=b=>(b&0xFF).toString(16).padStart(2,"0"), toHex=a=>a.map(hx2).join("").toUpperCase();
+  const pa=(a,l,d)=>[((a<<4)|l)&0xFF,d&0xFF], ga=(m,mi,s)=>[((m<<3)|mi)&0xFF,s&0xFF];
+  const fcs=body=>{ let x=0; for(const b of body)x^=b; return [...body,(~x)&0xFF]; };
+  const txt=s=>[...s].map(c=>c.charCodeAt(0)&0xFF);
+  let seq=0;
+  const cemi=lpdu=>"2B030301"+hx2(seq++&0x07)+toHex(lpdu);
+  const std=(ctrl,src,dst,grp,apdu)=>fcs([ctrl,...src,...dst,(grp?0x80:0)|0x60|((apdu.length-1)&0x0F),...apdu]);
+  const ext=(ctrl,src,dst,grp,apdu)=>fcs([ctrl,(grp?0x80:0)|0x60,...src,...dst,(apdu.length-1)&0xFF,...apdu]);
+  const ackF=b=>"2B03030100"+hx2(b);
+  const gvw=(...d)=>[0x00,0x80,...d], gv1=b=>[0x00,0x80|(b&0x3F)];
+  const S=[];                                            // [displayDeltaMs, cemiHex]
+  const A=(dt,lpdu)=>{ S.push([dt,cemi(lpdu)]); S.push([2,ackF(0xCC)]); };  // telegram + its L2 ACK -> grey
+  const N=(dt,lpdu)=>{ S.push([dt,cemi(lpdu)]); };                          // telegram, no ACK -> green
+  // healthy acknowledged group traffic (ETS white/grey)
+  A(0,   std(0xBC, pa(5,0,10), ga(0,0,20), true, gvw(0x09,0x30)));
+  A(2582,std(0xBC, pa(5,0,12), ga(0,0,21), true, gv1(1)));
+  A(28,  std(0xBC, pa(5,0,10), ga(0,0,22), true, gvw(0x0C,0x41)));
+  A(1980,std(0xBC, pa(1,0,84), ga(0,3,10), true, gvw(0x64)));
+  A(760, std(0xBC, pa(8,0,1),  ga(4,0,3),  true, gvw(0x00,0x50)));
+  // unacknowledged (green) -- target not present
+  N(900, std(0xBC, pa(1,1,5),  ga(7,7,255),true, gv1(0)));
+  // repeated (yellow) -- same telegram retried, still unacked
+  N(140, std(0x9C, pa(1,1,5),  ga(7,7,255),true, gv1(0)));
+  // invalid (red) -- corrupt the FCS
+  { const l=std(0xBC, pa(5,0,10), ga(0,0,23), true, gv1(1)); l[l.length-1]^=0x5A; S.push([1200,cemi(l)]); }
+  // standalone L2 control frames (only shown in RAW view): ACK, NAK, BUSY
+  S.push([300,ackF(0xCC)]); S.push([70,ackF(0x0C)]); S.push([70,ackF(0xC0)]);
+  // point-to-point management (beyond a group monitor): DeviceDescriptor read + response, acknowledged
+  A(700, std(0xBC, pa(1,1,0), pa(5,0,3), false, [0x43,0x00]));            // T_Data_Connected + DeviceDescriptor_Read
+  A(120, std(0xBC, pa(5,0,3), pa(1,1,0), false, [0x43,0x40,0x07,0xB0])); // DeviceDescriptor_Response (mask 07B0)
+  // broadcast
+  N(600, std(0xBC, pa(5,0,3), [0x00,0x00], false, [0x01,0x40,0x50,0x03])); // IndividualAddress_Response
+  // more group traffic
+  A(1500,std(0xBC, pa(1,0,244),ga(0,0,20), true, gvw(0x0A,0x18)));
+  N(650, std(0xBC, pa(1,1,5),  ga(1,1,1),  true, gv1(1)));                 // unacked
+  // FTC over the tunnel (files obj 159 / console obj 160), acknowledged
+  A(1100,ext(0x3C, pa(1,1,0), pa(5,0,3), false, [0x02,0xC7,0x9F,0x2B].concat(txt("/logic.bin"))));       // FileInfo request
+  A(240, ext(0x3C, pa(1,1,0), pa(5,0,3), false, [0x02,0xC7,0x9F,0x2C,0x05,0x00].concat(Array.from({length:40},(_,i)=>i&0xFF)))); // FileUploadFast DATA #5
+  A(240, ext(0x3C, pa(5,0,3), pa(1,1,0), false, [0x02,0xC7,0xA0,0x02].concat(txt("ver\nOpenKNX KNX-IP 0.1.0\nfree 812 KiB\n")))); // console OUT
+  A(300, ext(0x3C, pa(1,1,0), pa(5,0,3), false, [0x02,0xC7,0xA0,0x01].concat(txt("help"))));             // console IN (typed)
+
+  // --- set up the live view + auto-enable the ETS colours so the point is visible immediately ---
+  if(ES){ try{ES.close();}catch(_){} ES=null; } LIVECONN=null;
+  LIVE=true; FOLLOW=true; PAUSED=false;
+  FRAMES=[]; FRAMES.detected="demo"; liveT0=null; SEL=-1; WIN=null; RSTART=0; RENDERED=0; FAF_OPEN=null; liveDirty=false;
+  const li=document.getElementById("liveIp"); if(li)li.blur(); if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  document.getElementById("loader").style.display="none"; document.getElementById("app").classList.add("on");
+  const cb=document.getElementById("fAckCol"); if(cb&&!cb.checked){ cb.checked=true; document.body.classList.add("ackcol"); } // non-persistent
+  buildStats(); buildApciSelect(); buildBars(); initNav(); applyFilter();
+  setLiveStatus("demo - simulated bus, looping (every frame type + ETS colours)","var(--accent)");
+  liveLoop();
+  // Continuous clean loop with occasional bus-load blasts. Replay the scenario from a queue; on each wrap,
+  // ~35% of the time prepend a ~90-frame back-to-back burst whose airtime saturates a 1-second bucket ->
+  // PEAK LOAD 100%. Timestamps stay monotonic; the live ring buffer (LIVE_CAP) trims old frames. Stops on
+  // demoStop(). Airtime per telegram = (octets*13 + 28) bit-times @ 9600 -> ~15 ms; ~70 in a second = 100%.
+  const burst=()=>{ const b=[], g=(Math.random()*7)|0; for(let k=0;k<90;k++) b.push([14, cemi(std(0xBC, pa(1,0,(k%40)+1), ga(g,0,(k%30)+1), true, gvw((k*7)&0xFF,(k*3)&0xFF)))]); return b; };
+  let Q=S.slice(), ts=0;
+  const fire=()=>{
+    if(!_demoActive || !LIVE){ return; }
+    if(!Q.length){ ts+=1500; Q=S.slice(); if(Math.random()<0.35) Q=burst().concat(Q); }  // loop; sometimes blast the bus to 100% first
+    const e=Q.shift(); ts+=e[0]; addFrame(e[1], ts);
+    _demoTimer=setTimeout(fire, e[0]<=20 ? 12 : 170);    // burst frames stream fast (~real airtime); normal snappy
+  };
+  fire();
+}
+
+/* ================================================================== *
+ *  Live mode — stream L_Busmon.ind frames from the local pwsh bridge (SSE)
+ * ================================================================== */
+let LIVE_CAP=100000, LIVE=false, ES=null, liveDirty=false, liveT0=null, FOLLOW=true, PAUSED=false, LIVECONN=null;
+function ipList(){ try{ return JSON.parse(localStorage.getItem("bmv-live-ips")||"[]"); }catch(e){ return []; } }
+function ipListSave(a){ try{ localStorage.setItem("bmv-live-ips",JSON.stringify(a.slice(0,12))); }catch(e){} }
+function refreshIpList(){ const dl=document.getElementById("ipList"); if(dl) dl.innerHTML=ipList().map(ip=>`<option value="${esc(ip)}">`).join(""); }
+// persist a valid IP to the saved list (most-recent first) -> survives reloads, shows in the datalist
+function rememberIp(ip){ ip=(ip||"").trim(); if(!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return; const arr=ipList().filter(x=>x!==ip); arr.unshift(ip); ipListSave(arr); refreshIpList(); }
+// mDNS discovery via the bridge: GET /discover -> [{name,ip,pa,chip,...}]; fills the device dropdown
+function discoverDevices(){
+  const bridge=(document.getElementById("liveBridge").value||"http://localhost:8671").trim().replace(/\/+$/,"");
+  const err=document.getElementById("err"); err.hidden=true;
+  const sel=document.getElementById("liveFound"), row=document.getElementById("foundRow"), btn=document.getElementById("btnDiscover");
+  const old=btn.textContent; btn.textContent="⏳ scanning…"; btn.disabled=true;
+  const ac=(typeof AbortController!=="undefined")?new AbortController():null;
+  showOverlay('searching the network','mDNS + KNXnet/IP discovery via the bridge — ~4 s', ()=>{ if(ac){ try{ac.abort();}catch(_){} } hideLiveOverlay(); });
+  fetch(bridge+"/discover",ac?{signal:ac.signal}:undefined).then(r=>r.json()).then(list=>{
+    sel.innerHTML="";
+    if(!Array.isArray(list)||!list.length){ row.style.display="none"; err.hidden=false; err.textContent="No OpenKNX devices found via mDNS — enter the IP manually."; return; }
+    sel.appendChild(new Option("— "+list.length+" device(s) found — pick one —",""));
+    list.forEach(d=>{ const src=d.source==="both"?"OpenKNX+KNXnet/IP":d.source==="openknx"?"OpenKNX":(d.kind||"KNXnet/IP");
+      const lbl=[d.name,d.pa,d.ip,d.chip,src].filter(Boolean).join("  ·  "); sel.appendChild(new Option(lbl,d.ip||"")); });
+    // wire the pick HERE (survives every rebuild): a selection fills the IP field immediately
+    sel.onchange=()=>{ if(sel.value){ const ipf=document.getElementById("liveIp"); ipf.value=sel.value; rememberIp(sel.value); ipf.focus(); } };
+    if(list.length===1 && list[0].ip){ sel.selectedIndex=1; document.getElementById("liveIp").value=list[0].ip; rememberIp(list[0].ip); } // single hit -> prefill
+    row.style.display="";
+  }).catch(e=>{ if(e&&e.name==="AbortError") return; row.style.display="none"; err.hidden=false; err.textContent="Discover failed — is the bridge running?  ("+e.message+")"; })
+    .finally(()=>{ hideLiveOverlay(); btn.textContent=old; btn.disabled=false; });
+}
+// animated waiting overlay (phosphor scope) — used for the initial live connect AND the network scan
+let _ovlCancel=null;
+function showOverlay(txtHtml,subText,onCancel){
+  document.getElementById("loTxt").innerHTML=txtHtml;
+  document.getElementById("loSub").textContent=subText||"";
+  _ovlCancel=onCancel||null;
+  document.getElementById("loCancel").style.display=onCancel?"":"none";
+  document.getElementById("liveOvl").hidden=false;
+}
+function hideLiveOverlay(){ const o=document.getElementById("liveOvl"); if(o) o.hidden=true; _ovlCancel=null; }
+// initial connect only (not resume): show the "connecting to <ip>" overlay with a cancel-to-loader action
+function showLiveOverlay(ip){ showOverlay('connecting to <b>'+esc(ip)+'</b>','waiting for the bridge to open the KNX busmonitor tunnel',
+  ()=>{ hideLiveOverlay(); if(ES){ try{ES.close();}catch(_){}} location.reload(); }); }
+function startLive(){
+  demoStop();
+  const ip=(document.getElementById("liveIp").value||"").trim(), port=(document.getElementById("livePort").value||"3671").trim();
+  const layer=document.getElementById("liveLayer").value, bridge=(document.getElementById("liveBridge").value||"http://localhost:8671").trim().replace(/\/+$/,"");
+  const err=document.getElementById("err");
+  if(!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)){ err.hidden=false; err.textContent="Enter a valid interface IP, e.g. 11.11.0.210"; return; }
+  rememberIp(ip);
+  LIVE_CAP=Math.max(1000,parseInt(document.getElementById("liveCap").value)||100000);
+  LIVECONN={ip,port,layer,bridge};                       // remember for resume/reconnect
+  FRAMES=[]; FRAMES.detected="Busmonitor (live)"; liveT0=null; SEL=-1; WIN=null; RSTART=0; RENDERED=0; FAF_OPEN=null;
+  // Blur the IP field first: its native datalist/autocomplete popup (the saved-IP suggestion) would otherwise
+  // linger floating over the app after the loader is hidden.
+  document.getElementById("liveIp").blur();
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  document.getElementById("loader").style.display="none"; document.getElementById("app").classList.add("on");
+  buildStats(); buildApciSelect(); buildBars(); initNav(); applyFilter();
+  showLiveOverlay(ip);                                    // initial connect -> wait-for-connection overlay
+  openLiveStream();                                       // fresh start (buffer already wiped above)
+}
+// (re)open the SSE stream for LIVECONN. Does NOT touch FRAMES -> used by both a fresh start and resume.
+function openLiveStream(){
+  if(!LIVECONN) return;
+  const {ip,port,layer,bridge}=LIVECONN;
+  const err=document.getElementById("err");
+  const url=bridge+"/stream?ip="+encodeURIComponent(ip)+"&port="+encodeURIComponent(port)+"&layer="+encodeURIComponent(layer);
+  let es; try{ es=new EventSource(url); }catch(e){ hideLiveOverlay(); err.hidden=false; err.textContent="Cannot open "+url+" — is the bridge running?"; return; }
+  ES=es; LIVE=true; setLiveStatus("connecting to "+ip+"…","var(--warn)",true);
+  es.onmessage=e=>{ try{ const m=JSON.parse(e.data); addFrame(m.hex,m.ts); }catch(_){ } };
+  es.addEventListener("hello",()=>{ hideLiveOverlay(); setLiveStatus("live from "+ip,"var(--accent)"); });
+  es.addEventListener("error",e=>{ hideLiveOverlay(); try{ const m=JSON.parse(e.data); setLiveStatus("bridge error: "+(m.msg||"?"),"var(--fail)",true); }catch(_){ } });
+  es.onerror=()=>{ hideLiveOverlay(); if(LIVE) setLiveStatus("disconnected — bridge down?","var(--fail)",true); };
+  liveLoop();
+}
+// resume after a manual stop: reconnect the SAME interface and KEEP the collected buffer (append continues)
+function resumeLive(){ if(LIVE||!LIVECONN) return; openLiveStream(); }
+function addFrame(hex,tsMs){ if(!hex)return; const F=decodeFrame(hex); if(liveT0===null)liveT0=(tsMs||0); F.tsMs=tsMs; F.t=((tsMs||0)-liveT0)/1000; F.n=FRAMES.length+1; FRAMES.push(F);
+  FAF_OPEN=fafStep(F,FAF_OPEN); // incrementally link FAF long-frame continuation pieces to their open chunk
+  if(FRAMES.length>LIVE_CAP){ FRAMES.splice(0,FRAMES.length-LIVE_CAP); liveT0=FRAMES[0].tsMs||0; // re-base kept window (continuous time, no reset)
+    for(let i=0;i<FRAMES.length;i++){ FRAMES[i].n=i+1; FRAMES[i].t=((FRAMES[i].tsMs||0)-liveT0)/1000; } } FRAMES._ackDone=false; liveDirty=true; }
+function liveLoop(){ if(!LIVE)return; if(liveDirty){ liveDirty=false; recomputeLive(); } setTimeout(liveLoop,400); }
+function recomputeLive(){
+  let prev=null,lost=0; for(const f of FRAMES){ if(f.seq===undefined)continue; if(prev!==null){ const miss=(f.seq-((prev+1)&7))&7; if(miss>0){f.seqGap=miss;lost+=miss;} } prev=f.seq; } FRAMES.lostBySeq=lost;
+  const svSel=document.getElementById("fApci").value;
+  buildStats(); buildBars(); buildApciSelect(); document.getElementById("fApci").value=svSel;
+  nav.dur=FRAMES.length?(FRAMES[FRAMES.length-1].t||1):1; layoutNav(); computeNavBins(); drawNav(1);
+  // autoscroll ON: refilter + tail to the last frame. OFF: leave the table FROZEN (scrollable) — data keeps
+  // collecting in the background (stats/timeline above still update), nothing jumps.
+  if(FOLLOW){ applyFilter(); } // applyFilter -> renderTable tails the newest LIVE_TAIL rows and pins to the bottom
+  const span=FRAMES.length?FRAMES[FRAMES.length-1].t:0;
+  const p=document.getElementById("liveCnt"); if(p) p.textContent=FRAMES.length.toLocaleString()+" · "+span.toFixed(1)+"s";
+}
+// stop = stop only: close the stream, KEEP the captured buffer, switch to the stopped pill (resume / new).
+function stopLive(){ if(ES){ ES.close(); ES=null; } LIVE=false; setStoppedStatus(); }
+const _pillBtn='background:none;border:1px solid var(--line-2);border-radius:6px;cursor:pointer;font-size:11px;padding:2px 7px';
+// the OpenKNX mark, inline SVG — same animation as the big overlay, just tiny; always shown in the live pill
+const OKNX_MINI_SVG='<svg viewBox="0 0 32 32">'+
+  '<line class="oknx-bus" x1="0" y1="16" x2="32" y2="16"/><line class="oknx-drop" x1="7" y1="20" x2="7" y2="16"/><line class="oknx-drop" x1="25" y1="16" x2="25" y2="12"/>'+
+  '<rect class="oknx-node n1" x="2" y="21" width="10" height="10" rx="1"/><rect class="oknx-node n2" x="20" y="1" width="10" height="10" rx="1"/>'+
+  '<rect class="oknx-hollow" x="4" y="3" width="6" height="6" rx=".8"/><rect class="oknx-hollow" x="22" y="23" width="6" height="6" rx=".8"/>'+
+  '<circle class="oknx-packet" r="1.7"/></svg>';
+// mark keeps animating always; RED while waiting to connect, GREEN once live
+function setLiveStatus(t,c,waiting){ const mc=waiting?'var(--fail)':'var(--accent)'; document.getElementById("statusPill").innerHTML=
+  '<span class="oknx-mini" style="color:'+mc+'" aria-hidden="true">'+OKNX_MINI_SVG+'</span>'+
+  '<b style="color:'+c+'">● LIVE</b> <span id="liveCnt">'+FRAMES.length.toLocaleString()+'</span> · '+esc(t)+
+  ' <label style="color:var(--txt-dim);font-size:11px" title="ON = tail to newest; OFF = table frozen &amp; scrollable, data keeps collecting"><input type="checkbox" id="liveFollow" '+(FOLLOW?"checked":"")+' style="accent-color:var(--accent)"> autoscroll</label>'+
+  ' <button id="liveExport" title="export all captured frames as re-loadable XML" style="'+_pillBtn+';color:var(--accent)">⭳ export</button>'+
+  ' <button id="liveStop" title="stop live (keeps the captured data)" style="'+_pillBtn+';color:var(--fail)">⏹ stop</button>';
+  const f=document.getElementById("liveFollow"); if(f) f.onchange=()=>{ FOLLOW=f.checked; if(FOLLOW){ liveDirty=true; recomputeLive(); } };
+  const x=document.getElementById("liveExport"); if(x) x.onclick=exportRaw;
+  const b=document.getElementById("liveStop"); if(b) b.onclick=stopLive;
+}
+// stopped state: data is frozen but fully analysable; offer resume (reconnect same iface) or new (fresh load)
+function setStoppedStatus(){ const ipTxt=LIVECONN?esc(LIVECONN.ip):"";
+  document.getElementById("statusPill").innerHTML=
+  '<b style="color:var(--warn)">■ STOPPED</b> <span>'+FRAMES.length.toLocaleString()+' frames</span>'+
+  ' <button id="liveResume" title="reconnect '+ipTxt+' and keep collecting" style="'+_pillBtn+';color:var(--accent)">▶ resume</button>'+
+  ' <button id="liveExport" title="export all captured frames as re-loadable XML" style="'+_pillBtn+';color:var(--accent)">⭳ export</button>'+
+  ' <button id="liveNew" title="load another capture / connect a different interface" style="'+_pillBtn+';color:var(--txt-dim)">↩ new</button>';
+  const r=document.getElementById("liveResume"); if(r) r.onclick=resumeLive;
+  const x=document.getElementById("liveExport"); if(x) x.onclick=exportRaw;
+  const n=document.getElementById("liveNew"); if(n) n.onclick=()=>location.reload();
+}
+// export every captured frame as an ETS-compatible CommunicationLog XML (raw hex + timestamp) -> re-loadable here + analysable
+function exportRaw(){
+  if(!FRAMES.length){ return; }
+  let x='<?xml version="1.0" encoding="utf-8"?>\n<CommunicationLog xmlns="http://knx.org/xml/telegrams/01">\n  <RecordStart Mode="Busmonitor" ConnectionName="BusmonViewer export" />\n';
+  const base=(FRAMES[0].tsMs!=null)?FRAMES[0].tsMs:(Date.now()-(FRAMES[FRAMES.length-1].t*1000));
+  for(const f of FRAMES){ const ms=(f.tsMs!=null)?f.tsMs:(base+f.t*1000); x+='  <Telegram Timestamp="'+new Date(ms).toISOString()+'" Service="'+(f.isBusmon?"L_Busmon.ind":(MCODE[f.mc]||"L_Data.ind"))+'" FrameFormat="CommonEmi" RawData="'+f.hex+'" />\n'; }
+  x+='</CommunicationLog>\n';
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([x],{type:"application/xml"}));
+  a.download="busmon-export-"+new Date().toISOString().replace(/[:.]/g,"-").slice(0,19)+".xml";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+
+/* ================================================================== *
+ *  Boot
+ * ================================================================== */
+/* ---- FAF long-frame fragment reassembly ------------------------------------------------------- *
+ * A Siemens busmon splits a ~245-byte FileUploadFast data chunk into a header piece (decoded as
+ * FTC FileUploadFast) plus several header-less continuation pieces (raw binary chunk data — otherwise
+ * shown as text / non-LPDU). Link each continuation to the open chunk so a forget upload reads as a
+ * clean chain instead of ?->? noise. Heuristic (the wire carries no continuation marker): the piece is
+ * a busmon non-LPDU with a BINARY body AND we are inside an open FAF data chunk. Anything else — a real
+ * decoded telegram, an ACK, printable console text — closes the window. Idempotent per frame.            */
+let FAF_OPEN=null;
+function fafBodyLen(F){ return F.raw.length-(F.ctlOff!=null?F.ctlOff:2); }
+function fafBinaryBody(F){ const b=F.raw.slice(F.ctlOff!=null?F.ctlOff:2), n=b.length; if(n<8)return false;
+  let pr=0; for(const x of b) if((x>=32&&x<127)||x===10||x===13)pr++; return pr/n<0.7; } // chunk data is a byte pattern, not ASCII
+function fafStep(F,open){
+  if(F.ftc && F.ftcCmd==="FileUploadFast" && F.fafPhase==="data"){ F.fafParts=[F]; F.fafBytes=F.fafLen||0; return F; }
+  if(open && F.isBusmon && F.nonLpdu && fafBinaryBody(F)){
+    F.fafCont=true; F.fafOf=open.fafSeq; F.service="FAF data (cont.)";
+    F.summary="FAF data (cont.) · chunk #"+open.fafSeq+" · "+fafBodyLen(F)+" B";
+    open.fafParts.push(F); open.fafBytes=(open.fafBytes||0)+fafBodyLen(F); return open;
+  }
+  return null; // real telegram / ACK / text closes the reassembly window
+}
+function fafReassemble(frames){ let open=null; for(const f of frames) open=fafStep(f,open); }
+function boot(parsed){
+  FRAMES=parsed.frames;
+  fafReassemble(FRAMES);
+  document.getElementById("loader").style.display="none";
+  document.getElementById("app").classList.add("on");
+  const span=FRAMES.length?FRAMES[FRAMES.length-1].t:0;
+  // auto-detect capture type from the actual message codes (RecordStart Mode is only a hint)
+  let bm=0,ld=0; for(const f of FRAMES){ if(f.isBusmon)bm++; else if(f.mc===0x29||f.mc===0x2E||f.mc===0x11)ld++; }
+  const detected = bm>0&&ld===0 ? "Busmonitor" : ld>0&&bm===0 ? "Group / Data monitor" : bm||ld ? "Mixed capture" : (parsed.mode||"capture");
+  FRAMES.detected=detected;
+  // lost-frame detection from the busmon sequence number (a jump > +1 means the monitor dropped frames)
+  let prevSeq=null, lost=0; for(const f of FRAMES){ if(f.seq===undefined)continue; if(prevSeq!==null){ const miss=(f.seq-((prevSeq+1)&7))&7; if(miss>0){ f.seqGap=miss; lost+=miss; } } prevSeq=f.seq; }
+  FRAMES.lostBySeq=lost;
+  document.getElementById("statusPill").innerHTML="<b>"+FRAMES.length.toLocaleString()+"</b> frames · <b style=\"color:var(--accent)\">"+detected+"</b> · "+span.toFixed(1)+"s";
+  const sub=document.querySelector(".subline"); if(sub) sub.textContent=(bm&&!ld?"cEMI L_Busmon.ind · TP1 FCS validation":"cEMI L_Data · KNX A/T-layer decode")+" · local & offline";
+  buildStats(); buildApciSelect(); buildBars(); initNav(); applyFilter();
+  requestAnimationFrame(()=>document.querySelectorAll(".bar .fill").forEach(el=>el.style.width=el.dataset.w+"%"));
+}
+
+/* ---- stats with count-up ---- */
+function buildStats(){
+  const n=FRAMES.length; let grp=0,phy=0,rep=0,fail=0,warnCnt=0,ftc=0; const srcSet=new Set();
+  // TP1 bus load: airtime per telegram = (wireOctets*13 + 28 for the ACK slot) bit-times @ 9600 bit/s
+  const TBIT=1/9600, secBucket=new Map(); let air=0;
+  for(const f of FRAMES){ if(f.group===true)grp++; else if(f.group===false)phy++; if(f.repeated)rep++; if(f.fcs&&!f.fcs.ok)fail++; if(f.checks.some(c=>c.lvl==="warn"))warnCnt++; if(f.src)srcSet.add(f.src); if(f.ftc)ftc++;
+    const wire=f.raw.length-(f.ctlOff||5)+(f.isBusmon?0:1); const a=(wire*13+28)*TBIT; air+=a;
+    const s=Math.floor(f.t); secBucket.set(s,(secBucket.get(s)||0)+a); }
+  const span=n?FRAMES[n-1].t:0;
+  const avgLoad=span>0?100*air/span:0; let peakSec=0; for(const v of secBucket.values()) if(v>peakSec)peakSec=v; const peakLoad=Math.min(100,100*peakSec);
+  const cards=[
+    ["frames",n,0,"","","reset"],["duration",span,1,"seconds","",""],["avg rate",span>0?n/span:0,1,"frames/s","",""],
+    ["bus load ⌀",avgLoad,1,"% airtime",avgLoad>30?"warn":avgLoad>60?"bad":"good",""],
+    ["peak load",peakLoad,1,"% in 1s",peakLoad>80?"bad":peakLoad>50?"warn":"good",""],
+    ["group",grp,0,pct(grp,n),"","group"],["physical",phy,0,pct(phy,n),"","physical"],
+    ["repeats",rep,0,pct(rep,n),rep?"warn":"good","repeats"],["FCS fails",fail,0,pct(fail,n),fail?"bad":"good","fcsfail"],
+    ["spec warnings",warnCnt,0,pct(warnCnt,n),warnCnt?"warn":"good","warnings"],["unique src",srcSet.size,0,"","",""]];
+  if(FRAMES.some(f=>f.seq!==undefined)) cards.push(["lost (seq)",FRAMES.lostBySeq||0,0,"monitor drops",FRAMES.lostBySeq?"bad":"good",""]);
+  if(ftc) cards.push(["FTC frames",ftc,0,pct(ftc,n)+" · file transfer","good","ftc"]);
+  document.getElementById("stats").innerHTML=cards.map(([k,v,d,u,cls,fk],i)=>
+    `<div class="stat ${LIVE?"":"reveal"} ${fk?"clickable":""}" ${fk?`data-f="${fk}"`:""} style="animation-delay:${(.03+i*.03).toFixed(2)}s"><div class="k">${k}</div><div class="v ${cls}" data-to="${v}" data-dec="${d}">0</div><div class="u">${u}</div></div>`).join("");
+  document.querySelectorAll("#stats .v").forEach(el=>countUp(el,+el.dataset.to,+el.dataset.dec));
+  document.querySelectorAll("#stats .stat[data-f]").forEach(s=>s.onclick=()=>cardClick(s.dataset.f));
+}
+const pct=(a,b)=>b?(100*a/b).toFixed(1)+"%":"";
+function countUp(el,to,dec){
+  if(LIVE||matchMedia("(prefers-reduced-motion: reduce)").matches){ el.textContent=to.toLocaleString(undefined,{maximumFractionDigits:dec,minimumFractionDigits:dec}); return; }
+  const dur=700,t0=performance.now();
+  (function step(now){ let p=Math.min(1,(now-t0)/dur); p=1-Math.pow(1-p,3); const val=to*p;
+    el.textContent=val.toLocaleString(undefined,{maximumFractionDigits:dec,minimumFractionDigits:dec});
+    if(p<1) requestAnimationFrame(step); else el.textContent=to.toLocaleString(undefined,{maximumFractionDigits:dec,minimumFractionDigits:dec}); })(t0);
+}
+
+function buildApciSelect(){
+  const m=new Map(); for(const f of FRAMES){ const s=f.service||"?"; m.set(s,(m.get(s)||0)+1); }
+  const svcOpts=[...m.entries()].sort((a,b)=>b[1]-a[1]).map(([s,c])=>`<option value="${esc(s)}">${esc(s)} (${c})</option>`).join("");
+  const fm=new Map(); for(const f of FRAMES){ if(f.ftc){ const c=f.ftcCmd||"FTC"; fm.set(c,(fm.get(c)||0)+1); } }
+  const ftcOpts=fm.size?`<optgroup label="── FTC commands ──">`+[...fm.entries()].sort((a,b)=>b[1]-a[1]).map(([s,c])=>`<option value="ftc:${esc(s)}">FTC ${esc(s)} (${c})</option>`).join("")+`</optgroup>`:"";
+  document.getElementById("fApci").innerHTML=`<option value="">all services (${FRAMES.length})</option>`+svcOpts+ftcOpts;
+}
+const baseSvc=s=>(s||"?").replace(/\s*\[.*/,"").replace(/\s*\(0x.*/,"").replace(/ seq=.*/,"");
+function buildBars(){
+  const m=new Map(); for(const f of FRAMES){ const s=baseSvc(f.service); m.set(s,(m.get(s)||0)+1); }
+  bars("apciBars",[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,9));
+  const s=new Map(); for(const f of FRAMES) if(f.src) s.set(f.src,(s.get(f.src)||0)+1);
+  bars("srcBars",[...s.entries()].sort((a,b)=>b[1]-a[1]).slice(0,9));
+}
+function bars(id,entries){
+  const max=entries.reduce((m,[,c])=>Math.max(m,c),1);
+  document.getElementById(id).innerHTML=entries.map(([lbl,c])=>
+    `<div class="bar"><span class="lbl" title="${esc(lbl)}">${esc(lbl)}</span><span class="track"><span class="fill" data-w="${(100*c/max).toFixed(1)}"></span></span><span class="n">${c.toLocaleString()}</span></div>`).join("");
+}
+
+/* ================================================================== *
+ *  Horizontal activity navigator
+ * ================================================================== */
+function initNav(){
+  nav.cv=document.getElementById("nav"); nav.g=nav.cv.getContext("2d");
+  const span=FRAMES.length?FRAMES[FRAMES.length-1].t:0; nav.dur=span>0?span:1;
+  layoutNav(); computeNavBins(); animateNav();
+  const wrap=document.getElementById("navwrap"), tip=document.getElementById("navtip");
+  nav.cv.onmousedown=e=>{ const x=relX(e); nav.drag={a:x,b:x}; drawNav(1); };
+  window.addEventListener("mousemove",e=>{
+    if(nav.drag){ nav.drag.b=relX(e,true); drawNav(1); }
+  });
+  window.addEventListener("mouseup",()=>{
+    if(!nav.drag)return; const {a,b}=nav.drag; nav.drag=null;
+    if(Math.abs(a-b)<4){ WIN=null; } else { const t1=xToT(Math.min(a,b)),t2=xToT(Math.max(a,b)); WIN=[t1,t2]; }
+    drawNav(1); applyFilter();
+  });
+  nav.cv.onmousemove=e=>{ const x=relX(e), t=xToT(x), b=Math.floor((t/nav.dur)*nav.BINS);
+    const cnt=nav.bins[Math.max(0,Math.min(nav.BINS-1,b))]||0;
+    tip.style.opacity=1; tip.style.left=Math.min(nav.W-90,Math.max(0,x))+"px"; tip.style.top="-6px";
+    tip.style.transform="translateY(-100%)"; tip.innerHTML=t.toFixed(2)+"s · "+cnt+" fr"; };
+  nav.cv.onmouseleave=()=>{ tip.style.opacity=0; };
+  document.getElementById("peakBtn").onclick=jumpToPeak;
+  window.addEventListener("resize",debounce(()=>{ layoutNav(); computeNavBins(); drawNav(1); },160));
+}
+function layoutNav(){ const dpr=window.devicePixelRatio||1; nav.W=nav.cv.clientWidth||900; nav.cv.width=nav.W*dpr; nav.cv.height=nav.H*dpr; nav.g.setTransform(dpr,0,0,dpr,0,0); }
+function computeNavBins(){ nav.BINS=Math.max(40,Math.min(900,Math.floor(nav.W/2))); nav.bins=new Array(nav.BINS).fill(0); nav.reps=new Array(nav.BINS).fill(0);
+  for(const f of FRAMES){ let b=Math.floor((f.t/nav.dur)*nav.BINS); if(b>=nav.BINS)b=nav.BINS-1; if(b<0)b=0; nav.bins[b]++; if(f.repeated)nav.reps[b]++; } }
+const relX=(e,clamp)=>{ const r=nav.cv.getBoundingClientRect(); let x=e.clientX-r.left; if(clamp) x=Math.max(0,Math.min(nav.W,x)); return x; };
+const xToT=x=>Math.max(0,Math.min(nav.dur,(x/nav.W)*nav.dur));
+const tToX=t=>(t/nav.dur)*nav.W;
+
+function drawNav(prog){
+  const g=nav.g, W=nav.W, H=nav.H, padB=16, plotH=H-padB-4;
+  g.clearRect(0,0,W,H);
+  const max=Math.max(1,...nav.bins), bw=W/nav.BINS;
+  // baseline grid
+  g.strokeStyle="#0f1712"; g.lineWidth=1;
+  for(let i=0;i<=3;i++){ const y=4+plotH*i/3; g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); }
+  // density bars, brightness by intensity
+  for(let i=0;i<nav.BINS;i++){
+    const v=nav.bins[i]; if(!v)continue; const r=v/max;
+    const h=Math.max(1.2,plotH*r*prog), x=i*bw, y=4+plotH-h;
+    const inten=0.30+0.70*r;
+    g.fillStyle=rgba(TH.a,inten.toFixed(3));
+    if(r>0.55){ g.shadowColor=rgba(TH.hi,.7); g.shadowBlur=8; } else g.shadowBlur=0;
+    g.fillRect(x,y,Math.max(1,bw*0.9),h);
+    if(nav.reps[i]){ g.shadowBlur=0; g.fillStyle=rgba(TH.rep,.9); const rh=plotH*(nav.reps[i]/max)*prog; g.fillRect(x+bw*0.15,4+plotH-rh,Math.max(1,bw*0.55),rh); }
+  }
+  g.shadowBlur=0;
+  // selection window
+  let selA=null,selB=null;
+  if(nav.drag){ selA=Math.min(nav.drag.a,nav.drag.b); selB=Math.max(nav.drag.a,nav.drag.b); }
+  else if(WIN){ selA=tToX(WIN[0]); selB=tToX(WIN[1]); }
+  if(selA!==null&&selB!==null&&selB-selA>1){
+    g.fillStyle=rgba(TH.a,.12); g.fillRect(selA,0,selB-selA,plotH+4);
+    g.strokeStyle=rgba(TH.hi,.9); g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(selA,0); g.lineTo(selA,plotH+4); g.moveTo(selB,0); g.lineTo(selB,plotH+4); g.stroke();
+    for(const hx2 of [selA,selB]){ g.fillStyle=rgb(TH.hi); g.fillRect(hx2-1.5,0,3,plotH+4); }
+  }
+  // selected-frame marker
+  if(SEL>=0&&FRAMES[SEL]){ const x=tToX(FRAMES[SEL].t); g.strokeStyle="rgba(199,139,255,.9)"; g.lineWidth=1.5; g.beginPath(); g.moveTo(x,0); g.lineTo(x,plotH+4); g.stroke(); }
+  // axis
+  g.fillStyle="#506056"; g.font="11px ui-monospace, monospace"; g.textAlign="start";
+  g.fillText("0s",2,H-3); g.textAlign="center"; g.fillText((nav.dur/2).toFixed(1)+"s",W/2,H-3);
+  g.textAlign="end"; g.fillText(nav.dur.toFixed(1)+"s",W-2,H-3); g.textAlign="start";
+  g.fillStyle="#3a463e"; g.fillText("peak "+max+" fr/bin",2,13);
+}
+function animateNav(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){ drawNav(1); return; }
+  const t0=performance.now(),dur=650;
+  (function s(now){ let p=Math.min(1,(now-t0)/dur); p=1-Math.pow(1-p,3); drawNav(p); if(p<1) requestAnimationFrame(s); })(t0);
+}
+function jumpToPeak(){
+  if(!nav.bins.length)return; let bi=0,mx=-1; for(let i=0;i<nav.BINS;i++) if(nav.bins[i]>mx){mx=nav.bins[i];bi=i;}
+  const center=(bi+0.5)/nav.BINS*nav.dur, half=Math.max(nav.dur*0.03,0.5);
+  WIN=[Math.max(0,center-half),Math.min(nav.dur,center+half)]; drawNav(1); applyFilter();
+}
+
+/* ================================================================== *
+ *  Filter + table
+ * ================================================================== */
+function cardClick(key){
+  if(key==="reset"){
+    ["fRep","fFcs","fGrp","fPhy"].forEach(id=>document.getElementById(id).checked=false);
+    WARN=false; FTCONLY=false; WIN=null; document.getElementById("q").value=""; document.getElementById("fApci").value="";
+    if(FRAMES.length) drawNav(1);
+  } else if(key==="warnings"){ WARN=!WARN; }
+  else if(key==="ftc"){ FTCONLY=!FTCONLY; }
+  else { const map={repeats:"fRep",fcsfail:"fFcs",group:"fGrp",physical:"fPhy"}; const cb=document.getElementById(map[key]); if(cb) cb.checked=!cb.checked; }
+  applyFilter();
+}
+function refreshCardActive(){
+  const on={ repeats:document.getElementById("fRep").checked, fcsfail:document.getElementById("fFcs").checked,
+    group:document.getElementById("fGrp").checked, physical:document.getElementById("fPhy").checked, warnings:WARN, ftc:FTCONLY };
+  document.querySelectorAll("#stats .stat[data-f]").forEach(s=>s.classList.toggle("active",!!on[s.dataset.f]));
+}
+// Tag every telegram with its ETS-style acknowledge status by pairing it with the L2 acknowledge that
+// follows on the bus. A data telegram is "acked" iff the next captured L-PDU is an L_ACK (0xCC); an
+// L_NAK/L_BUSY or another data frame in between means it was not acknowledged. Repeated frames map to
+// ETS "yellow" and FCS failures to "red" regardless. Requires a capture that carries the L2 acknowledges;
+// FRAMES.hasAckFrames records whether any were present (else every telegram reads unacked/green).
+function computeAckStatus(){
+  let hasAck=false;
+  for(let i=0;i<FRAMES.length;i++){
+    const f=FRAMES[i];
+    if(f.isAck){ hasAck=true; f.ackStatus=null; continue; }
+    if(f.nonLpdu){ f.ackStatus=null; continue; }
+    if(f.fcs && !f.fcs.ok){ f.ackStatus="invalid"; continue; }
+    let acked=false;
+    for(let j=i+1;j<FRAMES.length;j++){        // first following L-PDU decides
+      const g=FRAMES[j];
+      if(g.nonLpdu) continue;
+      if(g.isAck) acked=(g.service==="L_ACK");
+      break;
+    }
+    f.ackStatus = f.repeated ? "repeated" : (acked ? "acked" : "unacked");
+  }
+  FRAMES.hasAckFrames=hasAck;
+}
+// Explain the colours; warn when the capture carries no acknowledges (all-green artifact).
+function updateAckLegendNote(){
+  const el=document.getElementById("ackNote"); if(!el) return;
+  const base='ETS-UI convention, not part of the KNX spec. <b>Grey</b> = acknowledged; ETS shows '
+    +'<b>white</b> for an acknowledged frame whose source is known from a loaded project — this offline '
+    +'viewer has no project database, so acknowledged frames are grey.';
+  const warn=FRAMES.hasAckFrames
+    ? ' The loaded capture carries L2 acknowledges, so the colouring is meaningful.'
+    : ' ⚠ This capture carries <b>no</b> L2 acknowledges, so every telegram shows green even if the '
+      +'devices did ACK on the bus — a monitor/capture limitation, not a bus fault.';
+  el.innerHTML=base+warn;
+}
+function applyFilter(){
+  if(!FRAMES._ackDone){ computeAckStatus(); FRAMES._ackDone=true; updateAckLegendNote(); }
+  const q=document.getElementById("q").value.trim().toLowerCase();
+  const svc=document.getElementById("fApci").value;
+  const oR=document.getElementById("fRep").checked, oF=document.getElementById("fFcs").checked,
+        oG=document.getElementById("fGrp").checked, oP=document.getElementById("fPhy").checked, oW=WARN,
+        oBeyond=document.getElementById("fBeyond").checked, oShowAck=document.getElementById("fShowAck").checked;
+  const cv=id=>document.getElementById(id).value.trim().toLowerCase();
+  const cSrc=cv("cSrc"),cDst=cv("cDst"),cSvc=cv("cSvc"),cType=cv("cType"),cPrio=cv("cPrio"),cFcs=cv("cFcs");
+  VIEW=[];
+  for(let i=0;i<FRAMES.length;i++){ const f=FRAMES[i];
+    if(WIN&&(f.t<WIN[0]||f.t>WIN[1])) continue;
+    if(svc){ if(svc.slice(0,4)==="ftc:"){ if((f.ftcCmd||"")!==svc.slice(4)) continue; } else if(f.service!==svc) continue; }
+    if(oR&&!f.repeated) continue;
+    if(oF&&(!f.fcs||f.fcs.ok)) continue;
+    if(oG&&f.group!==true) continue;
+    if(oP&&f.group!==false) continue;
+    if(!oShowAck&&f.isAck) continue; // ACK/NAK/BUSY hidden by default; "ACK rows" opts them in as raw lines
+    if(oBeyond&&(f.apci!==null&&f.apci<=0x0BF&&f.group===true)) continue; // hide plain GroupValue-on-group = what a GA monitor shows
+    if(oW&&!f.checks.some(c=>c.lvl==="warn")) continue;
+    if(FTCONLY&&!f.ftc) continue;
+    if(cSrc&&!(f.src||"").toLowerCase().includes(cSrc)) continue;
+    if(cDst&&!(f.dst||"").toLowerCase().includes(cDst)) continue;
+    if(cSvc&&!((f.service||"")+" "+(f.ftcCmd||"")+" "+(f.ftcHint||"")).toLowerCase().includes(cSvc)) continue;
+    if(cType&&ftype(f)!==cType) continue;
+    if(cPrio&&(f.prio||"")!==cPrio) continue;
+    if(cFcs){ if(cFcs==="ok"&&!(f.fcs&&f.fcs.ok)) continue; if(cFcs==="fail"&&!(f.fcs&&!f.fcs.ok)) continue; }
+    if(q){ const hay=((f.src||"")+" "+(f.dst||"")+" "+(f.service||"")+" "+(f.ftcCmd||"")+" "+(f.ftcHint||"")+" "+f.hex).toLowerCase(); if(!hay.includes(q)) continue; }
+    VIEW.push(i);
+  }
+  if(SORT.key){ VIEW.sort((a,b)=>{ const x=sortVal(FRAMES[a],SORT.key),y=sortVal(FRAMES[b],SORT.key); return x<y?-SORT.dir:x>y?SORT.dir:(a-b); }); }
+  refreshCardActive();
+  const wc=document.getElementById("winChip");
+  if(WIN){ wc.classList.add("on"); wc.innerHTML=`⌖ ${WIN[0].toFixed(2)}–${WIN[1].toFixed(2)}s <button title="clear window" id="winX">✕</button>`; document.getElementById("winX").onclick=()=>{ WIN=null; drawNav(1); applyFilter(); }; }
+  else wc.classList.remove("on");
+  document.getElementById("fCount").textContent=VIEW.length.toLocaleString()+" / "+FRAMES.length.toLocaleString()+" frames";
+  renderTable();
+}
+// build one table row for VIEW index k (Δt is derived from the previous VIEW row, so chunks append cleanly)
+function rowHtml(k,seqOn,rawOn){ const f=FRAMES[VIEW[k]];
+  const dt = k>0 ? ((f.t-FRAMES[VIEW[k-1]].t)*1000).toFixed(1) : "";
+  const gp=f.group===true?'<span class="chip g">G</span>':f.group===false?'<span class="chip p">P</span>':"";
+  const rep=f.repeated?'<span class="chip rep">R</span>':"";
+  const fcs=f.fcs?(f.fcs.ok?'<span class="chip ok">ok</span>':'<span class="chip no">FAIL</span>'):"";
+  const seqChip=seqOn?((f.seq!==undefined?`<span class="chip p" title="busmon sequence">s${f.seq}</span>`:"")+(f.seqGap?`<span class="chip no" title="lost frames before this one">−${f.seqGap}</span>`:"")):"";
+  const rawHex=rawOn?`<div class="rawhex">${f.hex.replace(/(..)(?=.)/g,"$1 ")}</div>`:"";
+  const ftcChip=f.ftc?`<span class="chip ftc" title="OpenKNX File Transfer (obj ${f.ftcObj})">FTC ${esc(f.ftcCmd||"")}${f.ftcHint?" "+esc(f.ftcHint):""}</span>`:"";
+  const txtInline=f.textData?`<span style="color:var(--txt-dim)"> “${esc(f.textData.slice(0,60))}”</span>`:"";
+  return `<tr data-i="${VIEW[k]}" class="${SEL===VIEW[k]?"sel":""} ${f.fcs&&!f.fcs.ok?"fcsfail":""} ${f.isAck?"ackrow":""} ${f.ftc?"ftcrow":""} ${f.ackStatus?"ackst-"+f.ackStatus:""}">
+      <td>${f.n}</td><td>${f.t.toFixed(3)}</td><td>${dt}</td><td>${esc(f.src||"—")}</td><td>${esc(f.dst||"—")} ${gp}</td>
+      <td>${esc(ftype(f))}</td><td>${esc(baseSvc(f.service)||"—")}${txtInline} ${ftcChip}${seqChip}${rawHex}</td><td>${esc(f.prio||"")}</td><td>${rep}</td><td>${f.raw.length}B</td><td>${fcs}</td></tr>`;
+}
+// (re)render the visible window from the top (or, in live-follow, the trailing LIVE_TAIL rows pinned to bottom)
+function renderTable(){
+  wireInfiniteScroll();
+  const tb=document.getElementById("tbody");
+  const seqOn=document.getElementById("vSeq").checked, rawOn=document.getElementById("fShowAck").checked;
+  if(!VIEW.length){ tb.innerHTML=`<tr><td colspan="11" style="text-align:center;color:var(--txt-mut);padding:28px">no frames match the filter</td></tr>`; RSTART=0; RENDERED=0; updateCount(); return; }
+  const follow=LIVE&&FOLLOW;
+  RSTART = follow ? Math.max(0,VIEW.length-LIVE_TAIL) : 0;
+  RENDERED = Math.min(VIEW.length-RSTART, follow ? LIVE_TAIL : CHUNK);
+  let s=""; for(let k=RSTART;k<RSTART+RENDERED;k++) s+=rowHtml(k,seqOn,rawOn);
+  tb.innerHTML=s;
+  tb.onclick=e=>{ const tr=e.target.closest("tr[data-i]"); if(tr) selectFrame(parseInt(tr.dataset.i,10)); }; // event delegation — survives lazy appends
+  updateCount();
+  // a fresh render starts at the top; live-follow instead pins to the newest row at the bottom
+  const ts=document.querySelector(".tablescroll"); if(ts) ts.scrollTop = follow ? ts.scrollHeight : 0;
+}
+// lazily append the next CHUNK rows when the user scrolls near the bottom (disabled while live-follow tails)
+function appendChunk(){
+  if(LIVE&&FOLLOW) return;
+  const from=RSTART+RENDERED; if(from>=VIEW.length) return;
+  const to=Math.min(VIEW.length,from+CHUNK);
+  const seqOn=document.getElementById("vSeq").checked, rawOn=document.getElementById("fShowAck").checked;
+  let s=""; for(let k=from;k<to;k++) s+=rowHtml(k,seqOn,rawOn);
+  document.getElementById("tbody").insertAdjacentHTML("beforeend",s); RENDERED+=(to-from); updateCount();
+}
+function updateCount(){ const p=document.getElementById("pager"); if(!p) return;
+  if(!VIEW.length){ p.innerHTML="<span>0 frames</span>"; return; }
+  const shown=RSTART+RENDERED, more=shown<VIEW.length;
+  p.innerHTML=`<span>${(RSTART+1).toLocaleString()}–${shown.toLocaleString()} of ${VIEW.length.toLocaleString()} frames`+
+    (more?` · <button id="loadAll" title="render all remaining rows now">load all</button> · scroll for more ↓`:"")+
+    (LIVE&&FOLLOW?" · following newest":"")+`</span>`;
+  const la=document.getElementById("loadAll"); if(la) la.onclick=()=>{ while(RSTART+RENDERED<VIEW.length) appendChunk(); };
+}
+function wireInfiniteScroll(){ if(scrollWired) return; const ts=document.querySelector(".tablescroll"); if(!ts) return; scrollWired=true;
+  ts.addEventListener("scroll",()=>{ if(LIVE&&FOLLOW) return; if(ts.scrollTop+ts.clientHeight>=ts.scrollHeight-320) appendChunk(); }); }
+const ftype=f=>{ const b=(f.raw[f.ctlOff||0]||0)&0xC0; return b===0x80?"std":b===0x00?"ext":"?"; };
+
+/* ================================================================== *
+ *  Detail
+ * ================================================================== */
+const CVAR={"--f-mc":"#5a6f63","--f-ai":"#435248","--f-ctl":"#4fe0d0","--f-src":"#6fb0ff","--f-dst":"#c78bff","--f-npci":"#ffd166","--f-apci":"#35e08a","--f-data":"#b8c9be","--f-fcs":"#ff8080"};
+function selectFrame(i){
+  SEL=i;
+  document.querySelectorAll("#tbody tr").forEach(tr=>tr.classList.toggle("sel",parseInt(tr.dataset.i,10)===i));
+  drawNav(1);
+  const f=FRAMES[i];
+  const runs=f.fields.map(fd=>{ const c=fd.key==="fcs"?(f.fcs&&f.fcs.ok?"#35e08a":"#ff5d5d"):(CVAR[fd.color]||"#b8c9be");
+    return `<span class="b" style="color:${c}" title="${esc(fd.label)}">${esc(fd.bytes)}</span>`; }).join(" ");
+  const seen=new Set(), legend=f.fields.map(fd=>{ if(seen.has(fd.label))return""; seen.add(fd.label);
+    const c=fd.key==="fcs"?(f.fcs&&f.fcs.ok?"#35e08a":"#ff5d5d"):(CVAR[fd.color]||"#b8c9be");
+    return `<span><i style="background:${c}"></i>${esc(fd.label)}</span>`; }).join("");
+  const fieldRows=f.fields.map(fd=>{
+    const toks=fd.bytes.split(" ");
+    const hxShow = toks.length>12 ? esc(toks.slice(0,10).join(" "))+' <span style="color:var(--txt-mut)">… '+fd.len+' B</span>' : esc(fd.bytes);
+    return `<tr><td class="hx">${hxShow}</td><td class="nm">${esc(fd.label)}</td><td class="vl">${esc(fd.value)}</td></tr>`; }).join("");
+  const fcsBox = f.fcs ? `<div class="fcsbox">
+    <div class="line"><span>XOR of LPDU octets</span><b>0x${hx(f.fcs.xor||0)}</b></div>
+    <div class="line"><span>NOT(XOR) = expected FCS</span><b>0x${hx(f.fcs.computed)}</b></div>
+    <div class="line"><span>FCS byte in frame</span><b>0x${hx(f.fcs.actual)}</b></div>
+    <div class="result ${f.fcs.ok?"ok":"no"}">${f.fcs.ok?"✓ FCS VALID — matches KNX TP1 checksum":"✗ FCS MISMATCH — corrupt / altered frame"}</div></div>`
+    : `<div class="fcsbox"><div class="line"><span>frame check</span><b>n/a</b></div><div class="result ok" style="color:var(--txt-dim);font-weight:600">cEMI ${esc(f.mcName||"L_Data")} carries no TP1 FCS (checksum exists only on the wire / in busmonitor captures)</div></div>`;
+  const checks=f.checks.map(c=>`<li class="${c.lvl}"><span class="mk">${c.lvl==="ok"?"✓":c.lvl==="warn"?"!":"✗"}</span><span class="tx">${c.t}</span></li>`).join("");
+  document.getElementById("detail").innerHTML=`
+    <div class="head"><span class="t">#${f.n} · ${esc(f.summary||"")}</span>
+      <span class="meta">t=${f.t.toFixed(3)}s · ${f.raw.length} bytes · hop=${f.hop??"—"} · prio=${esc(f.prio||"—")}${f.repeated?" · REPEATED":""}</span></div>
+    <div class="body">
+      <div class="left"><div class="hexrun">${runs}</div><div class="legend">${legend}</div>${f.ftc?`<div class="ftcpanel"><div class="fh">◆ FTC action — decoded</div>${ftcDecode(f).map(([k,v])=>`<div class="fl"><span class="fk">${esc(k)}</span><span class="fv">${esc(v)}</span></div>`).join("")}</div>`:""}</div>
+      <div class="right"><table class="fields"><thead><tr><th>bytes</th><th>field</th><th>decoded</th></tr></thead><tbody>${fieldRows}</tbody></table>${fcsBox}<ul class="checks">${checks}</ul></div>
+    </div>`;
+}
+
+/* ================================================================== *
+ *  Wiring
+ * ================================================================== */
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function handleFile(file){ const err=document.getElementById("err"); err.hidden=true;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ boot(parseXml(rd.result)); }catch(e){ err.hidden=false; err.textContent="Could not read this file: "+e.message; } };
+  rd.onerror=()=>{ err.hidden=false; err.textContent="File read failed."; };
+  rd.readAsText(file); }
+const drop=document.getElementById("drop"), fileInput=document.getElementById("file");
+document.getElementById("btnChoose").onclick=e=>{ e.stopPropagation(); fileInput.click(); };
+drop.onclick=()=>fileInput.click();
+drop.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileInput.click(); } };
+fileInput.onchange=()=>{ if(fileInput.files[0]) handleFile(fileInput.files[0]); };
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+document.getElementById("btnSample").onclick=e=>{ e.stopPropagation(); loadSample(); };
+document.getElementById("btnDemo").onclick=e=>{ e.stopPropagation(); demoLive(); };
+document.getElementById("btnLive").onclick=e=>{ e.stopPropagation(); startLive(); };
+document.getElementById("btnDiscover").onclick=e=>{ e.stopPropagation(); discoverDevices(); };
+document.getElementById("liveIp").addEventListener("change",e=>rememberIp(e.target.value)); // persist a manually typed IP on blur/enter
+document.getElementById("loCancel").onclick=()=>{ if(_ovlCancel) _ovlCancel(); else hideLiveOverlay(); };
+document.getElementById("liveFound").onchange=e=>{ if(e.target.value){ document.getElementById("liveIp").value=e.target.value; } };
+document.getElementById("btnLiveDel").onclick=e=>{ e.stopPropagation(); const ip=(document.getElementById("liveIp").value||"").trim(); ipListSave(ipList().filter(x=>x!==ip)); refreshIpList(); document.getElementById("liveIp").value=""; };
+refreshIpList();
+document.getElementById("btnExport").onclick=exportRaw;
+document.getElementById("btnLoadAnother").onclick=()=>location.reload();
+// collapsible breakdown panels (state remembered per panel)
+document.querySelectorAll(".panels .card h3").forEach((h,i)=>{ const key="bmv-coll-"+i, card=h.parentElement;
+  try{ if(localStorage.getItem(key)==="1") card.classList.add("collapsed"); }catch(e){}
+  h.onclick=()=>{ card.classList.toggle("collapsed"); try{ localStorage.setItem(key,card.classList.contains("collapsed")?"1":"0"); }catch(e){} };
+});
+document.getElementById("q").addEventListener("input",debounce(applyFilter,180));
+["fApci","fRep","fFcs","fGrp","fPhy","fBeyond","fShowAck","vSeq"].forEach(id=>document.getElementById(id).addEventListener("change",applyFilter));
+["cType","cPrio","cFcs"].forEach(id=>document.getElementById(id).addEventListener("change",applyFilter));
+// ACK-colours toggle: paint each telegram by its ETS acknowledge status. Rows already carry their ackst-*
+// class, so flipping body.ackcol recolours live (no re-render). State persists across reloads.
+(function(){ const cb=document.getElementById("fAckCol"); if(!cb) return;
+  try{ if(localStorage.getItem("bmv-ackcol")==="1"){ cb.checked=true; document.body.classList.add("ackcol"); } }catch(e){}
+  cb.addEventListener("change",()=>{
+    document.body.classList.toggle("ackcol",cb.checked);
+    try{ localStorage.setItem("bmv-ackcol",cb.checked?"1":"0"); }catch(e){}
+    updateAckLegendNote();
+  });
+})();
+// Custom ACK colours: each legend swatch is a colour input bound to a --ets-* CSS var; both the row tint
+// (color-mix) and the left stripe follow the var, so a pick recolours live. Persisted; reset -> CSS defaults.
+(function(){
+  const DEF={"--ets-acked":"#8a97a0","--ets-unacked":"#3fbf6f","--ets-repeated":"#e0b53a","--ets-invalid":"#e0564e"};
+  const inputs=[...document.querySelectorAll(".acklegend input.sw[data-ackvar]")];
+  if(!inputs.length) return;
+  let saved={}; try{ saved=JSON.parse(localStorage.getItem("bmv-ackcolors")||"{}"); }catch(e){}
+  const persist=()=>{ try{ localStorage.setItem("bmv-ackcolors",JSON.stringify(saved)); }catch(e){} };
+  inputs.forEach(inp=>{ const v=inp.dataset.ackvar;
+    inp.value=saved[v]||DEF[v];
+    if(saved[v]) document.documentElement.style.setProperty(v,saved[v]);
+    inp.addEventListener("input",()=>{ document.documentElement.style.setProperty(v,inp.value); saved[v]=inp.value; persist(); });
+  });
+  const rst=document.getElementById("ackReset");
+  if(rst) rst.onclick=()=>{ saved={}; persist(); inputs.forEach(inp=>{ const v=inp.dataset.ackvar; document.documentElement.style.removeProperty(v); inp.value=DEF[v]; }); };
+})();
+["cSrc","cDst","cSvc"].forEach(id=>document.getElementById(id).addEventListener("input",debounce(applyFilter,160)));
+// clickable column sort (ETS-style): first click asc, second desc
+document.querySelectorAll('table.pkts thead th[data-sort]').forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.sort; if(SORT.key===k) SORT.dir*=-1; else { SORT.key=k; SORT.dir=1; }
+  document.querySelectorAll('table.pkts thead th').forEach(h=>h.classList.remove("sortasc","sortdesc"));
+  th.classList.add(SORT.dir>0?"sortasc":"sortdesc"); applyFilter();
+}));
+document.getElementById("reset").onclick=e=>{ e.preventDefault(); location.reload(); };
+document.querySelectorAll("#themes button").forEach(b=>b.onclick=()=>setTheme(b.dataset.t));
+try{ const st=localStorage.getItem("bmv-theme"); if(st) setTheme(st); }catch(e){}
+document.querySelectorAll("#wtog button").forEach(b=>b.onclick=()=>setWidth(b.dataset.w));
+try{ const sw=localStorage.getItem("bmv-width"); if(sw) setWidth(sw); }catch(e){}
+document.querySelectorAll("#mtog button").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+try{ const sm=localStorage.getItem("bmv-mode"); if(sm) setMode(sm); }catch(e){}
+// arrow up/down move the SELECTION through the filtered list (flip pages as needed), not the scrollbar
+document.addEventListener("keydown",e=>{
+  if(e.key!=="ArrowDown"&&e.key!=="ArrowUp") return;
+  if(SEL<0||!VIEW.length) return;                      // only once a row is selected
+  const tag=(e.target.tagName||"").toLowerCase();
+  if(tag==="input"||tag==="select"||tag==="textarea") return;
+  e.preventDefault();
+  let vi=VIEW.indexOf(SEL); if(vi<0) vi=0;
+  vi+=(e.key==="ArrowDown"?1:-1);
+  vi=Math.max(0,Math.min(VIEW.length-1,vi));
+  const target=VIEW[vi];
+  // lazy render: make sure the target row is materialized before scrolling to it
+  if(vi<RSTART) renderTable();                                                   // above window -> re-render from top
+  while(RSTART+RENDERED<=vi && RSTART+RENDERED<VIEW.length) appendChunk();        // below window -> grow until reached
+  selectFrame(target);
+  const tr=document.querySelector('#tbody tr[data-i="'+target+'"]');
+  if(tr) tr.scrollIntoView({block:"nearest"});
+});
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+</script>
+</body>
+</html>

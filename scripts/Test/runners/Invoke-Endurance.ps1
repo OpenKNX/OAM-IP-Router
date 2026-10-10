@@ -25,7 +25,7 @@
          half of the run. A device that gets slower or starts failing late is leaking
          something - a single run cannot see that by construction.
 
-      3. An honest confidence statement instead of "everything is fine".
+      3. A confidence statement with its bound instead of "everything is fine".
 
     HOW MANY ITERATIONS - and why it is never 100 %
 
@@ -96,7 +96,7 @@ param(
     [string]$ReferenceIp = '',
     [string]$BdutPa = '',
     [string]$SerialPort = '',
-    [string]$FtcTarget = '5.0.3',
+    [string]$FtcTarget = '1.1.7',
         [string[]]$Stage = @('Conformance', 'Features'),
     [switch]$Quick,
     [ValidateSet('Full', 'ReadOnly', 'Safe')]
@@ -207,11 +207,8 @@ $computed = Get-RequiredIterations -MaxRate $MaxFailureRate -Confidence $Confide
 $n = $Iterations
 if ($n -le 0) { $n = $computed }
 
-Write-Host ''
-Write-Host '  Open ■' -ForegroundColor Green
-Write-Host '  ┬────┴  Endurance run' -ForegroundColor Green
-Write-Host '  ■ KNX   2026 OpenKNX - Erkan Çolak' -ForegroundColor DarkGray
-Write-Host ''
+. (Join-Path $PSScriptRoot '../lib/KnxLogo.ps1')
+Write-KnxLogo -Title 'Endurance run'
 Write-Host "  Iterations     : $n$(if ($Iterations -gt 0) { '  (set explicitly)' } else { '  (computed)' })"
 Write-Host ("  Statement      : {0:P0} confidence that an intermittent rate above {1:P0} would have shown" -f $Confidence, (Get-AchievedBound -N $n -Confidence $Confidence))
 Write-Host "  Stages / iter  : $($stageList -join ', ')$(if ($Quick) { '  (quick)' } else { '' })"
@@ -270,7 +267,7 @@ for ($i = 1; $i -le $n; $i++) {
     $iterSeconds = ((Get-Date) - $iterStart).TotalSeconds
 
     # Collect every per-case JSON this iteration produced (conformance, features, ...).
-    $iterPass = 0; $iterFail = 0; $iterSkip = 0; $iterNa = 0
+    $iterPass = 0; $iterFail = 0; $iterSkip = 0; $iterNa = 0; $iterNotRun = 0; $iterNoProof = 0; $iterOther = 0
     foreach ($f in (Get-ChildItem -Path $thisDir -Filter '*.json' -Recurse -ErrorAction SilentlyContinue)) {
         if ($f.Name -like 'AllTests_*') { continue }
         try { $j = Get-Content -Path $f.FullName -Raw | ConvertFrom-Json } catch { continue }
@@ -280,7 +277,7 @@ for ($i = 1; $i -le $n; $i++) {
             if (-not $cases.ContainsKey($id)) {
                 $cases[$id] = [pscustomobject]@{
                     Id = $id; Title = "$($r.Title)"; Suite = "$($r.Suite)"
-                    Pass = 0; Fail = 0; Skip = 0; NA = 0
+                    Pass = 0; Fail = 0; Skip = 0; NA = 0; NotRun = 0; NoProof = 0; Other = 0
                     FailedIterations = (New-Object System.Collections.ArrayList)
                     Reasons = (New-Object System.Collections.ArrayList)
                 }
@@ -295,13 +292,18 @@ for ($i = 1; $i -le $n; $i++) {
                 }
                 'SKIP' { $c.Skip++; $iterSkip++ }
                 'N-A' { $c.NA++; $iterNa++ }
+                'NOT-RUN' { $c.NotRun++; $iterNotRun++ }
+                'NO-PROOF' { $c.NoProof++; $iterNoProof++ }
+                # Without a default the switch dropped every result it did not name, so the per-case
+                # tallies stopped adding up to the cases read. NOT-RUN was already being lost this way.
+                default { $c.Other++; $iterOther++ }
             }
         }
     }
 
     [void]$iterationLog.Add([pscustomobject]@{
             Index = $i; ExitCode = $code; Seconds = [Math]::Round($iterSeconds, 1)
-            Pass = $iterPass; Fail = $iterFail; Skip = $iterSkip; NA = $iterNa
+            Pass = $iterPass; Fail = $iterFail; Skip = $iterSkip; NA = $iterNa; NotRun = $iterNotRun; NoProof = $iterNoProof; Other = $iterOther
         })
 
     $col = if ($iterFail -eq 0 -and $code -le 3) { 'Green' } else { 'Red' }
@@ -410,7 +412,7 @@ if ($done -ge 4) {
     Write-Host ''
 }
 
-# The honest headline.
+# The headline: the bound the run achieved.
 $bound = Get-AchievedBound -N $done -Confidence $Confidence
 Write-Host ('  ' + ('═' * 72)) -ForegroundColor DarkCyan
 if ($totalFail -eq 0 -and $flaky.Count -eq 0 -and $stableFail.Count -eq 0 -and -not $degraded) {

@@ -33,10 +33,13 @@ function Invoke-KnxSuiteIpMedium {
     $port = $Ctx.Port
 
     # Read the mask rather than trusting the build flags: this is the only thing that
-    # decides whether the section applies.
+    # decides whether the section applies. The DESCRIPTION_RESPONSE is NOT the source -- 03_08_02
+    # Table 5 p.31 forbids the Extended Device Information DIB there, so reading the mask from it
+    # left every case here N-A for "unknown" and would hide a mis-detected 57B0 device. PID 83 is
+    # the source; the DIB is only cross-checked below when the mask says IP medium.
     $desc = Get-KnxDescription -Ip $ip -Port $port
-    $mask = 'unknown'
-    if ($null -ne $desc -and $null -ne $desc.Extended) { $mask = $desc.Extended.MaskVersion }
+    $maskRaw = Get-KnxMaskVersion -Ip $ip -Port $port
+    $mask = if ($null -ne $maskRaw) { $maskRaw } else { 'not readable (PID 83 unanswered)' }
     $isIpDevice = (@('0x57B0', '0x5705') -contains $mask)
 
     Invoke-KnxTestCase -Suite $SuiteTitle -Id 'H-8.2.2' -Title 'Detection of Mask Version (57B0h or 5705h)' -Clause 'TSSH 8.2.2, p.156' -Body {
@@ -45,9 +48,14 @@ function Invoke-KnxSuiteIpMedium {
         if (-not $isIpDevice) {
             Set-KnxTestNotApplicable "mask version $mask is not a KNX IP end device (57B0h/5705h); section 8 does not apply to this product"
         }
-        # If the mask ever says 57B0/5705, the extended device information DIB must be
-        # consistent with it - that is the one thing this case can check on its own.
-        Assert-KnxTrue ($null -ne $desc.Extended) 'device reports an IP-medium mask but sends no Extended Device Information DIB'
+        # No DIB is demanded here: the same clause that names PID 83 authoritative forbids the
+        # Extended Device Information DIB in a DESCRIPTION_RESPONSE, so requiring it would fail a
+        # conformant device. When the device does send one anyway, it must agree with PID 83.
+        # $desc is null when the device did not answer the DESCRIPTION_REQUEST at all, and under
+        # Set-StrictMode -Version Latest reading a property off it throws instead of yielding null.
+        if ($null -ne $desc -and $null -ne $desc.Extended) {
+            Assert-KnxEqual $mask $desc.Extended.MaskVersion 'Extended Device Information DIB and PID 83 report different mask versions'
+        }
     }
 
     $rest = @(

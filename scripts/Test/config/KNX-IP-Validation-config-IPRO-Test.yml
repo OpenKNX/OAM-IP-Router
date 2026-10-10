@@ -12,8 +12,8 @@
 #  Because this is an include list, what is EXCLUDED is invisible. Every omission
 #  is therefore written out here.
 #
-#  Device under test (measured 2026-09-06): 11.11.0.126, PA 5.0.0, mask 091A,
-#  families CORE v1 - DEVICE_MANAGEMENT v1 - TUNNELLING v1 - ROUTING v1.
+#  Device under test: 11.11.0.126, PA 1.1.0, mask 091A,
+#  families CORE v1 - DEVICE_MANAGEMENT v2 - TUNNELLING v1 - ROUTING v2.
 #
 #  ── What is left out, and why ────────────────────────────────────────────────
 #
@@ -30,16 +30,17 @@
 #      of the interface, which advertises no routing and therefore may offer it.
 #
 #  cEMI raw mode (30105)
-#      Optional connection option, refused with E_TUNNELING_LAYER.
+#      Optional (03_08_04 7.2 p.35), not supported. Refused with E_CONNECTION_OPTION
+#      (0x23) as 08_TSSH 5.1.3 p.64 and 03_08_04 Figure 6 p.27 give it; the text of
+#      step 4.a p.28 names E_TUNNELING_LAYER (0x29). References 2026-10-03: MDT 0x29,
+#      Siemens N148 0x23. The bus monitor (30107) is refused with 0x23 too. Both
+#      left out until a run on the 23h build is measured.
 #
 #  Remote Configuration and Diagnosis (50101-50510)
 #      REMOTE_CONF_DIAG is not advertised.
 #
 #  KNX IP end device (60101, 60102)
 #      TP1 device with an IP side (medium 0x02), not a KNX IP end device (0x20).
-#
-#  Device Management v2 (60201)
-#      Advertised as v1. 60202-60206 stay IN - see below.
 #
 #  Programming mode by memory access (20208)
 #      03_05_01 4.26 p.303: type 1 IS the property PID_PROG_MODE; type 2 is the
@@ -52,8 +53,8 @@
 #  ── DELIBERATELY IN, and expected to be interesting ──────────────────────────
 #
 #  Routing (30201-30203, 40101-40315) and 80130
-#      The router advertises ROUTING v1 and must be measured against it.
-#      [80130] wants family version >= 2 and will fail - a real gap, left visible.
+#      On RP2040 the router advertises ROUTING v2, so [80130] (version >= 2) measures it;
+#      an ESP32 router still advertises ROUTING v1 and fails 80130.
 #
 #  cEMI Transport Layer (60202-60206)
 #      03_08_03 2.6.1.1 p.18 requires the MODE of ANY device that uses KNXnet/IP
@@ -124,10 +125,13 @@ include:
 - KNX/04 Routing
 
 # ── 06 Medium - cEMI Transport Layer ─────────────────────────────────────────
-# 60101/60102 (KNX IP end device) and 60201 (DevMgmt v2) are left out
+# 60101/60102 (KNX IP end device) are left out; DEVICE_MANAGEMENT v2 is advertised
+- 60201
 - 60202
 - 60203
 - 60204
+- 60205
+- 60206
 
 # ── 07 Security ──────────────────────────────────────────────────────────────
 - KNX/07 Security
@@ -139,14 +143,36 @@ exclude: []
 
 parameters:
 # [30213] sends a tunnelled MaskVersionRead here and expects the answer to carry
-# this address as source. Any answering TP device works; 5.0.3 is measured green
-# by our own suite as H-5.2.10.
+# this address as source. Any answering TP device works (our suite: H-5.2.10).
 - id: 30213
   parameters:
-    Device address of load switch: 5.0.3
+    Device address of load switch: 1.1.5
+
+# [40315] sends 1000 ROUTING_INDICATIONs to this address and counts them on the tool's bus connection. The MDT
+# tunnel passes individually addressed telegrams to a client only when they are addressed to the client's own
+# tunnel address (to a bench device's address the tool counts 0 of 1000), so it is the MDT tunnel address
+# the tool's connection gets: 1.1.192, the MDT's first tunnel address while the tool is its only client.
+- id: 40315
+  parameters:
+    DestinationIA: 1.1.192
+# [30110] [30111] [30113] [30114] write PID_ADDITIONAL_INDIVIDUAL_ADDRESSES (not permanent) starting here;
+# kept inside line 1.1, clear of the bench devices and of the tunnel ranges 1.1.111 (.210), 1.1.192 (MDT), 1.1.220 (router).
+- id: 30110
+  parameters:
+    First Tunnel Address: 1.1.150
+- id: 30111
+  parameters:
+    First Tunnel Address: 1.1.150
+- id: 30113
+  parameters:
+    First Tunnel Address: 1.1.150
+- id: 30114
+  parameters:
+    First Tunnel Address: 1.1.150
 
 systemparameters:
 # Set to true when the device under test draws its supply from the TP line, so
 # the tool does not expect an answer after it opens the TP connection.
+# 11.11.0.126 is a REG2 with external supply (a REG1 is bus-powered: true).
 - name: BdutIsTp1Powered
-  value: true
+  value: false

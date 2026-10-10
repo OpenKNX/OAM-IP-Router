@@ -18,7 +18,7 @@
         response, the CRD of a CONNECT response and cEMI frames.
       * A UDP transport with deterministic timeouts plus multicast support.
       * Connection objects for a tunnelling and a device-management connection.
-      * A verdict engine: PASS / FAIL / SKIP / N-A, byte-level evidence on failure,
+      * A result engine: PASS / FAIL / SKIP / N-A, byte-level evidence on failure,
         and a Markdown + JSON report.
       * Rig helpers: reachability probe and the TSSH load switch.
       * Self-test vectors so the library proves its own frames before it judges a device.
@@ -65,6 +65,7 @@ $script:KnxService = @{
     ROUTING_INDICATION                = 0x0530
     ROUTING_LOST_MESSAGE              = 0x0531
     ROUTING_BUSY                      = 0x0532
+    ROUTING_SYSTEM_BROADCAST          = 0x0533   # 03_02_06 4.1.3, always on the system setup group
     REMOTE_DIAGNOSTIC_REQUEST         = 0x0740
     REMOTE_DIAGNOSTIC_RESPONSE        = 0x0741
     REMOTE_BASIC_CONFIGURATION_REQUEST = 0x0742
@@ -100,7 +101,10 @@ $script:KnxError = @{
     E_NO_MORE_UNIQUE_CONNECTIONS  = 0x25
     E_DATA_CONNECTION             = 0x26
     E_KNX_CONNECTION              = 0x27
+    E_AUTHORISATION_ERROR         = 0x28
     E_TUNNELING_LAYER             = 0x29
+    E_NO_TUNNELLING_ADDRESS       = 0x2D
+    E_CONNECTION_IN_USE           = 0x2E
 }
 
 # DIB type codes (03_08_02 Core, DIB structures).
@@ -177,6 +181,53 @@ $script:Apci = @{
     PROPERTY_VALUE_WRITE   = 0x3D7
     PROPERTY_DESCRIPTION_READ     = 0x3D8
     PROPERTY_DESCRIPTION_RESPONSE = 0x3D9
+    # Extended and user services, same source: the stack's ApduType enum. These are the System B
+    # surface a plain TP device exposes alongside the classic services.
+    PROPERTY_EXT_VALUE_READ          = 0x1CC
+    PROPERTY_EXT_VALUE_RESPONSE      = 0x1CD
+    PROPERTY_EXT_VALUE_WRITE_CON     = 0x1CE
+    PROPERTY_EXT_VALUE_WRITE_CON_RES = 0x1CF
+    PROPERTY_EXT_DESCRIPTION_READ     = 0x1D2
+    PROPERTY_EXT_DESCRIPTION_RESPONSE = 0x1D3
+    MEMORY_EXT_WRITE          = 0x1FB
+    MEMORY_EXT_WRITE_RESPONSE = 0x1FC
+    MEMORY_EXT_READ           = 0x1FD
+    MEMORY_EXT_READ_RESPONSE  = 0x1FE
+    USER_MANUFACTURER_INFO_READ     = 0x2C5
+    USER_MANUFACTURER_INFO_RESPONSE = 0x2C6
+    FUNCTION_PROPERTY_COMMAND        = 0x2C7
+    FUNCTION_PROPERTY_STATE          = 0x2C8
+    FUNCTION_PROPERTY_STATE_RESPONSE = 0x2C9
+    IND_ADDR_SERIAL_READ     = 0x3DC
+    IND_ADDR_SERIAL_RESPONSE = 0x3DD
+    RESTART_MASTER_RESET = 0x381
+    # The master reset answer reuses the Restart code and marks itself in the APCI octet:
+    # data[0] |= (1 << 5) | 1 (application_layer.cpp restartResponse), so the code on the wire is 3A1h.
+    RESTART_RESPONSE = 0x3A1
+    USER_MEMORY_READ     = 0x2C0
+    USER_MEMORY_RESPONSE = 0x2C1
+    SYSTEM_NETWORK_PARAM_READ     = 0x1C8
+    SYSTEM_NETWORK_PARAM_RESPONSE = 0x1C9
+    AUTHORIZE_REQUEST  = 0x3D1
+    AUTHORIZE_RESPONSE = 0x3D2
+    ADC_READ     = 0x180
+    ADC_RESPONSE = 0x1C0
+    ROUTING_TABLE_READ          = 0x3C1
+    ROUTING_TABLE_READ_RESPONSE = 0x3C2
+    ROUTING_TABLE_OPEN  = 0x3C0
+    ROUTING_TABLE_WRITE = 0x3C3
+    MEMORY_ROUTER_WRITE = 0x3CA
+    USER_MEMORY_WRITE   = 0x2C2
+    KEY_WRITE           = 0x3D3
+    KEY_RESPONSE        = 0x3D4
+    IND_ADDR_SERIAL_WRITE = 0x3DE
+    PROPERTY_EXT_VALUE_WRITE_UNCON = 0x1D0
+    FUNCTION_PROPERTY_EXT_COMMAND        = 0x1D4
+    FUNCTION_PROPERTY_EXT_STATE          = 0x1D5
+    FUNCTION_PROPERTY_EXT_STATE_RESPONSE = 0x1D6
+    DOMAIN_ADDR_SERIAL_READ     = 0x3EC
+    DOMAIN_ADDR_SERIAL_RESPONSE = 0x3ED
+    DOMAIN_ADDR_SERIAL_WRITE    = 0x3EE
 }
 
 # Interface object types (03_05_01 Resources).
@@ -201,6 +252,7 @@ $script:KnxPid = @{
     PROG_MODE                      = 54   # device object (OT 0); on OT 11 the same number is CURRENT_IP_ASSIGNMENT_METHOD
     ORDER_INFO                     = 15
     VERSION                        = 25
+    TABLE                          = 23   # PID_TABLE on the address/association table objects (lib/knx property.h:85)
     ROUTING_COUNT                  = 51
     MAX_APDU_LENGTH                = 56
     SUBNET_ADDR                    = 57
@@ -209,6 +261,10 @@ $script:KnxPid = @{
     KNX_INDIVIDUAL_ADDRESS         = 52
     # 53, verified against knx/src/knx/property.h - 55 is PID_IP_ASSIGNMENT_METHOD.
     ADDITIONAL_INDIVIDUAL_ADDRESSES = 53
+    # 201/202 are OpenKNX properties (PID >= 200), not in the standard: which tunnel slot is reserved
+    # for which client IP. Numbers from knx/src/knx/property.h.
+    CUSTOM_RESERVED_TUNNELS_CTRL   = 201
+    CUSTOM_RESERVED_TUNNELS_IP     = 202
     CURRENT_IP_ASSIGNMENT_METHOD   = 54
     IP_ASSIGNMENT_METHOD           = 55
     IP_CAPABILITIES                = 56
@@ -597,7 +653,14 @@ function New-CemiLData {
         [switch]$Repeat,
         [byte[]]$AdditionalInfo = @()
     )
-    $ctrl1 = 0x80                                    # bit7 = standard frame
+    # 03_02_02 2.2.2 p.26: CTRL bit7 FT - 1 = standard, 0 = extended. A standard frame carries its
+    # length in a 4-bit field, so at most 15 octets of APDU fit. The tunnel copies this control octet
+    # onto TP1 unchanged, so asking for a standard frame with a longer APDU puts a frame on the line
+    # whose length cannot be expressed - the device never sees a valid telegram and stays silent.
+    # Measured 2026-09-26 on 5.0.8: APDU 15 answered, APDU 16 and above were silent, for EVERY
+    # command. That is what made Test-Rename report "no answer" while `oknx mv` renamed the same file.
+    $apduLength = $Tpdu.Length - 1
+    $ctrl1 = if ($apduLength -le 15) { 0x80 } else { 0x00 }
     if (-not $Repeat) { $ctrl1 = $ctrl1 -bor 0x20 }  # bit5 set = NOT repeated
     $ctrl1 = $ctrl1 -bor 0x10                        # bit4 = normal broadcast (not system)
     $ctrl1 = $ctrl1 -bor (($Priority -band 0x03) -shl 2)
@@ -801,6 +864,12 @@ function New-CemiMPropRead {
         [int]$StartIndex = 1,
         [int]$MessageCode = 0xFC
     )
+    if ($ElementCount -lt 0 -or $ElementCount -gt 15) {
+        throw "ElementCount $ElementCount does not fit the 4-bit cEMI field (0..15); split the request."
+    }
+    if ($StartIndex -lt 0 -or $StartIndex -gt 4095) {
+        throw "StartIndex $StartIndex does not fit the 12-bit cEMI field (0..4095)."
+    }
     return , ([byte[]]@(
         ($MessageCode -band 0xFF),
         (($ObjectType -shr 8) -band 0xFF), ($ObjectType -band 0xFF),
@@ -967,7 +1036,7 @@ function Read-CemiBusmon {
         $i += 2 + $len
     }
     # Status bits F B P x L s s s (03_06_03 section 4.1.5.8.1). Absent block -> unknown, not "clean".
-    # A TP1 acknowledge frame is a SINGLE octet (03_02_02 section 2.2.7 p.31, pattern
+    # A TP1 acknowledge frame is a SINGLE octet (03_02_02 section 2.2.7 p.32, pattern
     # xx00 xx00: ACK 0xCC, NAK 0x0C, BUSY 0xC0) and carries NO frame check octet at all.
     # Running the FCS over it computes 0xFF from zero preceding octets and compares that
     # against the acknowledge itself, which never matches - that reported a correctly
@@ -1395,12 +1464,12 @@ function Open-KnxConnection {
     $rsp = Invoke-KnxRequest -Socket $sock -Frame $frame -Ip $Ip -Port $Port -Expect @($script:KnxService.CONNECT_RESPONSE) -TimeoutMs $TimeoutMs
     if ($rsp.TimedOut) {
         $sock.Dispose()
-        return [pscustomobject]@{ Ok = $false; Status = -1; StatusName = 'NO_ANSWER'; Channel = -1; Socket = $null; Ip = $Ip; Port = $Port; SeqSend = 0; SeqRecv = 0; TunnelPa = $null; Request = $frame; Response = $null }
+        return [pscustomobject]@{ Ok = $false; Status = -1; StatusName = 'NO_ANSWER'; Channel = -1; Socket = $null; Ip = $Ip; Port = $Port; SeqSend = 0; SeqRecv = 0; TunnelPa = $null; Request = $frame; Response = $null; Disconnected = $true; DisconnectedBy = 'client'; DisconnectPacket = $null; LocalIp = ''; LocalPort = 0; LastSpoke = [DateTime]::UtcNow }
     }
     $cr = Read-KnxConnectResponse -Body $rsp.Header.Body
     if ($cr.IsError) {
         $sock.Dispose()
-        return [pscustomobject]@{ Ok = $false; Status = $cr.Status; StatusName = $cr.StatusName; Channel = -1; Socket = $null; Ip = $Ip; Port = $Port; SeqSend = 0; SeqRecv = 0; TunnelPa = $null; Request = $frame; Response = $rsp.Packet.Bytes }
+        return [pscustomobject]@{ Ok = $false; Status = $cr.Status; StatusName = $cr.StatusName; Channel = -1; Socket = $null; Ip = $Ip; Port = $Port; SeqSend = 0; SeqRecv = 0; TunnelPa = $null; Request = $frame; Response = $rsp.Packet.Bytes; Disconnected = $true; DisconnectedBy = 'client'; DisconnectPacket = $null; LocalIp = ''; LocalPort = 0; LastSpoke = [DateTime]::UtcNow }
     }
     return [pscustomobject]@{
         Ok         = $true
@@ -1417,7 +1486,315 @@ function Open-KnxConnection {
         LocalPort  = (Get-SocketLocalPort -Socket $sock)
         Request    = $frame
         Response   = $rsp.Packet.Bytes
+        # 03_08_02 5.4 p.14 puts the heartbeat on the CLIENT: a CONNECTIONSTATE_REQUEST every 60 s.
+        # Update-KnxTunnelHeartbeat needs to know when we last spoke, and the connect counts.
+        LastSpoke  = [DateTime]::UtcNow
+        # The teardown record, declared here so every reader finds it: who ended the channel and the
+        # datagram that said so. Set-KnxTunnelGone / Clear-KnxTunnelGone / Test-KnxTunnelGone own it.
+        Disconnected     = $false
+        DisconnectedBy   = ''
+        DisconnectPacket = $null
     }
+}
+
+function Set-KnxTunnelGone {
+    <#
+    .SYNOPSIS
+        Records that a tunnel channel is finished, and by whom.
+    .DESCRIPTION
+        Four places learn of it: a DISCONNECT_REQUEST caught while waiting for an acknowledge, one caught
+        while receiving, one caught by the heartbeat, and a teardown this client sent itself after a
+        failed acknowledge. They used to raise the same anonymous flag, so a waiting function could not
+        tell a teardown by the device from one we caused - and nothing ever cleared it, which left a
+        reused connection object marked dead for the rest of the run.
+    #>
+    param([Parameter(Mandatory)]$Connection, [Parameter(Mandatory)][ValidateSet('device', 'client')][string]$By, $Packet = $null)
+    # A teardown by the DEVICE is never overwritten by a client one. The client teardown is the routine
+    # cleanup that follows - Send-KnxTunnelCemi ends a connection whose acknowledge failed, and
+    # Close-KnxConnection ends every connection - and letting it win erased both the origin and the
+    # datagram, which is what every reader uses to tell "the device ended it" from "we did".
+    if ($By -eq 'client' -and (Test-KnxTunnelGone -Connection $Connection) -and
+        (Get-KnxTunnelGoneBy -Connection $Connection) -eq 'device') { return }
+    Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $true -Force
+    Add-Member -InputObject $Connection -NotePropertyName 'DisconnectedBy' -NotePropertyValue $By -Force
+    Add-Member -InputObject $Connection -NotePropertyName 'DisconnectPacket' -NotePropertyValue $Packet -Force
+}
+
+function Clear-KnxTunnelGone {
+    <#
+    .SYNOPSIS
+        Marks a channel as live again. Only for a connection the device has just acknowledged.
+    #>
+    param([Parameter(Mandatory)]$Connection)
+    Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $false -Force
+    Add-Member -InputObject $Connection -NotePropertyName 'DisconnectedBy' -NotePropertyValue '' -Force
+    Add-Member -InputObject $Connection -NotePropertyName 'DisconnectPacket' -NotePropertyValue $null -Force
+}
+
+function Get-KnxTunnelGoneBy {
+    <#
+    .SYNOPSIS
+        Who ended the channel: 'device', 'client', or '' when it is not ended or not recorded.
+    .DESCRIPTION
+        Read through this, never as $Connection.DisconnectedBy: under Set-StrictMode -Version Latest a
+        bare read throws on any connection-like object that does not carry the field, and the suites
+        build several of those by hand.
+    #>
+    param([Parameter(Mandatory)]$Connection)
+    if ($null -eq $Connection -or $null -eq $Connection.PSObject.Properties['DisconnectedBy']) { return '' }
+    return [string]$Connection.DisconnectedBy
+}
+
+function Test-KnxTunnelGone {
+    <#
+    .SYNOPSIS
+        True when this connection's channel has been torn down, by either side.
+    #>
+    param([Parameter(Mandatory)]$Connection)
+    if ($null -eq $Connection -or $null -eq $Connection.PSObject.Properties['Disconnected']) { return $false }
+    return [bool]$Connection.Disconnected
+}
+
+function Test-KnxTunnelRepeat {
+    <#
+    .SYNOPSIS
+        True when a TUNNELLING_REQUEST repeats one already handed out; otherwise records it and returns false.
+    .DESCRIPTION
+        03_08_04 2.6.1 p.9: "If a TUNNELLING_REQUEST frame is not confirmed within the
+        TUNNELLING_REQUEST_TIMEOUT time of one (1) second then the frame shall be repeated once with the
+        same sequence counter value". Every path that hands a frame to a caller asks here - the parked
+        queue and the direct read in Receive-KnxTunnelCemi - so the repeat is handed out once, whichever
+        path saw the original. Bounded by byte identity, a 2000 ms window and a lookback of 128 frames.
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$Channel, [int]$Sequence, [byte[]]$Cemi)
+    # Kept apart from the queue: the consumer removes a queue entry long before the one-second repeat.
+    if ($null -eq $Connection.PSObject.Properties['PendingSeen']) {
+        Add-Member -InputObject $Connection -NotePropertyName 'PendingSeen' `
+                   -NotePropertyValue (New-Object 'System.Collections.Generic.List[object]') -Force
+        Add-Member -InputObject $Connection -NotePropertyName 'PendingRepeats' -NotePropertyValue 0 -Force
+    }
+    # The window alone does not bound the 8-bit sequence counter at high frame rates; the 128-frame
+    # lookback does, as long as every frame handed out is recorded here (a number returns after 256).
+    $nowUtc = [DateTime]::UtcNow
+    while ($Connection.PendingSeen.Count -gt 0 -and
+           ($nowUtc - $Connection.PendingSeen[0].Stamp).TotalMilliseconds -gt 2000) {
+        $Connection.PendingSeen.RemoveAt(0)
+    }
+    while ($Connection.PendingSeen.Count -ge 128) { $Connection.PendingSeen.RemoveAt(0) }
+    for ($q = $Connection.PendingSeen.Count - 1; $q -ge 0; $q--) {
+        $prev = $Connection.PendingSeen[$q]
+        if ($null -eq $prev) { continue }
+        if ($prev.Channel -ne $Channel -or $prev.Sequence -ne $Sequence) { continue }
+        $same = ($null -ne $prev.Cemi -and $null -ne $Cemi -and $prev.Cemi.Length -eq $Cemi.Length)
+        if ($same) {
+            for ($b = 0; $b -lt $Cemi.Length; $b++) { if ($prev.Cemi[$b] -ne $Cemi[$b]) { $same = $false; break } }
+        }
+        if ($same) {
+            # The server repeats when our acknowledge was lost; the caller never sees the copy, so it is
+            # counted apart from PendingDropped and the first one per measurement goes into the evidence.
+            $Connection.PendingRepeats++
+            if ($Connection.PendingRepeats -eq 1) {
+                Add-KnxEvidence -Note ("suppressed a repeated TUNNELLING_REQUEST: channel $Channel, sequence $Sequence, identical cEMI within 2000 ms (03_08_04 2.6.1)")
+            }
+            return $true
+        }
+    }
+    [void]$Connection.PendingSeen.Add([pscustomobject]@{
+            Channel = $Channel; Sequence = $Sequence; Cemi = $Cemi; Stamp = $nowUtc
+        })
+    return $false
+}
+
+function Add-KnxTunnelParked {
+    <#
+    .SYNOPSIS
+        Parks an ALREADY acknowledged TUNNELLING_REQUEST on the connection, in arrival order.
+    .DESCRIPTION
+        One queue, one shape, one consumer: whoever reads a frame it was not waiting for acknowledges it
+        and parks it here, and Receive-KnxTunnelCemi is the only function that takes one out. A second
+        parking mechanism next to this one is what made a capture lose frames and a paced wait eat a
+        confirmation the case was about to read.
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$Channel, [int]$Sequence, [byte[]]$Cemi, [byte[]]$Raw, $Ignored = @())
+    if ($null -eq $Connection.PSObject.Properties['Pending']) {
+        Add-Member -InputObject $Connection -NotePropertyName 'Pending' `
+                   -NotePropertyValue (New-Object 'System.Collections.Generic.List[object]') -Force
+        Add-Member -InputObject $Connection -NotePropertyName 'PendingDropped' -NotePropertyValue 0 -Force
+    }
+    # A repeat of a frame already handed out is acknowledged by the caller but not parked again.
+    if (Test-KnxTunnelRepeat -Connection $Connection -Channel $Channel -Sequence $Sequence -Cemi $Cemi) { return $false }
+    $nowUtc = [DateTime]::UtcNow
+    # Bounded: the shared traffic connection is sent on far more often than it is read from. The oldest
+    # goes - dropping the NEWEST instead made a full connection permanently deaf, holding 256 stale
+    # records and refusing everything after them. At this depth the head is minutes old, so the
+    # confirmation a case is waiting for is never the one evicted.
+    while ($Connection.Pending.Count -ge 256) {
+        $Connection.Pending.RemoveAt(0)
+        if ($null -ne $Connection.PSObject.Properties['PendingDropped']) { $Connection.PendingDropped++ }
+    }
+    [void]$Connection.Pending.Add([pscustomobject]@{
+            Channel = $Channel; Sequence = $Sequence; Cemi = $Cemi; Raw = $Raw; Ignored = $Ignored
+            Stamp   = $nowUtc
+        })
+    return $true
+}
+
+function Clear-KnxTunnelParked {
+    <#
+    .SYNOPSIS
+        Throws away everything parked on a connection.
+    .DESCRIPTION
+        For a case that is about to measure and must not be handed a frame an earlier case left behind.
+        Two suites reached into the queue directly to do this; this is the same thing with a name.
+    #>
+    param([Parameter(Mandatory)]$Connection)
+    if ($null -ne $Connection.PSObject.Properties['Pending']) { $Connection.Pending.Clear() }
+    # The drop counter describes the measurement that is starting, not the life of the process.
+    if ($null -ne $Connection.PSObject.Properties['PendingDropped']) { $Connection.PendingDropped = 0 }
+    # The dedup memory goes with it: "start from nothing" must not leave a record behind that can
+    # suppress the first frame of the measurement.
+    if ($null -ne $Connection.PSObject.Properties['PendingSeen']) { $Connection.PendingSeen.Clear() }
+    if ($null -ne $Connection.PSObject.Properties['PendingRepeats']) { $Connection.PendingRepeats = 0 }
+}
+
+function Clear-KnxTunnelTraffic {
+    <#
+    .SYNOPSIS
+        Throws away everything a connection is holding - parked and still on the socket - while staying
+        a valid client.
+    .DESCRIPTION
+        "Start this measurement from nothing" needs both halves: the parked queue AND the datagrams still
+        in the socket. Draining the socket with Clear-KnxSocket alone discards TUNNELLING_REQUESTs
+        UNACKNOWLEDGED, which is the 03_08_04 2.6.1 trigger - the device repeats each one and then ends
+        the connection, on the very connection a whole run shares. This acknowledges what it discards.
+    .OUTPUTS
+        How many frames were thrown away, so a case can say so instead of wondering.
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$QuietMs = 200, [int]$MaxMs = 5000)
+    $n = 0
+    if ($null -ne $Connection.PSObject.Properties['Pending']) {
+        $n += $Connection.Pending.Count
+        $Connection.Pending.Clear()
+    }
+    if ($null -ne $Connection.PSObject.Properties['PendingDropped']) { $Connection.PendingDropped = 0 }
+    if ($null -ne $Connection.PSObject.Properties['PendingSeen']) { $Connection.PendingSeen.Clear() }
+    if ($null -ne $Connection.PSObject.Properties['PendingRepeats']) { $Connection.PendingRepeats = 0 }
+    if ($null -eq $Connection.Socket) { return $n }
+    # Bounded: acknowledging keeps the device sending, so on a busy line "drain until quiet" is
+    # "drain until the bus stops", which it does not.
+    $stopBy = [DateTime]::UtcNow.AddMilliseconds($MaxMs)
+    while ([DateTime]::UtcNow -lt $stopBy) {
+        $r = Wait-KnxService -Socket $Connection.Socket -TimeoutMs $QuietMs `
+                             -Service @($script:KnxService.TUNNELLING_REQUEST, $script:KnxService.DISCONNECT_REQUEST)
+        if ($r.TimedOut) { break }
+        if ($r.Header.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
+            if ($r.Header.Body.Length -ge 1 -and $r.Header.Body[0] -eq $Connection.Channel) {
+                Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $r.Header.Body[0] -Status 0) `
+                              -Ip $Connection.Ip -Port $Connection.Port
+                Set-KnxTunnelGone -Connection $Connection -By 'device' -Packet $r
+                break
+            }
+            continue
+        }
+        if ($r.Header.Body.Length -lt 4 -or $r.Header.Body[1] -ne $Connection.Channel) { continue }
+        Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxTunnellingAck -Channel $r.Header.Body[1] -Sequence $r.Header.Body[2]) `
+                      -Ip $Connection.Ip -Port $Connection.Port
+        $Connection.SeqRecv = $r.Header.Body[2]
+        $n++
+    }
+    return $n
+}
+
+function Read-KnxTunnelParked {
+    <#
+    .SYNOPSIS
+        Takes every parked frame off a connection, in arrival order, and empties the queue.
+    .DESCRIPTION
+        For a capture that never calls Receive-KnxTunnelCemi: without an explicit drain the queue is the
+        place its frames go to be forgotten, and it grows for the life of the process.
+
+        The records are emitted one by one, NOT as "return , $out": that idiom hands the whole array to
+        the pipeline as a single object, and a caller writing @(Read-KnxTunnelParked ...) then gets one
+        element - measured, two parked frames came back as one.
+    .OUTPUTS
+        The parked records, oldest first. Nothing when the queue is empty.
+    #>
+    param([Parameter(Mandatory)]$Connection)
+    if ($null -eq $Connection.PSObject.Properties['Pending'] -or $Connection.Pending.Count -eq 0) { return }
+    $out = @($Connection.Pending.ToArray())
+    $Connection.Pending.Clear()
+    return $out
+}
+
+function Update-KnxTunnelHeartbeat {
+    <#
+    .SYNOPSIS
+        Sends the CONNECTIONSTATE_REQUEST the client owes when the connection has been quiet too long.
+    .DESCRIPTION
+        03_08_02 5.4 p.14 gives the client a duty and the server a deadline: the client sends a
+        CONNECTIONSTATE_REQUEST about every 60 s, and the server ends a connection 120 s after the last
+        frame it received. Acknowledging what the device pushes does NOT discharge that duty - measured on
+        11.11.0.126: a client that returned 930 TUNNELLING_ACKs and sent nothing of its own was
+        disconnected at exactly 120.0 s, while the same client plus four requests of its own survived. Any
+        loop that may sit on a tunnel longer than a minute has to call this, or it kills its own tunnel and
+        then reports the device for it (D-4.3 under bus load).
+    .OUTPUTS
+        $true while the device still answers for this channel, $false when it does not.
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$IntervalSeconds = 45, [int]$TimeoutMs = 1500)
+    if ($null -eq $Connection -or -not $Connection.Ok -or $null -eq $Connection.Socket) { return $false }
+    if ($null -eq $Connection.PSObject.Properties['LastSpoke']) {
+        Add-Member -InputObject $Connection -NotePropertyName 'LastSpoke' -NotePropertyValue ([DateTime]::UtcNow) -Force
+        return $true
+    }
+    if (([DateTime]::UtcNow - $Connection.LastSpoke).TotalSeconds -lt $IntervalSeconds) { return $true }
+
+    $probe = New-KnxConnectionStateRequest -Channel $Connection.Channel -ControlIp $Connection.LocalIp -ControlPort $Connection.LocalPort
+    $r = Invoke-KnxRequest -Socket $Connection.Socket -Frame $probe -Ip $Connection.Ip -Port $Connection.Port `
+                           -Expect @($script:KnxService.CONNECTIONSTATE_RESPONSE) -TimeoutMs $TimeoutMs
+    $Connection.LastSpoke = [DateTime]::UtcNow
+    # Wait-KnxService puts everything that is not the expected answer into Ignored and does not act on
+    # it. Two things must not be lost there: a TUNNELLING_REQUEST left unanswered makes the device repeat
+    # it once and then end the connection (03_08_04 2.6.1 p.9) - the very thing the heartbeat prevents -
+    # and a DISCONNECT_REQUEST dropped here leaves the caller waiting on a channel that is already gone,
+    # which reads as "the device did not disconnect". Both go through the same state every other reader
+    # uses: the parked queue and the teardown record. The channel sits at a different offset per service -
+    # a DISCONNECT_REQUEST carries it in body octet 0 with a reserved octet behind it, a tunnelling
+    # request in octet 1 behind the structure length.
+    foreach ($p in @($r.Ignored)) {
+        $h = Read-KnxHeader -Frame $p.Bytes
+        if ($null -eq $h) { continue }
+        if ($h.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
+            if ($h.Body.Length -lt 1 -or $h.Body[0] -ne $Connection.Channel) { continue }
+            Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $h.Body[0] -Status 0) `
+                          -Ip $Connection.Ip -Port $Connection.Port
+            Set-KnxTunnelGone -Connection $Connection -By 'device' -Packet ([pscustomobject]@{ Header = $h; Packet = $p })
+            # Nothing after a teardown belongs on this channel any more, so acknowledging further frames
+            # from the same batch would be answering for a connection we just agreed is closed.
+            break
+        }
+        if ($h.Service -ne $script:KnxService.TUNNELLING_REQUEST) { continue }
+        if ($h.Body.Length -lt 4 -or $h.Body[1] -ne $Connection.Channel) { continue }
+        Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxTunnellingAck -Channel $h.Body[1] -Sequence $h.Body[2]) `
+                      -Ip $Connection.Ip -Port $Connection.Port
+        $Connection.SeqRecv = $h.Body[2]
+        $inCemi = if ($h.Body.Length -gt 4) { [byte[]]$h.Body[4..($h.Body.Length - 1)] } else { [byte[]]@() }
+        # [void]: the helper answers whether the queue took it, and an unconsumed answer would be
+        # emitted as this function's output next to its real return value.
+        [void](Add-KnxTunnelParked -Connection $Connection -Channel $h.Body[1] -Sequence $h.Body[2] -Cemi $inCemi -Raw $p.Bytes)
+    }
+    if (Test-KnxTunnelGone -Connection $Connection) { return $false }
+    if ($r.TimedOut -or $r.Header.Body.Length -lt 2) { return $false }
+    # An answer for SOMEBODY ELSE'S channel says nothing about ours - servers recycle channel ids
+    # seconds after they reap one, so this is not theoretical.
+    if ($r.Header.Body[0] -ne $Connection.Channel) { return $false }
+    if ($r.Header.Body[1] -ne 0x00) {
+        # 03_08_02 5.4 p.14: a non-zero status on our own channel - E_CONNECTION_ID above all - is the
+        # server stating it does not have this connection. Continuing to wait on it waits on nothing.
+        Set-KnxTunnelGone -Connection $Connection -By 'device'
+        return $false
+    }
+    return $true
 }
 
 function Close-KnxConnection {
@@ -1434,7 +1811,17 @@ function Close-KnxConnection {
         $ok = (-not $r.TimedOut)
     }
     catch { $ok = $false }
-    finally { try { $Connection.Socket.Dispose() } catch { } }
+    finally {
+        try { $Connection.Socket.Dispose() } catch { }
+        # Leave nothing usable behind. A disposed socket is not $null, so the reuse check in
+        # Get-KnxTrafficConnection let it through and the next send threw ObjectDisposedException out of
+        # the case - deterministic in suite 6, where three cases close the SHARED connection themselves.
+        Set-KnxTunnelGone -Connection $Connection -By 'client'
+        try { $Connection.Socket = $null } catch { }
+        if ($null -ne $script:TrafficConnection -and [object]::ReferenceEquals($script:TrafficConnection, $Connection)) {
+            $script:TrafficConnection = $null
+        }
+    }
     return $ok
 }
 
@@ -1453,6 +1840,13 @@ function Send-KnxTunnelCemi {
         [int]$TimeoutMs = 2000,
         [switch]$NoAdvance
     )
+    # A closed connection has no socket; sending into it threw out of the case instead of reporting it.
+    if ($null -eq $Connection -or $null -eq $Connection.Socket) {
+        # Same shape as the normal return, or a caller reading AckSeq gets a strict-mode error instead
+        # of a result.
+        return [pscustomobject]@{ Acked = $false; Status = -1; Sequence = -1; AckChannel = -1; AckSeq = -1
+                                  AckSeen = $false; AckStatusSeen = -1; Sent = $null; Disconnected = $true; Ignored = @() }
+    }
     $seq = if ($Sequence -ge 0) { $Sequence } else { $Connection.SeqSend }
     $frame = New-KnxTunnellingRequest -Channel $Connection.Channel -Sequence $seq -Cemi $Cemi
 
@@ -1462,10 +1856,6 @@ function Send-KnxTunnelCemi {
     # runs into its outstanding-frame limit and drops the connection, which looks exactly
     # like "the device never answered". Take them here, ack them, and park them so the
     # next Receive-KnxTunnelCemi hands them out in arrival order.
-    if ($null -eq $Connection.PSObject.Properties['Pending']) {
-        Add-Member -InputObject $Connection -NotePropertyName 'Pending' `
-                   -NotePropertyValue (New-Object 'System.Collections.Generic.List[object]') -Force
-    }
     # 03_08_04 p.9: on a missing TUNNELLING_ACK the sending device shall repeat the frame ONCE
     # with the SAME sequence number, then terminate the connection. Both shortcuts are wrong and
     # both were tried here: keeping the counter turns the NEXT, different frame into a duplicate
@@ -1476,7 +1866,11 @@ function Send-KnxTunnelCemi {
     # the repeat is a duplicate and gets acked, and if the frame was lost the repeat is the one
     # the server was waiting for.
     $status = -1; $ackSeq = -1; $ackCh = -1
+    $seenAck = $false; $seenCh = -1; $seenSeq = -1; $seenStatus = -1
     $ack = $null
+    # Update-KnxTunnelHeartbeat measures the quiet time from here: a request of our own restarts the
+    # server's 120 s window (03_08_02 5.4 p.14), an acknowledge does not.
+    if ($null -ne $Connection.PSObject.Properties['LastSpoke']) { $Connection.LastSpoke = [DateTime]::UtcNow }
     for ($attempt = 1; $attempt -le 2; $attempt++) {
     if ($attempt -gt 1) { $status = -1; $ackSeq = -1; $ackCh = -1; $ack = $null }
     Send-KnxFrame -Socket $Connection.Socket -Frame $frame -Ip $Connection.Ip -Port $Connection.Port
@@ -1499,30 +1893,53 @@ function Send-KnxTunnelCemi {
                 Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $db[0] -Status 0) `
                               -Ip $Connection.Ip -Port $Connection.Port
             }
-            Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $true -Force
+            Set-KnxTunnelGone -Connection $Connection -By 'device' -Packet $r
             $ack = [pscustomobject]@{ TimedOut = $true; Ignored = $r.Ignored }
             break
         }
-        if ($r.Header.Service -eq $script:KnxService.TUNNELLING_ACK) { $ack = $r; break }
+        if ($r.Header.Service -eq $script:KnxService.TUNNELLING_ACK) {
+            # Two different questions, and they were being answered by one value. For the PROTOCOL the
+            # acknowledge must match channel and sequence - a late one for the previous frame otherwise
+            # validates this one, and a real error status at the end of a burst becomes invisible. For
+            # the REPORT the cases need to know an acknowledge arrived at all and what it carried:
+            # "the device acknowledged a sequence one too large" is the finding H-5.2.4 exists for, and
+            # matching silently would have turned it into a pass.
+            $ab = $r.Header.Body
+            if ($ab.Length -ge 4) {
+                if (-not $seenAck) { $seenAck = $true; $seenCh = $ab[1]; $seenSeq = $ab[2]; $seenStatus = $ab[3] }
+                if ($ab[1] -eq $Connection.Channel -and $ab[2] -eq $seq) {
+                    # The matching one is authoritative for the report as well as for the decision.
+                    $seenCh = $ab[1]; $seenSeq = $ab[2]; $seenStatus = $ab[3]
+                    $ack = $r; break
+                }
+            }
+            continue
+        }
         $b = $r.Header.Body
-        if ($b.Length -ge 4) {
+        # Same filter as every other reader: a frame for another channel is not ours to acknowledge, and
+        # parking it would hand a case a telegram that was never addressed to its tunnel.
+        if ($b.Length -ge 4 -and $b[1] -eq $Connection.Channel) {
             Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxTunnellingAck -Channel $b[1] -Sequence $b[2]) `
                           -Ip $Connection.Ip -Port $Connection.Port
             $inCemi = if ($b.Length -gt 4) { [byte[]]$b[4..($b.Length - 1)] } else { [byte[]]@() }
             $Connection.SeqRecv = $b[2]
-            [void]$Connection.Pending.Add([pscustomobject]@{
-                    Channel = $b[1]; Sequence = $b[2]; Cemi = $inCemi; Raw = $r.Packet.Bytes; Ignored = $r.Ignored
-                })
+            [void](Add-KnxTunnelParked -Connection $Connection -Channel $b[1] -Sequence $b[2] -Cemi $inCemi `
+                                       -Raw $r.Packet.Bytes -Ignored $r.Ignored)
         }
     }
     if ($null -eq $ack) { $ack = [pscustomobject]@{ TimedOut = $true; Ignored = @() } }
     if (-not $ack.TimedOut -and $ack.Header.Body.Length -ge 4) {
         $ackCh = $ack.Header.Body[1]; $ackSeq = $ack.Header.Body[2]; $status = $ack.Header.Body[3]
     }
+    elseif ($seenAck) {
+        # No acknowledge for THIS frame, but one was seen. Report what it carried; the protocol decision
+        # below stays "unacknowledged", which is what 03_08_04 2.6.1 prescribes for it.
+        $ackCh = $seenCh; $ackSeq = $seenSeq
+    }
     # 03_08_04 2.6.1 names TWO repeat triggers: no ack within the timeout, AND an ack whose status
     # signals any error. Leaving on any received ack implemented only half of it.
     if (-not $ack.TimedOut -and $status -eq 0) { break }
-    if ($null -ne $Connection.PSObject.Properties['Disconnected'] -and $Connection.Disconnected) { break }
+    if (Test-KnxTunnelGone -Connection $Connection) { break }
     }
     if ($null -eq $ack) { $ack = [pscustomobject]@{ TimedOut = $true; Ignored = @() } }
     # Advance only on a positive ack. After two unanswered attempts the server never confirmed
@@ -1537,23 +1954,40 @@ function Send-KnxTunnelCemi {
     # Covers both triggers: a timeout leaves $status at -1, an error status leaves it non-zero.
     # -NoAdvance marks a caller that is deliberately probing sequence handling and expects no ack;
     # ending its connection would destroy the very case it is running.
-    if (-not $NoAdvance -and $status -ne 0) {
+    if (-not $NoAdvance -and $status -ne 0 -and -not (Test-KnxTunnelGone -Connection $Connection)) {
         try {
             $bye = New-KnxDisconnectRequest -Channel $Connection.Channel -ControlIp $Connection.LocalIp -ControlPort $Connection.LocalPort
             Send-KnxFrame -Socket $Connection.Socket -Frame $bye -Ip $Connection.Ip -Port $Connection.Port
         }
         catch { }
-        Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $true -Force
+        Set-KnxTunnelGone -Connection $Connection -By 'client'
+        # Leave nothing usable behind, as Close-KnxConnection does: this is the one place that ended a
+        # channel and kept a live, bound socket on the object.
+        try { $Connection.Socket.Dispose() } catch { }
+        try { $Connection.Socket = $null } catch { }
+        if ($null -ne $script:TrafficConnection -and [object]::ReferenceEquals($script:TrafficConnection, $Connection)) {
+            $script:TrafficConnection = $null
+        }
     }
-    $gone = $false
-    if ($null -ne $Connection.PSObject.Properties['Disconnected']) { $gone = [bool]$Connection.Disconnected }
+    $gone = Test-KnxTunnelGone -Connection $Connection
     return [pscustomobject]@{
         Sent         = $frame
         Disconnected = $gone
         Sequence   = $seq
-        Acked      = (-not $ack.TimedOut)
+        # Positively acknowledged, not merely answered: an ack carrying an error status (E_SEQUENCE_NUMBER,
+        # E_CONNECTION_ID) tore the channel down above (except under -NoAdvance), so reporting it as acked
+        # let a case assert Acked, then read nothing from the dead socket and call that a silent device.
+        Acked      = ((-not $ack.TimedOut) -and $status -eq 0)
+        # AckSeen is "an acknowledge arrived", Acked is "OUR frame was acknowledged". A device that
+        # answers the wrong sequence sets the first and not the second, and a case needs to tell them
+        # apart to report what the device actually did.
+        AckSeen    = $seenAck
         AckChannel = $ackCh
         AckSeq     = $ackSeq
+        # The status of the acknowledge that was SEEN. Status below stays the protocol answer for this
+        # frame (-1 when it was never acknowledged) - feeding a seen status into it would let an
+        # acknowledge for someone else's frame advance our sequence counter.
+        AckStatusSeen = $seenStatus
         Status     = $status
         Ignored    = $ack.Ignored
     }
@@ -1625,6 +2059,9 @@ function Receive-KnxTunnelCemi {
         Do not answer - for the "repeat and timeout after missing ACK" test cases.
     #>
     param([Parameter(Mandatory)]$Connection, [int]$TimeoutMs = 3000, [switch]$NoAck)
+    # A closed connection has no socket. Reading from it threw a parameter-binding error out of the
+    # case instead of reporting "nothing arrived", which is what a closed channel means.
+    if ($null -eq $Connection -or $null -eq $Connection.Socket) { return $null }
     # Frames that arrived while Send-KnxTunnelCemi was waiting for its ack are parked on the
     # connection. Hand them out first so the caller sees arrival order. Not for -NoAck: those
     # cases test what happens when we do NOT ack, and a parked frame was already acked.
@@ -1637,29 +2074,46 @@ function Receive-KnxTunnelCemi {
     # calls Send-KnxTunnelCemi, so the DISCONNECT_REQUEST handling added there does not cover
     # it. Without this a server that ends the connection is indistinguishable from a quiet
     # bus: the caller waits out its window and reports "captured nothing".
-    $r = Wait-KnxService -Socket $Connection.Socket `
-                         -Service @($script:KnxService.TUNNELLING_REQUEST, $script:KnxService.DISCONNECT_REQUEST) `
-                         -TimeoutMs $TimeoutMs
-    if ($r.TimedOut) { return $null }
-    if ($r.Header.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
-        $db = $r.Header.Body
-        if ($db.Length -ge 2) {
+    # A frame for another channel is not ours, and it must not read as "nothing arrived": returning null
+    # for it ended a drain loop early with the whole budget unspent. Keep listening until the deadline.
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
+    while ($true) {
+        $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
+        $r = Wait-KnxService -Socket $Connection.Socket `
+                             -Service @($script:KnxService.TUNNELLING_REQUEST, $script:KnxService.DISCONNECT_REQUEST) `
+                             -TimeoutMs $left
+        if ($r.TimedOut) { return $null }
+        if ($r.Header.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
+            $db = $r.Header.Body
+            if ($db.Length -lt 1 -or $db[0] -ne $Connection.Channel) {
+                if ([DateTime]::UtcNow -ge $deadline) { return $null }
+                continue
+            }
             Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $db[0] -Status 0) `
                           -Ip $Connection.Ip -Port $Connection.Port
+            Set-KnxTunnelGone -Connection $Connection -By 'device' -Packet $r
+            return $null
         }
-        Add-Member -InputObject $Connection -NotePropertyName 'Disconnected' -NotePropertyValue $true -Force
-        return $null
+        $b = $r.Header.Body
+        if ($b.Length -lt 4 -or $b[1] -ne $Connection.Channel) {
+            if ([DateTime]::UtcNow -ge $deadline) { return $null }
+            continue
+        }
+        $ch = $b[1]; $seq = $b[2]
+        $cemi = if ($b.Length -gt 4) { [byte[]]$b[4..($b.Length - 1)] } else { [byte[]]@() }
+        if (-not $NoAck) {
+            $ack = New-KnxTunnellingAck -Channel $ch -Sequence $seq
+            Send-KnxFrame -Socket $Connection.Socket -Frame $ack -Ip $Connection.Ip -Port $Connection.Port
+        }
+        $Connection.SeqRecv = $seq
+        # A repeat of a frame this path or the queue already handed out is acknowledged above but not
+        # returned again. Not for -NoAck: those cases provoke the repeat on purpose and must see it.
+        if (-not $NoAck -and (Test-KnxTunnelRepeat -Connection $Connection -Channel $ch -Sequence $seq -Cemi $cemi)) {
+            if ([DateTime]::UtcNow -ge $deadline) { return $null }
+            continue
+        }
+        return [pscustomobject]@{ Channel = $ch; Sequence = $seq; Cemi = $cemi; Raw = $r.Packet.Bytes; Ignored = $r.Ignored }
     }
-    $b = $r.Header.Body
-    if ($b.Length -lt 4) { return $null }
-    $ch = $b[1]; $seq = $b[2]
-    $cemi = if ($b.Length -gt 4) { [byte[]]$b[4..($b.Length - 1)] } else { [byte[]]@() }
-    if (-not $NoAck) {
-        $ack = New-KnxTunnellingAck -Channel $ch -Sequence $seq
-        Send-KnxFrame -Socket $Connection.Socket -Frame $ack -Ip $Connection.Ip -Port $Connection.Port
-    }
-    $Connection.SeqRecv = $seq
-    return [pscustomobject]@{ Channel = $ch; Sequence = $seq; Cemi = $cemi; Raw = $r.Packet.Bytes; Ignored = $r.Ignored }
 }
 
 function Send-KnxDeviceConfiguration {
@@ -1814,29 +2268,66 @@ function Get-KnxTunnelPool {
         An ETS entry left without an address shows up here as a duplicate of its neighbour,
         and that duplicate is exactly the 03_08_04 (p.6) condition for 0x25.
 
-        The element count field is four bits wide, so 16 wraps to 0 - read 15 + 1.
+        Count-driven, in blocks of at most 15 (the cEMI element-count field is four bits), because a
+        property read is all-or-nothing: a fixed request of 15 is refused by a device holding fewer.
+    .OUTPUTS
+        Addresses, Held, and Complete - false when the pool could not be read in full. A caller that
+        judges a device on this must check Complete first: a short read is not a short pool.
     #>
     param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$Count = 16)
     $entries = @()
     $conn = Open-KnxConnection -Ip $Ip -Port $Port -ConnectionType $script:KnxConnType.DEVICE_MGMT_CONNECTION -Layer -1
-    if (-not $conn.Ok) { return , $entries }
+    if (-not $conn.Ok) { return [pscustomobject]@{ Addresses = @(); Held = -1; Complete = $false } }
     try {
-        $first = [Math]::Min(15, $Count)
-        $blocks = @(@{ s = 1; n = $first })
-        if ($Count -gt 15) { $blocks += @{ s = 16; n = ($Count - 15) } }
-        foreach ($b in $blocks) {
-            $r = Read-KnxProperty -Connection $conn -ObjectType $script:ObjType.KNXNETIP_PARAM `
-                                  -PropertyId $script:KnxPid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount $b.n -StartIndex $b.s
-            if ($null -eq $r.Parsed -or $r.Parsed.IsError) { continue }
-            $d = $r.Parsed.Data
-            for ($o = 0; ($o + 1) -lt $d.Length; $o += 2) {
-                $raw = Get-Uint16 -Bytes $d -Offset $o
-                if ($raw -gt 0) { $entries += (ConvertFrom-KnxPa -Raw $raw) }
+        # Ask how many there are instead of assuming 16. A property read is all-or-nothing (03_03_07,
+        # and knx data_property.cpp): asking 15 elements of a device that holds 5 is refused outright,
+        # and the old code swallowed that refusal - so every device with fewer than 15 entries reported
+        # an EMPTY pool, and the one case whose result turns on the pool then demanded the wrong error
+        # code from a conformant device.
+        $c0 = Read-KnxProperty -Connection $conn -ObjectType $script:ObjType.KNXNETIP_PARAM `
+                               -PropertyId $script:KnxPid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount 1 -StartIndex 0
+        $held = -1
+        if ($null -ne $c0.Parsed -and -not $c0.Parsed.IsError -and $c0.Parsed.Data.Length -ge 2) {
+            $held = Get-Uint16 -Bytes $c0.Parsed.Data -Offset 0
+        }
+        $complete = $true
+        if ($held -lt 0) {
+            # No count to go by, and asking for 15 elements of a device that holds fewer is refused
+            # outright - that refusal used to be swallowed and the pool read as EMPTY. One element at a
+            # time is the only request an all-or-nothing read cannot refuse for being too large.
+            for ($i = 1; $i -le 64; $i++) {
+                $r1 = Read-KnxProperty -Connection $conn -ObjectType $script:ObjType.KNXNETIP_PARAM `
+                                       -PropertyId $script:KnxPid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount 1 -StartIndex $i
+                # A timeout looks exactly like "this element does not exist", so a lost datagram would
+                # truncate the pool and the caller would judge on it. An error is the natural end; no
+                # answer at all is not, and it makes the result incomplete.
+                if ($null -eq $r1.Parsed) { $complete = $false; break }
+                if ($r1.Parsed.IsError -or $r1.Parsed.Data.Length -lt 2) { break }
+                $entries += (ConvertFrom-KnxPa -Raw (Get-Uint16 -Bytes $r1.Parsed.Data -Offset 0))
             }
+            return [pscustomobject]@{ Addresses = $entries; Held = $entries.Count; Complete = $complete }
+        }
+        if ($held -gt 64) { $held = 64 }
+        $index = 1
+        while ($index -le $held) {
+            $n = [Math]::Min(15, $held - $index + 1)
+            $r = Read-KnxProperty -Connection $conn -ObjectType $script:ObjType.KNXNETIP_PARAM `
+                                  -PropertyId $script:KnxPid.ADDITIONAL_INDIVIDUAL_ADDRESSES -ElementCount $n -StartIndex $index
+            if ($null -eq $r.Parsed -or $r.Parsed.IsError) { $complete = $false; break }
+            $d = $r.Parsed.Data
+            $got = [int][Math]::Floor($d.Length / 2)
+            if ($got -le 0) { $complete = $false; break }
+            for ($o = 0; ($o + 1) -lt $d.Length; $o += 2) {
+                # Zero entries are KEPT. An ETS slot left without an address reads as 0.0.0, and those
+                # are exactly the duplicates the uniqueness case looks for - dropping them made the
+                # check it performs impossible to reach.
+                $entries += (ConvertFrom-KnxPa -Raw (Get-Uint16 -Bytes $d -Offset $o))
+            }
+            $index += $got
         }
     }
     finally { [void](Close-KnxConnection -Connection $conn) }
-    return , $entries
+    return [pscustomobject]@{ Addresses = $entries; Held = $held; Complete = ($complete -and $entries.Count -eq $held) }
 }
 
 function Test-KnxAlive {
@@ -1899,7 +2390,11 @@ function Get-KnxTrafficConnection {
     param([Parameter(Mandatory)][string]$Ip, [int]$Port = 3671, [int]$TimeoutMs = 3000, [int]$WaitSeconds = 25)
     if ($null -ne $script:TrafficConnection) {
         $c = $script:TrafficConnection
-        if ($null -ne $c.Socket -and $c.Ip -eq $Ip) {
+        # A connection whose record says the channel is finished is not probed back to life: the teardown
+        # this client sends is fire-and-forget, so a CONNECTIONSTATE_RESPONSE that overtakes it would
+        # "prove" a channel the device is about to reap, and the object would carry its old sequence
+        # counter and parked backlog into the next case.
+        if ($null -ne $c.Socket -and $c.Ip -eq $Ip -and -not (Test-KnxTunnelGone -Connection $c)) {
             # Holding a socket is not proof the DEVICE still knows the channel: after its
             # 120 s reaper fires we would keep sending into a dead channel and every
             # "from KNX" case would fail for a reason that has nothing to do with the BDUT.
@@ -1907,11 +2402,44 @@ function Get-KnxTrafficConnection {
             $probe = New-KnxConnectionStateRequest -Channel $c.Channel -ControlIp $c.LocalIp -ControlPort $c.LocalPort
             $r = Invoke-KnxRequest -Socket $c.Socket -Frame $probe -Ip $c.Ip -Port $c.Port `
                                    -Expect @($script:KnxService.CONNECTIONSTATE_RESPONSE) -TimeoutMs 1500
-            if (-not $r.TimedOut -and $r.Header.Body.Length -ge 2 -and $r.Header.Body[1] -eq 0x00) {
-                Clear-KnxSocket -Socket $c.Socket -QuietMs 50
-                return $c
+            # Bus traffic that lands in this 1500 ms window is in $r.Ignored, and dropping it there is
+            # unacknowledged - the same hole the heartbeat had. On the one connection a whole run shares
+            # that is how a device starts repeating and then ends the channel.
+            foreach ($p in @($r.Ignored)) {
+                $h = Read-KnxHeader -Frame $p.Bytes
+                if ($null -eq $h) { continue }
+                if ($h.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
+                    # Answered and recorded, like every other reader. Dropping it here left the device
+                    # repeating a teardown nobody had answered and the harness never learning of it.
+                    if ($h.Body.Length -ge 1 -and $h.Body[0] -eq $c.Channel) {
+                        Send-KnxFrame -Socket $c.Socket -Frame (New-KnxDisconnectResponse -Channel $h.Body[0] -Status 0) `
+                                      -Ip $c.Ip -Port $c.Port
+                        Set-KnxTunnelGone -Connection $c -By 'device' -Packet ([pscustomobject]@{ Header = $h; Packet = $p })
+                    }
+                    continue
+                }
+                if ($h.Service -ne $script:KnxService.TUNNELLING_REQUEST) { continue }
+                if ($h.Body.Length -lt 4 -or $h.Body[1] -ne $c.Channel) { continue }
+                Send-KnxFrame -Socket $c.Socket -Frame (New-KnxTunnellingAck -Channel $h.Body[1] -Sequence $h.Body[2]) `
+                              -Ip $c.Ip -Port $c.Port
+                $c.SeqRecv = $h.Body[2]
             }
+            if (-not $r.TimedOut -and $r.Header.Body.Length -ge 2 -and $r.Header.Body[1] -eq 0x00) {
+                # Whatever an earlier case left belongs to that case, not to the next one - and what is
+                # thrown away is acknowledged first, because a discarded frame the device never saw an
+                # acknowledge for is exactly what makes it end the channel.
+                [void](Clear-KnxTunnelTraffic -Connection $c -QuietMs 50)
+                # The probe said alive, but the drain can still meet the teardown that was already on
+                # its way - handing the object back then gives the caller a live socket on a channel
+                # this module has just recorded as gone, and every wait on it returns at once.
+                if (-not (Test-KnxTunnelGone -Connection $c)) { return $c }
+            }
+            # Same cleanup as Close-KnxConnection: a disposed socket that is still referenced passes
+            # every "is it there" check and throws on the next send, and a caller may still hold this
+            # object after the cache has moved on.
             try { $c.Socket.Dispose() } catch { }
+            Set-KnxTunnelGone -Connection $c -By 'client'
+            try { $c.Socket = $null } catch { }
         }
         $script:TrafficConnection = $null
     }
@@ -2028,6 +2556,8 @@ function Start-KnxTestRun {
         Started     = [DateTime]::Now
         Finished    = $null
         Results     = New-Object System.Collections.ArrayList
+        # Suites the runner refused to start, with the reason. Empty is the normal case.
+        Dropped     = New-Object System.Collections.ArrayList
     }
     return $script:Run
 }
@@ -2064,12 +2594,38 @@ function Add-KnxExpectedLog {
     Write-Host ("             device log expected: {0}" -f $Text) -ForegroundColor DarkGray
 }
 
+# How many assertions the running case has raised. Invoke-KnxTestCase resets it before the body and
+# reads it afterwards: a body that completes without raising one has judged nothing. Module scope, so
+# an assertion inside a helper the body calls counts as well, however deep the call stack.
+$script:KnxAssertions = 0
+
+function Add-KnxAssertion {
+    <#
+    .SYNOPSIS
+        Records that the running case has just put a requirement to the device.
+    .DESCRIPTION
+        Called by every Assert-Knx* function as its FIRST statement, before the condition is evaluated:
+        a failing assertion throws, and counting afterwards would make the case that found the defect
+        look like a case that checked nothing.
+    #>
+    $script:KnxAssertions++
+}
+
+function Get-KnxAssertionCount {
+    <#
+    .SYNOPSIS
+        Assertions raised since the running case started.
+    #>
+    return [int]$script:KnxAssertions
+}
+
 function Assert-KnxTrue {
     <#
     .SYNOPSIS
         Fails the current test case unless the condition holds.
     #>
     param([Parameter(Mandatory)][bool]$Condition, [Parameter(Mandatory)][string]$Message)
+    Add-KnxAssertion
     if (-not $Condition) { throw "KNXTEST_FAIL::$Message" }
 }
 
@@ -2079,6 +2635,7 @@ function Assert-KnxEqual {
         Fails unless two scalars are equal, recording both values as evidence.
     #>
     param($Expected, $Actual, [Parameter(Mandatory)][string]$Message)
+    Add-KnxAssertion
     if ($Expected -ne $Actual) {
         Add-KnxEvidence -Note "expected '$Expected', got '$Actual'"
         throw "KNXTEST_FAIL::$Message (expected '$Expected', got '$Actual')"
@@ -2091,6 +2648,7 @@ function Assert-KnxBytes {
         Fails unless two byte arrays are identical, recording both as evidence.
     #>
     param([byte[]]$Expected, [byte[]]$Actual, [Parameter(Mandatory)][string]$Message)
+    Add-KnxAssertion
     $same = ($null -ne $Expected -and $null -ne $Actual -and $Expected.Length -eq $Actual.Length)
     if ($same) {
         for ($i = 0; $i -lt $Expected.Length; $i++) { if ($Expected[$i] -ne $Actual[$i]) { $same = $false; break } }
@@ -2107,6 +2665,7 @@ function Assert-KnxStatus {
         Fails unless a KNXnet/IP status byte has the expected value, naming both codes.
     #>
     param([Parameter(Mandatory)][int]$Expected, [Parameter(Mandatory)][int]$Actual, [string]$Message = 'unexpected status code')
+    Add-KnxAssertion
     if ($Expected -ne $Actual) {
         $e = Get-KnxErrorName -Status $Expected
         $a = Get-KnxErrorName -Status $Actual
@@ -2126,6 +2685,7 @@ function Assert-KnxStatusAny {
     #>
     param([Parameter(Mandatory)][int[]]$Accept, [Parameter(Mandatory)][int]$Actual,
           [string]$Why = '', [string]$Message = 'unexpected status code')
+    Add-KnxAssertion
     $names = (@($Accept) | ForEach-Object { Get-KnxErrorName -Status $_ }) -join ' or '
     $got = Get-KnxErrorName -Status $Actual
     if ($Why) { Add-KnxEvidence -Note "expecting $names because $Why" }
@@ -2134,6 +2694,88 @@ function Assert-KnxStatusAny {
         throw "KNXTEST_FAIL::$Message - expected $names, got $got"
     }
     Add-KnxEvidence -Note "device answered $got (0x$($Actual.ToString('X2')))"
+}
+
+function Request-KnxOperatorAction {
+    <#
+    .SYNOPSIS
+        Asks the operator to do something at the device or in ETS, waits a bounded time, and skips
+        the case when nobody answers.
+    .DESCRIPTION
+        Some of what a device has to get right cannot be driven over a tunnel: pressing the
+        programming button, an ETS download, assigning group addresses. Those steps are not left
+        out and they are not faked either - the case asks for the step and then VERIFIES the result
+        on the bus like any other case.
+
+        Three ways out, and all of them let the REST of the run continue:
+          - not guided            -> SKIP immediately, with the instruction as the reason
+          - no interactive input  -> SKIP (a redirected stdin cannot be asked)
+          - nobody answers in time -> SKIP after -TimeoutSeconds
+
+        That last one is the point: a guided run left alone must not block on one prompt. The wait
+        is shown as a countdown so an operator who IS there can see how long they have.
+    .PARAMETER Instruction
+        What the operator has to do, in one line.
+    .PARAMETER Detail
+        Optional second line: why it is needed, or what to watch for.
+    .PARAMETER Guided
+        Set by the runner when a human may be present.
+    .PARAMETER TimeoutSeconds
+        How long to wait for ENTER before skipping. 0 waits forever (not recommended unattended).
+    .OUTPUTS
+        $true once the operator confirms. Never returns otherwise - it skips the case.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Instruction,
+        [string]$Detail = '',
+        [switch]$Guided,
+        [int]$TimeoutSeconds = 90
+    )
+    if (-not $Guided) {
+        Set-KnxTestNotRun -MissingInput '-Guided' -Reason "needs an operator step, run with -Guided: $Instruction"
+    }
+
+    # A redirected or absent stdin cannot be asked. Probing KeyAvailable is the portable test:
+    # it throws exactly in that situation, and catching it is cheaper than guessing from $Host.
+    $interactive = $true
+    try { [void][Console]::KeyAvailable } catch { $interactive = $false }
+    if (-not $interactive) {
+        Set-KnxTestSkip "needs an operator step but no interactive console is attached: $Instruction"
+    }
+
+    Write-Host ''
+    Write-Host '  +-- Handgriff noetig ------------------------------------------' -ForegroundColor Yellow
+    Write-Host "  |  $Instruction" -ForegroundColor Yellow
+    if ($Detail) { Write-Host "  |  $Detail" -ForegroundColor DarkGray }
+    Write-Host '  |  ENTER = erledigt   S = diesen Fall ueberspringen' -ForegroundColor DarkGray
+    Write-Host '  +--------------------------------------------------------------' -ForegroundColor Yellow
+
+    $deadline = if ($TimeoutSeconds -gt 0) { [DateTime]::UtcNow.AddSeconds($TimeoutSeconds) } else { [DateTime]::MaxValue }
+    $lastShown = -1
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if ([Console]::KeyAvailable) {
+            $key = [Console]::ReadKey($true)
+            if ($key.Key -eq 'Enter') {
+                Write-Host ''
+                Add-KnxEvidence -Note "operator confirmed: $Instruction"
+                return $true
+            }
+            if ("$($key.KeyChar)".ToLower() -eq 's') {
+                Write-Host ''
+                Set-KnxTestSkip "operator skipped the step: $Instruction"
+            }
+        }
+        if ($TimeoutSeconds -gt 0) {
+            $left = [int][Math]::Ceiling(($deadline - [DateTime]::UtcNow).TotalSeconds)
+            if ($left -ne $lastShown) {
+                $lastShown = $left
+                Write-Host ("`r  >  warte auf ENTER ... {0,3}s " -f $left) -NoNewline -ForegroundColor DarkGray
+            }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    Write-Host ''
+    Set-KnxTestSkip "no answer within $TimeoutSeconds s - the step was not carried out: $Instruction"
 }
 
 function Set-KnxTestSkip {
@@ -2145,6 +2787,43 @@ function Set-KnxTestSkip {
     throw "KNXTEST_SKIP::$Reason"
 }
 
+function Set-KnxTestNotRun {
+    <#
+    .SYNOPSIS
+        Ends the case as NOT-RUN: an input the rig was supposed to supply is missing.
+    .DESCRIPTION
+        Three different things used to end up in one SKIP bucket: the device does not have the feature
+        (N-A, correct and nobody's fault), a safety gate refused (dropped), and the run was started
+        without an argument the case needs (this). Only the last one is a gap in the RUN, and a report
+        that cannot tell them apart says "passed" over work it never did.
+    .PARAMETER MissingInput
+        The argument that was missing, spelled as the operator would pass it: -TestGa, -WitnessIp,
+        -Guided, -IncludeDestructive, -TrafficIp, -BdutPa. It is named in the report so the next run
+        can be complete. NOT called -Input: that is an automatic variable in PowerShell, and a
+        parameter of that name binds to nothing - the report then showed an empty column.
+    #>
+    param([Parameter(Mandatory)][string]$MissingInput, [Parameter(Mandatory)][string]$Reason)
+    throw "KNXTEST_NOTRUN::${MissingInput}::$Reason"
+}
+
+function Add-KnxRunDropped {
+    <#
+    .SYNOPSIS
+        Records that a whole suite was dropped before it ran, and why.
+    .DESCRIPTION
+        A suite the runner refuses to start - the routing cases on the production multicast group are
+        the standing example - leaves no cases behind, so nothing in the results shows it is missing.
+        Recorded here, it appears in the report instead of being invisible: a router run whose section 6
+        never ran still read "conformance PASS".
+    #>
+    param([Parameter(Mandatory)][string]$Suite, [Parameter(Mandatory)][string]$Reason)
+    if ($null -eq $script:Run) { return }
+    if ($null -eq $script:Run.PSObject.Properties['Dropped']) {
+        Add-Member -InputObject $script:Run -NotePropertyName 'Dropped' -NotePropertyValue (New-Object System.Collections.ArrayList) -Force
+    }
+    [void]$script:Run.Dropped.Add([pscustomobject]@{ Suite = $Suite; Reason = $Reason })
+}
+
 function Set-KnxTestNotApplicable {
     <#
     .SYNOPSIS
@@ -2154,14 +2833,179 @@ function Set-KnxTestNotApplicable {
     throw "KNXTEST_NA::$Reason"
 }
 
+$script:KnxCaseFilter = @()
+
+function Sync-KnxTunnel {
+    <#
+    .SYNOPSIS
+        Takes everything the device has pushed into a tunnel and acknowledges it.
+    .DESCRIPTION
+        A tunnel client that leaves a TUNNELLING_REQUEST unacknowledged loses its connection: the server
+        repeats the frame once and then sends DISCONNECT_REQUEST (03_08_04 2.6.1 p.9), which takes about
+        two seconds on a live bus. Three probes in one session read that teardown as a device defect
+        (T.30, T.32, T.33), so anything that waits on a tunnel calls this instead of sitting silent.
+    .OUTPUTS
+        Frames: a VIEW of the cEMI payloads seen, in arrival order - the frames themselves stay parked on
+        the connection for Receive-KnxTunnelCemi or for an explicit Read-KnxTunnelParked, so a caller that
+        discards this result loses nothing. Reading both is therefore reading the same frames twice.
+        Disconnected: the channel was torn down; Disconnect carries the datagram when one was seen.
+    #>
+    param([Parameter(Mandatory)]$Connection, [int]$Ms = 800)
+    # A closed connection has no socket: report it as gone instead of throwing a parameter-binding
+    # error out of the case.
+    if ($null -eq $Connection -or $null -eq $Connection.Socket) {
+        return [pscustomobject]@{ Frames = @(); Disconnected = $true; Disconnect = $null; Dropped = 0; Repeats = 0 }
+    }
+    $frames = @()
+    $disconnected = $false
+    $disconnectPacket = $null
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($Ms)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        # A channel that has been torn down - by either side - is not something to wait on. The record
+        # carries who ended it and the datagram, where one was seen, so a case can report both.
+        # Only the DEVICE ending the channel stops a paced wait. A teardown this client sent is recorded
+        # too, and treating that as "done" turned every later wait on the object into a no-op - the
+        # pacing a case needs then vanishes and the device is blamed for the lost timing.
+        if ((Test-KnxTunnelGone -Connection $Connection) -and (Get-KnxTunnelGoneBy -Connection $Connection) -eq 'device') {
+            $disconnected = $true
+            if ($null -ne $Connection.PSObject.Properties['DisconnectPacket']) { $disconnectPacket = $Connection.DisconnectPacket }
+            break
+        }
+        $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
+        # The heartbeat blocks for its own answer, so it must not be given longer than this call has.
+        $parkedBefore = 0
+        if ($null -ne $Connection.PSObject.Properties['Pending']) { $parkedBefore = $Connection.Pending.Count }
+        [void](Update-KnxTunnelHeartbeat -Connection $Connection -TimeoutMs ([Math]::Min(1500, $left)))
+        # Whatever the heartbeat caught belongs in this call's view too. Without this, Frames reported
+        # the same traffic or not depending on whether 45 s had elapsed - the same function answering
+        # differently by the clock. The frames stay parked either way; this is a view, not a removal.
+        if ($null -ne $Connection.PSObject.Properties['Pending']) {
+            # Only the tail that grew. At the cap the queue evicts as it appends, so an index walk from
+            # the old count finds nothing - the heartbeat's frames are then reported by the count of
+            # what it parked, which Update-KnxTunnelHeartbeat returns through the connection.
+            for ($i = $parkedBefore; $i -lt $Connection.Pending.Count; $i++) {
+                $rec = $Connection.Pending[$i]
+                if ($null -ne $rec) { $frames += , ([byte[]]$rec.Cemi) }
+            }
+        }
+        # Frames the heartbeat caught are acknowledged and parked for Receive-KnxTunnelCemi. This is a
+        # pump, not a consumer: it does not take them out, or a paced wait would eat the confirmation a
+        # case is about to read. A capture drains the queue itself with Read-KnxTunnelParked.
+        if ((Test-KnxTunnelGone -Connection $Connection) -and (Get-KnxTunnelGoneBy -Connection $Connection) -eq 'device') {
+            $disconnected = $true
+            if ($null -ne $Connection.PSObject.Properties['DisconnectPacket']) { $disconnectPacket = $Connection.DisconnectPacket }
+            break
+        }
+        $left = [int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds))
+        $r = Wait-KnxService -Socket $Connection.Socket -TimeoutMs $left `
+                             -Service @($script:KnxService.TUNNELLING_REQUEST, $script:KnxService.DISCONNECT_REQUEST)
+        if ($r.TimedOut) { break }
+        if ($r.Header.Service -eq $script:KnxService.DISCONNECT_REQUEST) {
+            # 03_08_02 5.5.2: the client answers it. Every other path in this module does; staying silent
+            # here made the device repeat the teardown and the close below wait out its whole timeout.
+            if ($r.Header.Body.Length -ge 1) {
+                Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxDisconnectResponse -Channel $r.Header.Body[0] -Status 0) `
+                              -Ip $Connection.Ip -Port $Connection.Port
+            }
+            Set-KnxTunnelGone -Connection $Connection -By 'device' -Packet $r
+            $disconnected = $true; $disconnectPacket = $r; break
+        }
+        # Guarded and filtered like every sibling: a body shorter than the connection header would throw
+        # out of here as an unhandled error instead of a result, and a frame for another channel is not
+        # ours to acknowledge or to report as traffic on this one.
+        if ($r.Header.Body.Length -lt 4 -or $r.Header.Body[1] -ne $Connection.Channel) { continue }
+        Send-KnxFrame -Socket $Connection.Socket -Frame (New-KnxTunnellingAck -Channel $r.Header.Body[1] -Sequence $r.Header.Body[2]) `
+                      -Ip $Connection.Ip -Port $Connection.Port
+        $Connection.SeqRecv = $r.Header.Body[2]
+        $inCemi = if ($r.Header.Body.Length -gt 4) { [byte[]]$r.Header.Body[4..($r.Header.Body.Length - 1)] } else { [byte[]]@() }
+        # Parked, not consumed. Taking a frame off the socket, acknowledging it and then handing it only
+        # to the return value destroys it for every caller that discards that value - and most of them do
+        # ([void](Wait-KnxTunnel ...) as a paced wait), which is how a drain right afterwards found
+        # nothing and a case reported the device for a frame this function had eaten.
+        # Count it in the view only when the queue actually took it: a repeat with the same sequence is
+        # suppressed there (03_08_04 2.6.1), and counting it here would put the duplicate back into the
+        # very report the suppression exists for.
+        # The queue says whether it took it. Comparing counts could not: at the cap one is evicted and
+        # one appended, so an accepted frame looked exactly like a suppressed repeat and every frame
+        # after the 256th vanished from this view while still being acknowledged and parked.
+        $took = Add-KnxTunnelParked -Connection $Connection -Channel $r.Header.Body[1] -Sequence $r.Header.Body[2] `
+                                    -Cemi $inCemi -Raw $r.Packet.Bytes -Ignored $r.Ignored
+        if ($took) { $frames += , $inCemi }
+    }
+    $dropped = 0
+    if ($null -ne $Connection.PSObject.Properties['PendingDropped']) { $dropped = [int]$Connection.PendingDropped }
+    # Repeats the queue suppressed (03_08_04 2.6.1). Reported next to Dropped so a case can tell
+    # "the device sent nothing" from "the device sent the same frame twice".
+    $repeats = 0
+    if ($null -ne $Connection.PSObject.Properties['PendingRepeats']) { $repeats = [int]$Connection.PendingRepeats }
+    return [pscustomobject]@{ Frames = $frames; Disconnected = $disconnected; Disconnect = $disconnectPacket; Dropped = $dropped; Repeats = $repeats }
+}
+
+function Wait-KnxTunnel {
+    <#
+    .SYNOPSIS
+        Waits a fixed time on an open tunnel while acknowledging everything that arrives.
+    .DESCRIPTION
+        Start-Sleep on an open tunnel costs the tunnel as soon as the bus carries traffic: the device
+        pushes indications the sleeping client does not acknowledge, repeats the head once and ends the
+        connection (03_08_04 2.6.1 p.9). Measured on 11.11.0.126 with a group telegram every 120 ms -
+        800 ms of Start-Sleep lost the tunnel in 2 of 4 runs, 800 ms of reading and acknowledging in 0 of
+        4. Unlike Sync-KnxTunnel this always waits the whole time, so it can replace a sleep that a case
+        needs for its timing.
+    .OUTPUTS
+        The same shape as Sync-KnxTunnel: Frames, Disconnected, Disconnect.
+    #>
+    param([Parameter(Mandatory)]$Connection, [Parameter(Mandatory)][int]$Ms)
+    $frames = @()
+    $disconnected = $false
+    $disconnectPacket = $null
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($Ms)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $r = Sync-KnxTunnel -Connection $Connection -Ms ([int]([Math]::Max(1, ($deadline - [DateTime]::UtcNow).TotalMilliseconds)))
+        $frames += $r.Frames
+        if ($r.Disconnected) { $disconnected = $true; $disconnectPacket = $r.Disconnect; break }
+    }
+    $dropped = 0
+    if ($null -ne $Connection.PSObject.Properties['PendingDropped']) { $dropped = [int]$Connection.PendingDropped }
+    # Repeats the queue suppressed (03_08_04 2.6.1). Reported next to Dropped so a case can tell
+    # "the device sent nothing" from "the device sent the same frame twice".
+    $repeats = 0
+    if ($null -ne $Connection.PSObject.Properties['PendingRepeats']) { $repeats = [int]$Connection.PendingRepeats }
+    return [pscustomobject]@{ Frames = $frames; Disconnected = $disconnected; Disconnect = $disconnectPacket; Dropped = $dropped; Repeats = $repeats }
+}
+
+function Set-KnxCaseFilter {
+    <#
+    .SYNOPSIS
+        Restricts a run to the case ids matching these wildcard patterns.
+    .DESCRIPTION
+        An empty list runs everything, which is the default. A case that does not match is not executed
+        and does not appear in the report at all - a targeted run should not claim coverage it skipped.
+    #>
+    param([string[]]$Pattern = @())
+    $script:KnxCaseFilter = @($Pattern | Where-Object { $_ })
+}
+
+function Test-KnxCaseSelected {
+    <#
+    .SYNOPSIS
+        True when no filter is set or the id matches one of its patterns.
+    #>
+    param([Parameter(Mandatory)][string]$Id)
+    if (-not $script:KnxCaseFilter -or $script:KnxCaseFilter.Count -eq 0) { return $true }
+    foreach ($p in $script:KnxCaseFilter) { if ($Id -like $p) { return $true } }
+    return $false
+}
+
 function Invoke-KnxTestCase {
     <#
     .SYNOPSIS
-        Runs one test case, captures its verdict and evidence, and records it in the run.
+        Runs one test case, captures its result and evidence, and records it in the run.
     .DESCRIPTION
-        The body decides the verdict by what it throws: nothing = PASS, an Assert-* failure
-        = FAIL, Set-KnxTestSkip = SKIP, Set-KnxTestNotApplicable = N-A. An unexpected
-        exception is a FAIL with the exception text - a test harness must never swallow one.
+        The body decides the result by what it throws: an Assert-* failure = FAIL,
+        Set-KnxTestSkip = SKIP, Set-KnxTestNotApplicable = N-A, Set-KnxTestNotRun = NOT-RUN.
+        Nothing thrown is PASS only if at least one assertion ran, otherwise NO-PROOF. An
+        unexpected exception is a FAIL with the exception text - a test harness must never swallow one.
     .PARAMETER Clause
         Spec reference, e.g. 'TSSH 5.3.5, p.88'. Mandatory: a test that cannot cite what it
         checks cannot be argued about, and an unarguable FAIL is worthless.
@@ -2174,24 +3018,56 @@ function Invoke-KnxTestCase {
         [string]$Suite = ''
     )
     if ($null -eq $script:Run) { throw 'Start-KnxTestRun must be called before Invoke-KnxTestCase' }
+    if (-not (Test-KnxCaseSelected -Id $Id)) { return }
 
     $script:Evidence = [pscustomobject]@{
         Sent = $null; Expected = $null; Received = $null
         Notes = (New-Object System.Collections.ArrayList)
     }
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    $verdict = 'PASS'; $reason = ''
+    $result = 'PASS'; $reason = ''; $missing = ''
+    # Counted from zero for this case only. A value left over from the previous one would let a case
+    # that asserts nothing inherit its predecessor's proof.
+    $script:KnxAssertions = 0
     try {
         & $Body
     }
     catch {
         $msg = "$($_.Exception.Message)"
-        if     ($msg -like 'KNXTEST_SKIP::*') { $verdict = 'SKIP'; $reason = $msg.Substring(14) }
-        elseif ($msg -like 'KNXTEST_NA::*')   { $verdict = 'N-A';  $reason = $msg.Substring(12) }
-        elseif ($msg -like 'KNXTEST_FAIL::*') { $verdict = 'FAIL'; $reason = $msg.Substring(14) }
-        else                                  { $verdict = 'FAIL'; $reason = "unhandled error: $msg" }
+        if     ($msg -like 'KNXTEST_SKIP::*') { $result = 'SKIP'; $reason = $msg.Substring(14) }
+        elseif ($msg -like 'KNXTEST_NA::*')   { $result = 'N-A';  $reason = $msg.Substring(12) }
+        elseif ($msg -like 'KNXTEST_NOTRUN::*') {
+            $result = 'NOT-RUN'
+            $rest = $msg.Substring(16)   # 'KNXTEST_NOTRUN::' is 16 characters
+            $cut = $rest.IndexOf('::')
+            if ($cut -ge 0) { $missing = $rest.Substring(0, $cut); $reason = $rest.Substring($cut + 2) }
+            else            { $reason = $rest }
+        }
+        elseif ($msg -like 'KNXTEST_FAIL::*') { $result = 'FAIL'; $reason = $msg.Substring(14) }
+        else {
+            # Only this branch is touched: the sentinels above carry reasons that the report and the
+            # reference comparison match on. Without the position an "unhandled error" cannot be
+            # diagnosed from the report at all - a bare "The property 'Length' cannot be found on
+            # this object" appeared in 16 cases at once and named neither file nor line.
+            $result = 'FAIL'
+            $where = ''
+            $inv = $_.InvocationInfo
+            if ($null -ne $inv -and $inv.ScriptLineNumber -gt 0) {
+                $file = if ($inv.ScriptName) { Split-Path -Leaf $inv.ScriptName } else { 'inline' }
+                $where = ' [' + $file + ':' + $inv.ScriptLineNumber + ']'
+            }
+            $reason = "unhandled error: $msg$where"
+        }
     }
     $sw.Stop()
+    $assertions = [int]$script:KnxAssertions
+    # A body that ran to the end without putting a single requirement to the device has not passed
+    # anything - it has said nothing. Only on the normal-completion path: SKIP, N-A, NOT-RUN and FAIL
+    # all arrive by a throw and keep their result, and a FAIL is itself an assertion that was raised.
+    if ($result -eq 'PASS' -and $assertions -eq 0) {
+        $result = 'NO-PROOF'
+        $reason = 'the case body ran to the end without raising an assertion'
+    }
 
     $evSent = ''; $evExpected = ''; $evReceived = ''
     if ($null -ne $script:Evidence.Sent)     { $evSent     = ConvertTo-HexString -Bytes $script:Evidence.Sent -MaxBytes 64 }
@@ -2203,8 +3079,12 @@ function Invoke-KnxTestCase {
         Suite    = $Suite
         Title    = $Title
         Clause   = $Clause
-        Result   = $verdict
+        Result   = $result
         Reason   = $reason
+        # The argument the run did not supply, for NOT-RUN. Empty everywhere else.
+        Missing  = $missing
+        # Assertions the case raised. Zero on a body that completed is what makes it NO-PROOF.
+        Assertions = $assertions
         Ms       = [int]$sw.ElapsedMilliseconds
         Sent     = $evSent
         Expected = $evExpected
@@ -2215,24 +3095,27 @@ function Invoke-KnxTestCase {
     Write-KnxResultLine -Case $res
     $script:Evidence = $null
     # Deliberately no return value: a suite calls this as a statement, and an emitted
-    # object would be formatted onto the console after every single verdict line.
+    # object would be formatted onto the console after every single result line.
 }
 
 function Write-KnxResultLine {
     <#
     .SYNOPSIS
-        Prints one aligned, colour-coded verdict line.
+        Prints one aligned, colour-coded result line.
     #>
     param([Parameter(Mandatory)]$Case)
     $col = switch ($Case.Result) {
         'PASS' { 'Green' }
         'FAIL' { 'Red' }
         'SKIP' { 'Yellow' }
+        'NOT-RUN' { 'Magenta' }
+        'NO-PROOF' { 'DarkYellow' }
         'N-A'  { 'DarkGray' }
         default { 'Gray' }
     }
     $id = $Case.Id.PadRight(10)
-    $vd = $Case.Result.PadRight(4)
+    # NO-PROOF is the longest result; a narrower pad put the title of every other line one column left.
+    $vd = $Case.Result.PadRight(8)
     Write-Host ("  {0} {1} " -f $id, $vd) -ForegroundColor $col -NoNewline
     Write-Host $Case.Title -ForegroundColor Gray -NoNewline
     if ($Case.Reason) { Write-Host ("  -- " + $Case.Reason) -ForegroundColor $col } else { Write-Host '' }
@@ -2241,18 +3124,78 @@ function Write-KnxResultLine {
 function Get-KnxRunSummary {
     <#
     .SYNOPSIS
-        Counts verdicts of the current run.
+        Counts results of the current run.
     #>
     param($Run = $null)
     if ($null -eq $Run) { $Run = $script:Run }
-    $c = @{ PASS = 0; FAIL = 0; SKIP = 0; 'N-A' = 0 }
-    foreach ($r in $Run.Results) { $c[$r.Result] = $c[$r.Result] + 1 }
+    $c = @{ PASS = 0; FAIL = 0; SKIP = 0; 'NOT-RUN' = 0; 'NO-PROOF' = 0; 'N-A' = 0 }
+    foreach ($r in $Run.Results) {
+        if ($c.ContainsKey($r.Result)) { $c[$r.Result] = $c[$r.Result] + 1 }
+        else { $c[$r.Result] = 1 }
+    }
+    $dropped = 0
+    if ($null -ne $Run.PSObject.Properties['Dropped']) { $dropped = $Run.Dropped.Count }
+    # Judged is the number the run may claim. Everything else is named for what it is: the device does
+    # not have it (NA), the run did not supply what it needs (NotRun), a gate refused it (Dropped), or
+    # the case ran and asserted nothing (NoProof) - which is not a statement about the device either.
     return [pscustomobject]@{
-        Total = $Run.Results.Count
-        Pass  = $c.PASS
-        Fail  = $c.FAIL
-        Skip  = $c.SKIP
-        NA    = $c.'N-A'
+        Total   = $Run.Results.Count
+        Pass    = $c.PASS
+        Fail    = $c.FAIL
+        Skip    = $c.SKIP
+        NotRun  = $c.'NOT-RUN'
+        NoProof = $c.'NO-PROOF'
+        NA      = $c.'N-A'
+        Dropped = $dropped
+        Judged  = ($c.PASS + $c.FAIL)
+    }
+}
+
+function Write-KnxRunSummary {
+    <#
+    .SYNOPSIS
+        Prints the result counts of a run, with the same buckets the Markdown table and the JSON carry.
+    .DESCRIPTION
+        One place for the summary line, so the console cannot silently disagree with the report. Every
+        caller printed its own line, and each of them left out a bucket: a run whose section 6 was
+        dropped and a run that ran everything printed the same green heading. Dropped suites and the
+        cases that asserted nothing are named here, not only in the file.
+    #>
+    param($Run = $null, [string]$Indent = '  ')
+    if ($null -eq $Run) { $Run = $script:Run }
+    if ($null -eq $Run) { return }
+    $sum = Get-KnxRunSummary -Run $Run
+    Write-Host ("{0}Total {1}   " -f $Indent, $sum.Total) -NoNewline
+    Write-Host ("PASS {0}  " -f $sum.Pass) -ForegroundColor Green -NoNewline
+    Write-Host ("FAIL {0}  " -f $sum.Fail) -ForegroundColor $(if ($sum.Fail -gt 0) { 'Red' } else { 'DarkGray' }) -NoNewline
+    Write-Host ("SKIP {0}  " -f $sum.Skip) -ForegroundColor Yellow -NoNewline
+    Write-Host ("NOT-RUN {0}  " -f $sum.NotRun) -ForegroundColor $(if ($sum.NotRun -gt 0) { 'Magenta' } else { 'DarkGray' }) -NoNewline
+    Write-Host ("NO-PROOF {0}  " -f $sum.NoProof) -ForegroundColor $(if ($sum.NoProof -gt 0) { 'DarkYellow' } else { 'DarkGray' }) -NoNewline
+    Write-Host ("N-A {0}  " -f $sum.NA) -ForegroundColor DarkGray -NoNewline
+    Write-Host ("Dropped {0}" -f $sum.Dropped) -ForegroundColor $(if ($sum.Dropped -gt 0) { 'Red' } else { 'DarkGray' })
+    Write-Host ("{0}Judged {1} of {2}." -f $Indent, $sum.Judged, $sum.Total) -ForegroundColor DarkGray
+    Write-KnxRunGaps -Run $Run -Indent $Indent
+}
+
+function Write-KnxRunGaps {
+    <#
+    .SYNOPSIS
+        Names the suites a run refused to start and the cases that raised no assertion.
+    .DESCRIPTION
+        Both are invisible in a result list - a dropped suite leaves no cases behind at all - and a
+        green heading over a section that never ran is what a reader takes away from the console.
+    #>
+    param($Run = $null, [string]$Indent = '  ')
+    if ($null -eq $Run) { $Run = $script:Run }
+    if ($null -eq $Run) { return }
+    if ($null -ne $Run.PSObject.Properties['Dropped']) {
+        foreach ($d in @($Run.Dropped)) {
+            Write-Host ("{0}DROPPED suite {1}: {2}" -f $Indent, $d.Suite, $d.Reason) -ForegroundColor Red
+        }
+    }
+    $noProof = @($Run.Results | Where-Object { $_.Result -eq 'NO-PROOF' })
+    foreach ($n in $noProof) {
+        Write-Host ("{0}NO-PROOF {1}: {2}" -f $Indent, $n.Id, $n.Title) -ForegroundColor DarkYellow
     }
 }
 
@@ -2291,17 +3234,61 @@ function Export-KnxTestReport {
     [void]$md.AppendLine('')
     [void]$md.AppendLine('## Summary')
     [void]$md.AppendLine('')
-    [void]$md.AppendLine('| Total | PASS | FAIL | SKIP | N-A |')
-    [void]$md.AppendLine('|---|---|---|---|---|')
-    [void]$md.AppendLine("| $($sum.Total) | $($sum.Pass) | $($sum.Fail) | $($sum.Skip) | $($sum.NA) |")
+    [void]$md.AppendLine('| Total | PASS | FAIL | SKIP | NOT-RUN | NO-PROOF | N-A | Suites dropped |')
+    [void]$md.AppendLine('|---|---|---|---|---|---|---|---|')
+    [void]$md.AppendLine("| $($sum.Total) | $($sum.Pass) | $($sum.Fail) | $($sum.Skip) | $($sum.NotRun) | $($sum.NoProof) | $($sum.NA) | $($sum.Dropped) |")
     [void]$md.AppendLine('')
-    # Anyone reading this report for the first time needs to know what the four words mean
-    # before the tables make sense - above all that SKIP and N-A are not softer failures.
+    # What the run may claim, stated before the tables: "everything passed" is worth nothing
+    # without "and this much was actually judged".
+    $coverPct = if ($sum.Total -gt 0) { [int](100 * $sum.Judged / $sum.Total) } else { 0 }
+    [void]$md.AppendLine("**Judged: $($sum.Judged) of $($sum.Total) cases ($coverPct %).** The rest was not a result about this device.")
+    [void]$md.AppendLine('')
+    # Anyone reading this report for the first time needs to know what the words mean before the
+    # tables make sense - above all that SKIP, NOT-RUN and N-A are not softer failures.
     [void]$md.AppendLine('PASS - the device did what the specification requires.  ')
     [void]$md.AppendLine('FAIL - it did not. The reason and the bytes are further down.  ')
-    [void]$md.AppendLine('SKIP - the test did not run, and why. Says nothing about the device.  ')
+    [void]$md.AppendLine('NOT-RUN - the RUN was missing an input the case needs. A gap in this run, not in the device.  ')
+    [void]$md.AppendLine('NO-PROOF - the case ran to the end and raised no assertion. It says nothing about the device, and it is not counted as judged.  ')
+    [void]$md.AppendLine('SKIP - the case chose not to run for a reason of its own, named per case.  ')
     [void]$md.AppendLine('N-A - the requirement does not apply to this device, and why.')
     [void]$md.AppendLine('')
+
+    # Everything the run did NOT judge, and what it would take to judge it. This is the section that
+    # turns "all that ran passed" into a statement somebody can act on.
+    $notRun = @($Run.Results | Where-Object { $_.Result -eq 'NOT-RUN' })
+    $noProof = @($Run.Results | Where-Object { $_.Result -eq 'NO-PROOF' })
+    $droppedSuites = @()
+    if ($null -ne $Run.PSObject.Properties['Dropped']) { $droppedSuites = @($Run.Dropped) }
+    if ($notRun.Count -gt 0 -or $droppedSuites.Count -gt 0 -or $noProof.Count -gt 0) {
+        [void]$md.AppendLine('## What this run did not judge')
+        [void]$md.AppendLine('')
+        if ($noProof.Count -gt 0) {
+            [void]$md.AppendLine('Cases that ran to the end without raising an assertion:')
+            [void]$md.AppendLine('')
+            [void]$md.AppendLine('| ID | Test case | Specification |')
+            [void]$md.AppendLine('|---|---|---|')
+            foreach ($n in $noProof) { [void]$md.AppendLine("| ``$($n.Id)`` | $($n.Title) | $($n.Clause) |") }
+            [void]$md.AppendLine('')
+        }
+        if ($droppedSuites.Count -gt 0) {
+            [void]$md.AppendLine('Whole suites the runner refused to start:')
+            [void]$md.AppendLine('')
+            foreach ($d in $droppedSuites) { [void]$md.AppendLine("* **$($d.Suite)** - $($d.Reason)") }
+            [void]$md.AppendLine('')
+        }
+        if ($notRun.Count -gt 0) {
+            [void]$md.AppendLine('Cases that need an input this run did not have:')
+            [void]$md.AppendLine('')
+            [void]$md.AppendLine('| Missing | Cases | What they would have judged |')
+            [void]$md.AppendLine('|---|---|---|')
+            foreach ($g in ($notRun | Group-Object -Property Missing | Sort-Object Name)) {
+                $ids = (@($g.Group | ForEach-Object { $_.Id }) -join ', ')
+                $what = ($g.Group[0].Reason -replace '\|', '\|')
+                [void]$md.AppendLine("| ``$($g.Name)`` | $($g.Count) - $ids | $what |")
+            }
+            [void]$md.AppendLine('')
+        }
+    }
 
     $suites = $Run.Results | Group-Object -Property Suite
     foreach ($s in $suites) {
@@ -2337,9 +3324,12 @@ function Export-KnxTestReport {
     $jsonPath = "$base.json"
     [System.IO.File]::WriteAllText($mdPath, $md.ToString())
 
+    $droppedOut = @()
+    if ($null -ne $Run.PSObject.Properties['Dropped']) { $droppedOut = @($Run.Dropped) }
     $payload = [pscustomobject]@{
         product     = $Run.Product
         bdut        = $Run.BdutIp
+        dropped     = $droppedOut
         profile     = $Run.Profile
         started     = $Run.Started.ToString('o')
         finished    = $Run.Finished.ToString('o')
@@ -2349,6 +3339,8 @@ function Export-KnxTestReport {
     }
     $payload | ConvertTo-Json -Depth 6 | Set-Content -Path $jsonPath -Encoding UTF8
 
+    # The gaps are NOT printed here: every caller calls Write-KnxRunSummary, which ends in Write-KnxRunGaps;
+    # printing them here too would show every "DROPPED suite ..." and "NO-PROOF <id>" line twice.
     return [pscustomobject]@{ Markdown = $mdPath; Json = $jsonPath; Summary = $sum }
 }
 
@@ -2412,7 +3404,7 @@ function Invoke-KnxSelfTest {
     .SYNOPSIS
         Verifies every frame builder against known-good byte vectors, without hardware.
     .DESCRIPTION
-        A suite that builds wrong frames produces wrong verdicts, and a wrong PASS is worse
+        A suite that builds wrong frames produces wrong results, and a wrong PASS is worse
         than no test at all. This must be green before any device result counts.
         Includes a negative control proving the comparison can actually fail.
     #>
@@ -2423,6 +3415,24 @@ function Invoke-KnxSelfTest {
         $act = (ConvertTo-HexString -Bytes $actual) -replace ' ', ''
         [void]$cases.Add([pscustomobject]@{ Name = $name; Ok = ($act -eq $exp); Expected = $exp; Actual = $act })
     }
+
+    # Network layer ----------------------------------------------------------
+    # 03_02_02 2.2.2 p.26: CTRL bit7 FT - 1 standard, 0 extended. A standard frame's length field is
+    # four bits, so an APDU above 15 octets MUST be sent as an extended frame. Getting this wrong made
+    # every request longer than 15 octets vanish without a trace.
+    Add-Vector 'L_Data.req standard frame, 15 octet APDU' `
+        (New-CemiLData -MessageCode 0x11 -Destination 0x1101 -Tpdu ([byte[]](, 0x00 * 16)) -Priority 0 -HopCount 6) `
+        '1100 B060 0000 1101 0F 00000000000000000000000000000000'
+    Add-Vector 'L_Data.req extended frame, 16 octet APDU' `
+        (New-CemiLData -MessageCode 0x11 -Destination 0x1101 -Tpdu ([byte[]](, 0x00 * 17)) -Priority 0 -HopCount 6) `
+        '1100 3060 0000 1101 10 0000000000000000000000000000000000'
+    # 08_03_03 needs any routing counter 0..7 on the wire; it lands in ctrl2 bits 6..4.
+    Add-Vector 'L_Data.req routing counter 7' `
+        (New-CemiLData -MessageCode 0x11 -Destination 0x1101 -Tpdu ([byte[]]@(0x00, 0x00)) -Priority 0 -HopCount 7) `
+        '1100 B070 0000 1101 01 0000'
+    Add-Vector 'L_Data.req routing counter 0' `
+        (New-CemiLData -MessageCode 0x11 -Destination 0x1101 -Tpdu ([byte[]]@(0x00, 0x00)) -Priority 0 -HopCount 0) `
+        '1100 B000 0000 1101 01 0000'
 
     # Core -------------------------------------------------------------------
     Add-Vector 'SEARCH_REQUEST 192.168.1.10:3671' `
@@ -2501,6 +3511,20 @@ function Invoke-KnxSelfTest {
     Add-Vector 'cEMI M_PropRead.req OT 11 PID 55 elem 1 start 16' `
         (New-CemiMPropRead -ObjectType 11 -ObjectInstance 1 -PropertyId 55 -ElementCount 1 -StartIndex 16) `
         'FC 000B 01 37 10 10'
+
+    # The 4-bit field must refuse 16, not mask it to 0: the silent mask produced two phantom
+    # findings (a device rejecting a zero-element request was read as a device defect).
+    $threwCount = $false
+    try { [void](New-CemiMPropRead -ObjectType 11 -ObjectInstance 1 -PropertyId 53 -ElementCount 16 -StartIndex 1) }
+    catch { $threwCount = $true }
+    Add-Vector 'cEMI M_PropRead.req refuses elem 16 (4-bit field)' `
+        ([byte[]]@($(if ($threwCount) { 1 } else { 0 }))) '01'
+
+    $threwIndex = $false
+    try { [void](New-CemiMPropRead -ObjectType 11 -ObjectInstance 1 -PropertyId 53 -ElementCount 1 -StartIndex 4096) }
+    catch { $threwIndex = $true }
+    Add-Vector 'cEMI M_PropRead.req refuses start index 4096 (12-bit field)' `
+        ([byte[]]@($(if ($threwIndex) { 1 } else { 0 }))) '01'
 
     Add-Vector 'cEMI M_PropWrite.req OT 0 PID 14 data 00' `
         (New-CemiMPropWrite -ObjectType 0 -ObjectInstance 1 -PropertyId 14 -Data ([byte[]]@(0x00))) `

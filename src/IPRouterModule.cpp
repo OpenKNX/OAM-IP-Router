@@ -334,11 +334,17 @@ static void formatTunStats(const IpTunnelServer::TunnelEvent &e, bool active, ch
         snprintf(last, sizeof(last), "  last contact %s", d);
     }
     // A sequence error is any datagram discarded because its counter was not the expected one -- a gap
-    // as well as a stale repeat. The busmonitor has no receive direction, so it has none.
-    char sq[24];
+    // as well as a stale repeat. The busmonitor has no receive direction, so it has none. "held": TUNNELLING_REQUESTs
+    // left unacknowledged under backpressure (KNX_TUNNEL_BACKPRESSURE), repeats included, shown once it happened.
+    char sq[28];
     sq[0] = '\0';
     if (!busmon)
-        snprintf(sq, sizeof(sq), "  seq-err %u", (unsigned)e.seqGap);
+    {
+        if (e.backpressure)
+            snprintf(sq, sizeof(sq), "  seq-err %u  held %u", (unsigned)e.seqGap, (unsigned)e.backpressure);
+        else
+            snprintf(sq, sizeof(sq), "  seq-err %u", (unsigned)e.seqGap);
+    }
     snprintf(b, n, "->client %s%s%s%s%s%s", humanCount(e.toClient).c_str(), rx, fi, dp, sq, last);
 }
 
@@ -554,7 +560,7 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
             else
                 zs[0] = 0;
             logInfoP("  %-11s %-8s %-15s  %-18s up %s%s", tunTypeName(act[i].type), pa, ip, start, dur, zs);
-            char st[192]; // 186 by the capacity rule this file uses (9+5+27+71+19+23+31+NUL)
+            char st[192]; // 190 by the capacity rule this file uses (9+5+27+71+19+27+31+NUL)
             formatTunStats(act[i], true, st, sizeof(st));
             logInfoP("    %s", st);
         }
@@ -598,7 +604,7 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
                 // A refused connect never had a session, so it has no counters to print.
                 if (e->reason < IpTunnelServer::END_REJ_TYPE)
                 {
-                    char st[192]; // 186 by the capacity rule this file uses (9+5+27+71+19+23+31+NUL)
+                    char st[192]; // 190 by the capacity rule this file uses (9+5+27+71+19+27+31+NUL)
                     formatTunStats(*e, false, st, sizeof(st));
                     logInfoP("    %s", st);
                 }

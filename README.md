@@ -70,7 +70,7 @@ Firmware can also be pushed as a **difference** instead of a whole image, which 
 
 - **Start here:** [QUICKSTART](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/QUICKSTART.md) — five minutes, three front ends, one first firmware update
 - **Doc index:** [doc/README.md](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/README.md) — every document with the audience it is written for
-- **Host client:** [FTC-CLI](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/FTC-CLI.md) · [ftc-cli/README.md](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/ftc-cli/README.md)
+- **Host client:** [oknx](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/guide/oknx.md) · [oknx/README.md](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/oknx/README.md)
 - **Firmware over the bus:** [FIRMWARE-UPDATE](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/FIRMWARE-UPDATE.md)
 - **Wire protocol:** [PROTOCOL](https://github.com/OpenKNX/OFM-FileTransferModule/blob/ec/v1dev/doc/PROTOCOL.md)
 

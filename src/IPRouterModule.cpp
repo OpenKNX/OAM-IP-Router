@@ -103,6 +103,7 @@ static const char *tunReasonName(uint8_t r, uint8_t det)
         case IpTunnelServer::END_BUSMON: return "Busmon";
         case IpTunnelServer::END_BUSMON_LOST: return "Busmon unerwartet beendet";
 #endif
+        case IpTunnelServer::END_VERSION: return "Protokollversion gewechselt";
         case IpTunnelServer::END_CLOSED: return "Vom Client getrennt";
         case IpTunnelServer::END_EVICTED: return "Ersetzt (Reservierung)";
         case IpTunnelServer::END_NOACK: return "Keine Quittung";

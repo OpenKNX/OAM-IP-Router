@@ -1217,17 +1217,31 @@ void IPRouterModule::appendFilterTableJson(std::string &json)
 {
     _filtWanted = true;
     RouterObject &ro = knx.bau().getRouterObject();
+
+    // The group routing mode per direction decides whether the table is consulted at all. Read the way
+    // NetworkLayerCoupler::isRoutedGroupAddress() reads it: the spec default unless the property exists.
+    uint8_t lcgrp[2];
+    const PropertyID pids[2] = {PID_MAIN_LCGRPCONFIG, PID_SUB_LCGRPCONFIG};
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        lcgrp[i] = LCGRPCONFIG::GROUP_6FFFROUTE | LCGRPCONFIG::GROUP_7000UNLOCK | LCGRPCONFIG::GROUP_REPEAT;
+        Property *p = ro.property(pids[i]);
+        if (p)
+            p->read(lcgrp[i]);
+    }
+    char buf[64];
+    snprintf(buf, sizeof(buf), ",\"filt\":{\"lcgrp\":{\"main\":%u,\"sub\":%u},", (unsigned)lcgrp[0], (unsigned)lcgrp[1]);
+    json += buf;
+
     if (ro.filterTableData() == nullptr || ro.filterTableSize() == 0)
     {
-        json += ",\"filt\":{\"loaded\":false}";
+        json += "\"loaded\":false}";
         return;
     }
 
     // inUse is read live, never cached: a management client can switch filtering off with a property
     // write that leaves the table itself untouched, so a stored flag would contradict the router.
-    char buf[64];
-    snprintf(buf, sizeof(buf), ",\"filt\":{\"loaded\":true,\"inUse\":%s,",
-             ro.filterTableInUse() ? "true" : "false");
+    snprintf(buf, sizeof(buf), "\"loaded\":true,\"inUse\":%s,", ro.filterTableInUse() ? "true" : "false");
     json += buf;
 
     const size_t mark = json.size();

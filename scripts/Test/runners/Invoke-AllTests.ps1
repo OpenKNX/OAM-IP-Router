@@ -1028,6 +1028,8 @@ if ($want -contains 'Reference') {
     else {
         $t0 = Get-Date
         $refFails = @()
+        $refUsed = @()
+        $refUnusable = @()
         foreach ($ref in $refs) {
             if ($ref -eq $Ip) { Write-Host "  $ref is the device under test, not a reference - skipped" -ForegroundColor Yellow; continue }
             Write-Host ''
@@ -1038,12 +1040,16 @@ if ($want -contains 'Reference') {
             if ($Quick) { $a += '-Quick' }
             & pwsh -NoProfile -File (Join-Path $here 'runners/Compare-Reference.ps1') @a
             # 3 means the rig could not offer this reference; that is not a result about our device.
-            if ($LASTEXITCODE -eq 3) { Write-Host "  reference $ref not usable right now" -ForegroundColor Yellow }
-            elseif ($LASTEXITCODE -ne 0) { $refFails += "$ref (exit $LASTEXITCODE)" }
+            if ($LASTEXITCODE -eq 3) { Write-Host "  reference $ref not usable right now" -ForegroundColor Yellow; $refUnusable += $ref; continue }
+            $refUsed += $ref
+            if ($LASTEXITCODE -ne 0) { $refFails += "$ref (exit $LASTEXITCODE)" }
         }
         $elapsed = ((Get-Date) - $t0).TotalSeconds
-        if ($refFails.Count -eq 0) { Add-StageResult -Name 'Reference' -Status 'PASS' -Seconds $elapsed }
-        else { Add-StageResult -Name 'Reference' -Status 'FAIL' -Reason ($refFails -join '; ') -ExitCode 1 -Seconds $elapsed }
+        # A reference whose comparison did not run is named in the result; with none run there is nothing to judge.
+        $refNote = if ($refUnusable.Count -gt 0) { "not compared: $($refUnusable -join ', ')" } else { '' }
+        if ($refUsed.Count -eq 0) { Add-StageResult -Name 'Reference' -Status 'SKIPPED' -Reason ('no comparison could be run' + $(if ($refNote) { " - $refNote" } else { '' })) -Seconds $elapsed }
+        elseif ($refFails.Count -eq 0) { Add-StageResult -Name 'Reference' -Status 'PASS' -Reason $refNote -Seconds $elapsed }
+        else { Add-StageResult -Name 'Reference' -Status 'FAIL' -Reason ((@($refFails) + @($refNote | Where-Object { $_ })) -join '; ') -ExitCode 1 -Seconds $elapsed }
     }
 }
 

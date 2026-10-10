@@ -129,6 +129,15 @@ Tunnelling, Routing, Remote Diagnosis, IP Medium and TP devices. Every case name
 | **03_02_02** Communication Medium TP1 | the character, ACK and bus-free timings the bus-load figure is built on |
 | **AN189** | a hop count of 7 no longer bypasses the filter table |
 
+**Access protection: the warning the standard asks for.** The device answers `A_Authorize_Request` with
+access level 0 - the highest - whatever key is offered, and it does not answer `A_Key_Write` at all. For a
+device without key-protected areas that is what the standard prescribes: 08_03_07 §2.11 p.45 says such a
+device "shall always allow - regardless of the attributed keys - access to the highest level (0), including
+when receiving an illegal key". The same clause requires the consequence to be spelled out here, so:
+**setting a BCU key for this device in ETS protects nothing.** Anyone who can reach the bus, or open a
+tunnel to it, can read and write its properties and its memory. Protect the installation where it can be
+protected - the KNX line, the IP segment, and who is allowed to open a tunnel at all.
+
 Two deliberate exceptions, both marked as such where they appear: the FTC **fast** and **forget** upload
 modes trade protocol silence for speed and step outside the specification. They are experimental, off by
 default, and work only between OpenKNX devices.

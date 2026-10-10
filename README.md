@@ -51,8 +51,10 @@ Ethernet. Shares the common OpenKNX libraries (`knx`, `TPUart`, `OGM-*`, `OFM-*`
   ACK window, bus-free time), so a saturated line reads 100 % whatever the telegram length. Kept with a
   one-minute average and a peak.
 - **`ipro` console command** — coupler role and coupled line, routing multicast and TTL, open tunnels, the
-  routing counters per direction, the KNXnet/IP telegram counters and bus load. `ipro reset` clears the
-  bus-load history before a measurement.
+  routing counters per direction, the KNXnet/IP telegram counters, the receive queue (waiting,
+  peak, dropped) and bus load. `ipro reset` clears the bus-load history and the per-address routing
+  counts before a measurement and sets the status page's queue-loss row back to 0; PID 72/73 are not
+  reset (they count since boot and stop at 65535).
 - **`tun` console command** — active tunnels with type, client and uptime, plus the last 32
   connect/disconnect events with the reason.
 - **`apdu` / `route apdu`** — read and set the APDU length properties.

@@ -359,6 +359,30 @@
         });
     }
 
+    // A queue loss is current for this long after its counter last rose, then it turns amber.
+    // Same value on the IP-Interface page.
+    const LOST_FRESH_S = 300;
+
+    function lostFresh(n, age) { return n > 0 && age >= 0 && age < LOST_FRESH_S; }
+
+    function ago(s) {
+        return s < 60 ? s + '&nbsp;s' : s < 3600 ? Math.floor(s / 60) + '&nbsp;min'
+             : s < 172800 ? Math.floor(s / 3600) + '&nbsp;h' : Math.floor(s / 86400) + '&nbsp;d';
+    }
+
+    // [lost since start or reset, seconds since its last rise (-1 = none)]. An older firmware sends
+    // only the raw counter; it is then shown as fresh and without an age (third element).
+    function lostOf(d, k) {
+        return d[k + 'Since'] === undefined ? [d[k] || 0, 0, true] : [d[k + 'Since'], d[k + 'Age']];
+    }
+
+    function lostCell(v) {
+        const n = v[0], age = v[1];
+        if (!n) return '0';
+        return '<span class="' + (lostFresh(n, age) ? 'ii-bad' : 'ii-warn') + '">' + humanCount(n) + '</span>' +
+               (age >= 0 && !v[2] ? ' <span class="gray">zuletzt vor ' + ago(age) + '</span>' : '');
+    }
+
     // An expert number without its meaning is what turned a healthy device into a power-supply hunt.
     const WHY = {
         byteErr: 'FE = Leitung zum Chip (Baudrate, Verkabelung). PE = Bitfehler vom Bus. BE = Break. ' +
@@ -368,14 +392,21 @@
         ackDrop: 'Die Quittung kam zu sp&auml;t auf den Bus, der Sender wiederholt.',
         con: 'Der Chip blieb eine Sendebest&auml;tigung schuldig, der Treiber hat sie nachgezogen. Dauernd = Chipstress.',
         sc: 'Zwei Teilnehmer haben gleichzeitig gesendet. Einzeln normal, dauerhaft hoch = Adress- oder Leitungsproblem.',
-        lost: 'Warteschlange voll - diese Telegramme wurden nie gesendet.',
+        lost: 'Auf dem Weg hinaus verworfen (Warteschlange voll, Seite getrennt oder gest&ouml;rt) - diese ' +
+              'Telegramme kamen dort nicht an. <b>Rot</b> = in den letzten ' +
+              (LOST_FRESH_S / 60) + '&nbsp;min gestiegen, <b>orange</b> = der letzte Verlust ist &auml;lter. ' +
+              '&bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; z&auml;hlt diese Anzeige ab 0; die Ger&auml;tez&auml;hler ' +
+              '(PID 72/73, ETS) werden nicht zur&uuml;ckgesetzt.',
+        rxDrop: 'Empfang: verworfen, weil die Empfangswarteschlange voll war oder zu lange ungelesen blieb ' +
+                '(z.&nbsp;B. nach abgebrochenem OTA) - diese KNXnet/IP-Pakete wurden nie gelesen. Nicht in PID 72/73 enthalten.',
         // All four values, because all four are on the row. The >100 % note is not a caveat: frames
         // are booked in the second they COMPLETE (BusLoad.h), so a long telegram can overfill one.
         load: 'Anteil der Zeit, in der die TP1-Linie belegt war (9600&nbsp;bit/s). ' +
               '<b>jetzt</b> = letzte Sekunde &middot; <b>Mittel</b> = seit Start/Zur&uuml;cksetzen, max. 60&nbsp;s &middot; ' +
               '<b>Spitze</b> = h&ouml;chster Sekundenwert seit Start oder Zur&uuml;cksetzen &middot; ' +
               '<b>B/s</b> = empfangene Bytes der letzten Sekunde. &Uuml;ber 100&nbsp;% m&ouml;glich: ein ' +
-              'Telegramm z&auml;hlt in der Sekunde, in der es endet.',
+              'Telegramm z&auml;hlt in der Sekunde, in der es endet. &bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; ' +
+              'setzt auch die Zeile &bdquo;Verloren (Queue)&ldquo; auf 0.',
         toIp: 'Jedes KNXnet/IP-Paket, nicht nur Gruppentelegramme.',
         cfg: 'Das Ger&auml;t hat noch keine Konfiguration erhalten: es tr&auml;gt die Vorgabeadresse ' +
              '15.15.255 und keine Filtertabelle. Damit ein Tunnel &uuml;berhaupt zustande kommt, vergibt es sich ' +
@@ -400,7 +431,10 @@
     function renderState(d) {
         const l = d.load;
         const loadCls = l.now >= 500 ? 'ii-bad' : l.now >= 200 ? 'ii-warn' : 'ii-ok';
-        const bad = d.lostTp > 0;
+        // Any of the three: each counter holds only telegrams that were dropped.
+        const lostTp = lostOf(d, 'lostTp'), lostIp = lostOf(d, 'lostIp'), rxDrop = lostOf(d, 'rxDrop');
+        const bad = lostFresh(lostTp[0], lostTp[1]) || lostFresh(lostIp[0], lostIp[1]) ||
+                    lostFresh(rxDrop[0], rxDrop[1]);
 
         $('ii-head').innerHTML = d.tun.n + '&nbsp;/&nbsp;' + d.tun.max + ' Tunnel &middot; Buslast ' + pct(l.now);
 
@@ -438,8 +472,12 @@
             row('Weitergeleitet', '&rarr;IP ' + humanCount(d.rtIp) + ' &nbsp; &rarr;TP ' + humanCount(d.rtTp), WHY.routed) +
             row('Gefiltert', '&rarr;IP ' + humanCount(d.flIp) + ' &nbsp; &rarr;TP ' + humanCount(d.flTp), WHY.filt) +
             row('Telegramme', '&rarr;IP ' + humanCount(d.toIp) + ' &nbsp; &rarr;TP ' + humanCount(d.toTp), WHY.toIp) +
-            row('Verloren (Queue)', '&rarr;IP ' + humanCount(d.lostIp) + ' &nbsp; &rarr;TP ' +
-                (d.lostTp ? '<span class="ii-bad">' + humanCount(d.lostTp) + '</span>' : '0'), WHY.lost) +
+            // Empfang only where the firmware counts it (RP2040, ESP32).
+            row('Verloren (Queue)', '&rarr;IP ' + lostCell(lostIp) + ' &nbsp; &rarr;TP ' + lostCell(lostTp) +
+                (d.rxDrop === undefined ? '' : ' &nbsp; Empfang ' + lostCell(rxDrop)),
+                WHY.lost + ' Stand PID 72/73: &rarr;IP ' + d.lostIp + ' &middot; &rarr;TP ' + d.lostTp + '.' +
+                (d.rxDrop === undefined ? '' : ' ' + WHY.rxDrop + ' Stand seit Start: ' + d.rxDrop +
+                    ', wartend ' + d.rxQ + ', H&ouml;chststand ' + d.rxPeak + '.')) +
             row('Hop-Count 0', '&rarr;IP ' + humanCount(d.hop0Ip) + ' &nbsp; &rarr;TP ' + humanCount(d.hop0Tp), WHY.hop0) +
             row('LOST empfangen', humanCount(d.lostRx) + ' &nbsp; gemeldete Verluste ' + humanCount(d.lostRxN), WHY.lostRx) +
             row('BUSY empfangen', humanCount(d.busyRx), WHY.busyRx) +

@@ -361,6 +361,80 @@ static void formatGa(uint16_t ga, char *b, size_t n)
 
 #endif // KNX_TUNNELING
 
+#ifdef IPRO_HAS_WEBPAGE
+/**
+ * @brief Queue losses for the status page: count since the last reset, seconds since the last rise.
+ * Read from the wrapping 32-bit twins of PID 72/73, which keep counting where those saturate,
+ * and from the platform receive queue (saturating; RP2040 and ESP32).
+ * Same keys and rules as the IP-Interface page.
+ */
+struct LostTrack
+{
+    std::atomic<uint32_t> base{0}; // count at the last reset
+    std::atomic<uint32_t> seen{0}; // count at the last sample
+    std::atomic<uint32_t> atS{0};  // uptime() seconds of the last change of seen
+};
+static LostTrack lostTrack[3];    // [0] = ->IP, [1] = ->TP, [2] = receive queue of the routing socket
+static uint32_t lostSampleAt = 0; // millis() of the last sample
+
+static uint32_t lostCount(uint8_t dir)
+{
+    if (dir == 2)
+    {
+        MulticastRxStats rx;
+        knx.platform().multicastRxStats(rx);
+        return rx.dropped; // saturates at 2^32 - 1, not reached in practice
+    }
+    KnxIpCounters &c = knx.bau().getCounters();
+    return dir ? c.lostToKnx() : c.lostToIp();
+}
+
+/** @brief Stamps a change of any count. KNX loop only. */
+static void lostSample()
+{
+    for (uint8_t d = 0; d < 3; d++)
+    {
+        const uint32_t n = lostCount(d);
+        if (n == lostTrack[d].seen.load()) continue;
+        lostTrack[d].atS.store(uptime());
+        lostTrack[d].seen.store(n); // after atS: a reader that sees this value also sees its time
+    }
+}
+
+/** @brief Web-only baseline: the page counts from here, PID 72/73 are not touched. */
+static void lostResetBaseline()
+{
+    for (uint8_t d = 0; d < 3; d++)
+        lostTrack[d].base.store(lostCount(d));
+}
+
+/**
+ * @brief Appends "<key>Since" (lost since boot or reset) and "<key>Age" (seconds since the last rise,
+ * -1 when Since is 0). Load order base -> seen -> atS -> count, each at least as new as the one before.
+ */
+static void appendLost(std::string &json, const char *key, uint8_t dir)
+{
+    const LostTrack &t = lostTrack[dir];
+    const uint32_t base = t.base.load();
+    const uint32_t seen = t.seen.load();
+    const uint32_t atS = t.atS.load();
+    const uint32_t n = lostCount(dir);
+    const uint32_t since = n - base; // unsigned: exact across the 2^32 wrap
+    char buf[64];                    // worst case 48: two keys, two 10-digit values
+    if (since == 0)
+        snprintf(buf, sizeof(buf), ",\"%sSince\":0,\"%sAge\":-1", key, key);
+    else
+    {
+        // n != seen: risen after the last sample.
+        const uint32_t now = uptime();
+        const uint32_t age = (n != seen || now < atS) ? 0 : now - atS;
+        snprintf(buf, sizeof(buf), ",\"%sSince\":%lu,\"%sAge\":%lu", key, (unsigned long)since, key,
+                 (unsigned long)age);
+    }
+    json += buf;
+}
+#endif
+
 IPRouterModule *IPRouterModule::_instance = nullptr;
 
 IPRouterModule::IPRouterModule()
@@ -453,6 +527,10 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
 #else
         logInfoP("Bus load history, average and peak cleared");
 #endif
+#ifdef IPRO_HAS_WEBPAGE
+        lostResetBaseline();
+        logInfoP("Web page lost counters zeroed (PID 72/73 unchanged)");
+#endif
         return true;
     }
     if (cmd == "ipro ?")
@@ -497,8 +575,16 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
         // 03_08_03: ->IP counts EVERY KNXnet/IP datagram, tunnelling and ACKs included.
         logInfoP("Telegrams  ->IP %lu   ->TP %lu   (PID 74/75)",
                  (unsigned long)c.transmitToIp(), (unsigned long)c.transmitToKnx());
-        logInfoP("Lost       ->IP %u    ->TP %u    (PID 72/73, queue overflow)",
+        logInfoP("Lost       ->IP %u    ->TP %u    (PID 72/73 since boot, queue overflow)",
                  c.overflowToIp(), c.overflowToKnx());
+        {
+            // Receive queue of the KNXnet/IP socket (RP2040, ESP32): drops here never reach PID 72/73.
+            MulticastRxStats rx;
+            if (knx.platform().multicastRxStats(rx))
+                logInfoP("Rx queue   %u waiting   peak %u   dropped %lu (full/stale)   %lu over %u octets   (queue %lu octets)",
+                         (unsigned)rx.backlog, (unsigned)rx.peak, (unsigned long)rx.dropped,
+                         (unsigned long)rx.oversize, (unsigned)KNXIP_RX_MAX_DATAGRAM, (unsigned long)rx.capacity);
+        }
         // Telegrams that had used up their couplers. Nothing counted these before.
         logInfoP("Hop-Count 0->IP %lu   ->TP %lu",
                  (unsigned long)c.hopCountToIp(), (unsigned long)c.hopCountToKnx());
@@ -620,9 +706,9 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
 void IPRouterModule::showHelp()
 {
 #ifdef OPENKNX_ROUTE_TRACE
-    openknx.console.printHelpLine("ipro reset", "Clear bus load history/average/peak AND the per-address routing counts");
+    openknx.console.printHelpLine("ipro reset", "Clear bus load history/average/peak, the per-address routing counts, web lost view");
 #else
-    openknx.console.printHelpLine("ipro reset", "Clear the bus load history, average and peak");
+    openknx.console.printHelpLine("ipro reset", "Clear the bus load history, average and peak, web lost view");
 #endif
     openknx.console.printHelpLine("ipro", "Router status: coupler role/line, multicast, routing + KNXnet/IP counters, bus load");
 #ifdef KNX_TUNNELING
@@ -869,6 +955,18 @@ static const std::string &buildIproJson()
              c.overflowToIp(), c.overflowToKnx(),
              (unsigned long)c.hopCountToIp(), (unsigned long)c.hopCountToKnx());
     json += buf;
+    // lostIp/lostTp above stay the raw PID values; these two carry the page's view of them.
+    appendLost(json, "lostIp", 0);
+    appendLost(json, "lostTp", 1);
+    // Receive queue, only where the platform keeps one (RP2040, ESP32): datagrams dropped on arrival.
+    MulticastRxStats rx;
+    if (knx.platform().multicastRxStats(rx))
+    {
+        snprintf(buf, sizeof(buf), ",\"rxDrop\":%lu,\"rxQ\":%u,\"rxPeak\":%u,\"rxOver\":%lu",
+                 (unsigned long)rx.dropped, (unsigned)rx.backlog, (unsigned)rx.peak, (unsigned long)rx.oversize);
+        json += buf;
+        appendLost(json, "rxDrop", 2);
+    }
     snprintf(buf, sizeof(buf), ",\"lostRx\":%lu,\"lostRxN\":%lu,\"busyRx\":%lu",
              (unsigned long)c.lostMessageRx(), (unsigned long)c.lostReportedRx(), (unsigned long)c.busyRx());
     json += buf;
@@ -1279,6 +1377,14 @@ void IPRouterModule::loop(bool configured)
         refreshReserved();
         refreshIas();
     }
+#ifdef IPRO_HAS_WEBPAGE
+    // Here and not in the JSON builder: a page opened long after a loss must still see its age.
+    if (lostSampleAt == 0 || (uint32_t)(millis() - lostSampleAt) >= 1000)
+    {
+        lostSampleAt = millis();
+        lostSample();
+    }
+#endif
 #ifdef OPENKNX_ROUTE_TRACE
     // Two pointer comparisons every pass so a download is never missed, the scan only when
     // there is time left. During LS_LOADING the table reads as nullptr, which is the signal.
@@ -1365,6 +1471,7 @@ void IPRouterModule::setup(bool configured)
 #ifdef OPENKNX_ROUTE_TRACE
         knx.bau().getRouteTrace().resetTop();
 #endif
+        lostResetBaseline();
         res.setContentType("application/json");
         res.sendStatic("{}");
     });

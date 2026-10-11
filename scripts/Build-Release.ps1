@@ -154,6 +154,7 @@ $fullTargets = @(
 )
 
 $buildParam = if ($isDev) { "Dev" } else { "Release" }
+$buildStart = Get-Date
 OpenKNX_ShowLogo "Build-Release ($buildParam$(if ($isFull) { ', Full' })$(if ($isSkipFirmware) { ', SkipFirmware' }))"
 
 # Loud reminder: the default is a DEV build. A real release must be asked for explicitly.
@@ -227,3 +228,32 @@ if (Test-Path $testGuide) {
 # ---- generic post-build steps --------------------------------------------------------------
 lib/OGM-Common/scripts/setup/reusable/Build-Release-Postprocess.ps1 $buildParam
 if (!$?) { exit 1 }
+
+# ---- closing note: a new build is untested -------------------------------------------------
+# Shown only for a package written by this run, so a failed packaging step is not reported as finished.
+$package = Get-ChildItem -Path "release" -Filter "OpenKNX-*.zip" -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -ge $buildStart } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($null -ne $package) {
+    $variants = if ($isSkipFirmware) { 0 } elseif ($isFull) { $standardTargets.Count + $fullTargets.Count } else { $standardTargets.Count }
+    $content  = if ($variants -gt 0) { "$buildParam, $variants firmware variants" } else { "$buildParam, no firmware built" }
+    Write-Host ""
+    Write-Host "Build finished: " -NoNewline -ForegroundColor Green
+    Write-Host "release/$($package.Name)" -NoNewline
+    Write-Host "  ($content)" -ForegroundColor DarkGray
+    if ($variants -gt 0) {
+        Write-Host ""
+        Write-Host "  This build is new and nothing in it has been tested yet."
+        Write-Host "  Before it is handed on, run it through the test suite:"
+        Write-Host ""
+        Write-Host "    1. Flash the firmware to the test device. If the application version changed, download it with ETS." -ForegroundColor DarkGray
+        Write-Host "    2. " -NoNewline -ForegroundColor DarkGray
+        Write-Host "pwsh scripts/Test/Run-Tests.ps1 -TestProfile router-all" -ForegroundColor Cyan
+        Write-Host "       (pwsh scripts/Test/Run-Tests.ps1 -ListProfiles shows the shorter runs)" -ForegroundColor DarkGray
+        Write-Host "    3. Read the report in scripts/Test/Reports/." -ForegroundColor DarkGray
+        if (Test-Path "release/FTC-Testanleitung.md") {
+            Write-Host ""
+            Write-Host "  Test guide: release/FTC-Testanleitung.md" -ForegroundColor DarkGray
+        }
+    }
+    Write-Host ""
+}

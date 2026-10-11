@@ -229,31 +229,58 @@ if (Test-Path $testGuide) {
 lib/OGM-Common/scripts/setup/reusable/Build-Release-Postprocess.ps1 $buildParam
 if (!$?) { exit 1 }
 
-# ---- closing note: a new build is untested -------------------------------------------------
+# ---- closing summary: what was built, and that it is untested -------------------------------
 # Shown only for a package written by this run, so a failed packaging step is not reported as finished.
 $package = Get-ChildItem -Path "release" -Filter "OpenKNX-*.zip" -ErrorAction SilentlyContinue |
     Where-Object { $_.LastWriteTime -ge $buildStart } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($null -ne $package) {
-    $variants = if ($isSkipFirmware) { 0 } elseif ($isFull) { $standardTargets.Count + $fullTargets.Count } else { $standardTargets.Count }
-    $content  = if ($variants -gt 0) { "$buildParam, $variants firmware variants" } else { "$buildParam, no firmware built" }
+    $testProfile = "router-all"
+    $testGuideOut = "release/FTC-Testanleitung.md"
+    $built = @()
+    if (-not $isSkipFirmware) { $built = @($standardTargets); if ($isFull) { $built += $fullTargets } }
+    $width = 78
+    $rule = "  " + ("$([char]0x2500)" * $width)
+
+    function Write-SummaryBar($Text, $Back) {
+        Write-Host "  " -NoNewline
+        # The line break is written without the background colour, or a scrolling console paints the next line with it.
+        Write-Host (" $Text").PadRight($width) -ForegroundColor Black -BackgroundColor $Back -NoNewline
+        Write-Host ""
+    }
+    function Write-SummaryRow($Label, $Value, $Color = "Gray") {
+        Write-Host ("  {0,-11}" -f $Label) -NoNewline -ForegroundColor DarkGray
+        Write-Host $Value -ForegroundColor $Color
+    }
+    function Write-SummaryStep($Number, $Label, $Value, $Color = "Gray") {
+        Write-Host ("  {0,-3}" -f $Number) -NoNewline -ForegroundColor Yellow
+        Write-Host ("{0,-8}" -f $Label) -NoNewline
+        Write-Host $Value -ForegroundColor $Color
+    }
+
     Write-Host ""
-    Write-Host "Build finished: " -NoNewline -ForegroundColor Green
-    Write-Host "release/$($package.Name)" -NoNewline
-    Write-Host "  ($content)" -ForegroundColor DarkGray
-    if ($variants -gt 0) {
+    Write-SummaryBar "BUILD FINISHED  -  $($package.BaseName)" Green
+    Write-Host ""
+    Write-SummaryRow "Package" "release/$($package.Name)" White
+    if ($built.Count -eq 0) {
+        Write-SummaryRow "Firmware" "not built (-SkipFirmware)" DarkGray
+    } else {
+        $label = "Firmware"
+        foreach ($t in $built) { Write-SummaryRow $label ($t.Env -replace '^release_', ''); $label = "" }
         Write-Host ""
-        Write-Host "  This build is new and nothing in it has been tested yet."
-        Write-Host "  Before it is handed on, run it through the test suite:"
+        Write-SummaryBar "NOT TESTED YET" Yellow
         Write-Host ""
-        Write-Host "    1. Flash the firmware to the test device. If the application version changed, download it with ETS." -ForegroundColor DarkGray
-        Write-Host "    2. " -NoNewline -ForegroundColor DarkGray
-        Write-Host "pwsh scripts/Test/Run-Tests.ps1 -TestProfile router-all" -ForegroundColor Cyan
-        Write-Host "       (pwsh scripts/Test/Run-Tests.ps1 -ListProfiles shows the shorter runs)" -ForegroundColor DarkGray
-        Write-Host "    3. Read the report in scripts/Test/Reports/." -ForegroundColor DarkGray
-        if (Test-Path "release/FTC-Testanleitung.md") {
+        Write-Host "  This build is new and nothing in it has been tested."
+        Write-Host "  Run it through the test suite before it is handed on:"
+        Write-Host ""
+        Write-SummaryStep "1" "Flash" "the firmware to the test device; download with ETS if the application version changed"
+        Write-SummaryStep "2" "Test" "./scripts/Test/Run-Tests.ps1 -TestProfile $testProfile" Cyan
+        Write-SummaryStep "" "" "./scripts/Test/Run-Tests.ps1 -ListProfiles      (the shorter runs)" DarkGray
+        Write-SummaryStep "3" "Report" "scripts/Test/Reports/"
+        if (Test-Path $testGuideOut) {
             Write-Host ""
-            Write-Host "  Test guide: release/FTC-Testanleitung.md" -ForegroundColor DarkGray
+            Write-SummaryRow "Guide" $testGuideOut
         }
     }
+    Write-Host $rule -ForegroundColor DarkGray
     Write-Host ""
 }

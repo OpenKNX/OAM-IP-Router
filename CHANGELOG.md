@@ -19,6 +19,11 @@ ESP32.
 * Feature: the overview shows the queue losses ->IP and ->TP and the routing receive queue, counted from boot or the last reset: red while the last rise is younger than 5 min, amber after, with the age beside it. PID 72 and PID 73 stay as they are
 * Feature: the overview shows the received `ROUTING_LOST_MESSAGE` and `ROUTING_BUSY` counts and the sum of reported lost messages
 * Fix: a tunnel the stack closed for a protocol version change is listed as "Protokollversion gewechselt" instead of "active"
+* Change: the help texts of the router page are reworded for the person operating the installation, in a neutral form and without stack terms
+* Fix: the help for busy reports said the router does not pause yet. It does since the routing flow control, and the text says so
+* Fix: the note for a loaded but unused filter table said every group telegram passes, which is wrong when a direction is locked. It now says that no direction uses the table
+* Fix: an unconfigured router was described with the address 15.15.255. Its default is 15.15.0, and the state follows the loaded router object, not the address
+* Change: "filtered" is described as telegrams that do not belong on the other side by filter table, setting or destination address, and the multicast row explains the address and the TTL
 
 ### ETS product
 * Fix: the parameter segment sits at 2200h with 0200h octets, above the filter table at 0200h-21FFh. It was declared at 0100h with 256 octets, shorter than the 295 parameter octets the firmware reads, and the metadata that every save writes from the start of the NVM ran into its first octets. A `static_assert` fails the build when the parameters outgrow the segment
@@ -81,6 +86,7 @@ list; this is what matters for this product.
 * The device info reads the bus voltage of every device over a transport connection of its own, and the info of a device with a router object completes instead of leaving the client busy
 * The scan reads every device by default, and the parallel range scan is gone
 * `oknx -i <ip> con` finds the console on the shared web socket
+* knxOTA page: it explains itself to the person doing the update (help per step, for the capabilities and for the method), safe is the default method, a locked target shows the next step, and the transfer has a block map
 
 **OGM-Common** `ec/v2.0.0-beta.1` -> `ec/v2.0.0-beta.2`
 * The build compares the knxprod it built with the header the firmware uses, and says why when it cannot

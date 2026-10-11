@@ -149,15 +149,14 @@
                // Explains only what THIS table shows, in the order the row is actually decided, and
                // claims nothing about connecting: every warning row is by construction a row where
                // nothing is connected. "Ausweichplatz" moved to TUN_WHY, next to the column using it.
-               '<p class="meta ii-row-wide" style="margin:8px 0 0">In dieser Reihenfolge entschieden: ' +
+               '<p class="meta ii-row-wide" style="margin:8px 0 0">' +
                '<span class="tn-p ok">&#9679;&nbsp;belegt</span> = ein Client ist verbunden &middot; ' +
-               '<span class="tn-p bad">&#8856;&nbsp;nicht erreichbar</span> = f&uuml;r 0.0.0.0 reserviert, ' +
-               'erreicht keinen Client und bleibt f&uuml;r andere gesperrt &middot; ' +
-               '<span class="tn-p warn">&#9888;&#65038;&nbsp;Adresse nicht eindeutig</span> = der Platz ' +
-               'teilt sich die Adresse mit einem anderen. Gleichzeitig nutzbar ist jede Adresse nur ' +
-               'einmal, deshalb sinkt die Zahl der parallel m&ouml;glichen Tunnel &middot; ' +
-               '<span class="tn-p idle">&#9675;&nbsp;frei</span> = nicht reserviert &middot; ' +
-               '<span class="tn-p idle">&#9680;&nbsp;reserviert</span> = wartet auf genau eine IP.</p>';
+               '<span class="tn-p bad">&#8856;&nbsp;nicht erreichbar</span> = ohne IP-Adresse reserviert, ' +
+               'f&uuml;r niemanden nutzbar &middot; ' +
+               '<span class="tn-p warn">&#9888;&#65038;&nbsp;Adresse nicht eindeutig</span> = die KNX-Adresse ' +
+               'fehlt oder ist doppelt vergeben; dadurch sind weniger Tunnel gleichzeitig m&ouml;glich &middot; ' +
+               '<span class="tn-p idle">&#9675;&nbsp;frei</span> = f&uuml;r jeden Client &middot; ' +
+               '<span class="tn-p idle">&#9680;&nbsp;reserviert</span> = nur f&uuml;r die genannte IP-Adresse.</p>';
     }
 
 
@@ -236,35 +235,32 @@
     // Same shape as the reserved-tunnel legend: one term, one "=", one meaning, separated by a dot --
     // and the Zustand values as the PILLS they really are, so the key looks like the column it explains.
     const TUN_WHY =
-        '<b>Z&auml;hler:</b> <b>&rarr;</b> = an den Client, <b>&larr;</b> = vom Client &middot; ' +
-        '<b>Wiederholungen</b> = ohne Quittung nochmal gesendet &middot; ' +
-        '<b>Queue max</b> = Spitze der Sendewarteschlange, voll ist normal &middot; ' +
-        '<b>Verworfen</b> = nie gesendet &middot; ' +
-        '<b>&Uuml;berlast</b> = Gruppentelegramme bei voller Warteschlange fallengelassen, damit die Verbindung ' +
-        'stehen bleibt &middot; <b>Sequenzfehler</b> = falsche Nummer, verworfen &middot; ' +
-        '<b>Letzter Kontakt</b> = seit letztem Lebenszeichen' +
-        '<br><b>Zustand</b> &mdash; <span class="tn-p ok">ok</span> = nichts aufgelaufen &middot; ' +
-        '<span class="tn-p warn">n Hinweise</span> = so viele der Z&auml;hler Wiederholungen, ' +
-        'Verworfen, &Uuml;berlast und Sequenzfehler stehen nicht auf 0; welche, zeigt die ' +
-        'aufgeklappte Zeile &mdash; <b>Verworfen</b> ist dort als einziger echter Verlust rot. ' +
-        'Die Zahlen sind Summen seit Verbindungsbeginn und sinken nie &middot; ' +
-        '<span class="gray">&ndash;</span> = nicht messbar' +
+        '<b>&rarr;</b> = an den Client gesendet &middot; <b>&larr;</b> = vom Client empfangen &middot; ' +
+        '<b>Wiederholungen</b> = ohne Best&auml;tigung erneut gesendet &middot; ' +
+        '<b>Puffer max</b> = h&ouml;chster F&uuml;llstand des Sendepuffers, voll ist normal &middot; ' +
+        '<b>Verworfen</b> = nicht zugestellt &middot; ' +
+        '<b>&Uuml;berlast</b> = Gruppentelegramme, die bei vollem Puffer ausgelassen wurden &middot; ' +
+        '<b>Sequenzfehler</b> = Telegramm mit falscher laufender Nummer, verworfen &middot; ' +
+        '<b>Letzter Kontakt</b> = Zeit seit der letzten Meldung des Clients' +
+        '<br><b>Zustand</b>: <span class="tn-p warn">n Hinweise</span> = so viele der Z&auml;hler Wiederholungen, ' +
+        'Verworfen, &Uuml;berlast und Sequenzfehler stehen nicht auf 0 &middot; ' +
+        '<span class="gray">&ndash;</span> = nicht messbar &middot; alle Z&auml;hler gelten seit Verbindungsbeginn' +
         '<br><b>Zuteilung</b>: <b>fest</b> = der f&uuml;r diesen Client reservierte Platz &middot; ' +
-        '<b>Ausweichplatz</b> = sein reservierter Platz war belegt, er sitzt auf einem anderen &middot; ' +
-        '<b>frei vergeben</b> = keine Reservierung im Spiel';
-    const TUN_WHY_BM = ' &middot; Busmonitor: kein Sendepuffer, keine Empfangsrichtung';
+        '<b>Ausweichplatz</b> = sein reservierter Platz war belegt &middot; ' +
+        '<b>frei vergeben</b> = ohne Reservierung';
+    const TUN_WHY_BM = '<br><b>Busmonitor</b>: liest nur mit, deshalb ohne &larr; und ohne Puffer';
     // Only the history has an Ende column; explaining it on an active row describes a column that
     // is not on screen. A history row is the one carrying a reason.
-    const TUN_WHY_END = '<br><b>Ende</b> &mdash; orange, wenn niemand die Trennung verlangt hat';
+    const TUN_WHY_END = '<br><b>Ende</b>: orange = nicht regul&auml;r beendet';
 
     function tunDetail(r) {
         if (r.tc === undefined) return ''; // refused connect: the Ende column already says why
         const d = function (v) { return v === undefined ? '<span class="gray">&ndash;</span>' : v; };
         // Third element: the severity this entry carries once its counter is not zero. The column
         // above only counts the findings, so this is where "how bad" is said -- Verworfen is the
-        // only one of them that is a real loss. Queue max is not a finding, full is normal.
+        // only one of them that is a real loss. Puffer max is not a finding, full is normal.
         const kv = [['Wiederholungen', d(r.rs), r.rs ? ' class="warn"' : ''],
-                    ['Queue max', r.qd === undefined ? d(undefined) : r.qp + '&nbsp;/&nbsp;' + r.qd, ''],
+                    ['Puffer max', r.qd === undefined ? d(undefined) : r.qp + '&nbsp;/&nbsp;' + r.qd, ''],
                     ['Verworfen', d(r.dr), r.dr ? ' class="bad"' : ''],
                     ['&Uuml;berlast', d(r.gd), r.gd ? ' class="warn"' : ''],
                     ['Sequenzfehler', d(r.gp), r.gp ? ' class="warn"' : '']];
@@ -383,47 +379,47 @@
                (age >= 0 && !v[2] ? ' <span class="gray">zuletzt vor ' + ago(age) + '</span>' : '');
     }
 
-    // An expert number without its meaning is what turned a healthy device into a power-supply hunt.
+    // Written for the person operating the installation: what the value says and when it matters.
     const WHY = {
-        byteErr: 'FE = Leitung zum Chip (Baudrate, Verkabelung). PE = Bitfehler vom Bus. BE = Break. ' +
-                 'OE = der Host war zu langsam.',
-        rep: 'Keine Quittung, der Sender hat wiederholt. Steigt bei schlechter Leitung oder &uuml;berlastetem Ger&auml;t.',
-        ovf: 'UART, Suchpuffer, Rahmenpuffer, Sendepuffer. Jeder Anstieg hei&szlig;t verworfen - nicht nur wiederholt.',
-        ackDrop: 'Die Quittung kam zu sp&auml;t auf den Bus, der Sender wiederholt.',
-        con: 'Der Chip blieb eine Sendebest&auml;tigung schuldig, der Treiber hat sie nachgezogen. Dauernd = Chipstress.',
-        sc: 'Zwei Teilnehmer haben gleichzeitig gesendet. Einzeln normal, dauerhaft hoch = Adress- oder Leitungsproblem.',
-        lost: 'Auf dem Weg hinaus verworfen (Warteschlange voll, Seite getrennt oder gest&ouml;rt) - diese ' +
-              'Telegramme kamen dort nicht an. <b>Rot</b> = in den letzten ' +
-              (LOST_FRESH_S / 60) + '&nbsp;min gestiegen, <b>orange</b> = der letzte Verlust ist &auml;lter. ' +
-              '&bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; z&auml;hlt diese Anzeige ab 0; die Ger&auml;tez&auml;hler ' +
-              '(PID 72/73, ETS) werden nicht zur&uuml;ckgesetzt.',
-        rxDrop: 'Empfang: verworfen, weil die Empfangswarteschlange voll war oder zu lange ungelesen blieb ' +
-                '(z.&nbsp;B. nach abgebrochenem OTA) - diese KNXnet/IP-Pakete wurden nie gelesen. Nicht in PID 72/73 enthalten.',
-        // All four values, because all four are on the row. The >100 % note is not a caveat: frames
-        // are booked in the second they COMPLETE (BusLoad.h), so a long telegram can overfill one.
-        load: 'Anteil der Zeit, in der die TP1-Linie belegt war (9600&nbsp;bit/s). ' +
-              '<b>jetzt</b> = letzte Sekunde &middot; <b>Mittel</b> = seit Start/Zur&uuml;cksetzen, max. 60&nbsp;s &middot; ' +
-              '<b>Spitze</b> = h&ouml;chster Sekundenwert seit Start oder Zur&uuml;cksetzen &middot; ' +
-              '<b>B/s</b> = empfangene Bytes der letzten Sekunde. &Uuml;ber 100&nbsp;% m&ouml;glich: ein ' +
-              'Telegramm z&auml;hlt in der Sekunde, in der es endet. &bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; ' +
-              'setzt auch die Zeile &bdquo;Verloren (Queue)&ldquo; auf 0.',
-        toIp: 'Jedes KNXnet/IP-Paket, nicht nur Gruppentelegramme.',
-        cfg: 'Das Ger&auml;t hat noch keine Konfiguration erhalten: es tr&auml;gt die Vorgabeadresse ' +
-             '15.15.255 und keine Filtertabelle. Damit ein Tunnel &uuml;berhaupt zustande kommt, vergibt es sich ' +
-             'die Tunneladressen selbst - vorl&auml;ufig, bis ein Download sie ersetzt.',
-        addIa: 'Jeder Tunnel braucht eine eigene KNX-Adresse. Die Zahl sagt, wie viele Pl&auml;tze eine ' +
-               '<b>eindeutige</b> haben. Teilen sich mehrere Pl&auml;tze eine Adresse, verbinden sie ' +
-               'trotzdem &mdash; jede Adresse ist aber nur einmal gleichzeitig in Benutzung, es k&ouml;nnen ' +
-               'also weniger Clients parallel arbeiten. Welcher Platz welche Adresse hat, steht im Tab ' +
+        byteErr: 'FE = Verbindung zum Bus-Chip gest&ouml;rt &middot; PE = Bitfehler beim Empfang &middot; ' +
+                 'BE = Verbindung zum Bus-Chip unterbrochen &middot; OE = Zeichen verpasst, Ger&auml;t zu langsam.',
+        rep: 'Ein Telegramm wurde nicht best&auml;tigt und wiederholt. H&auml;ufig bei Leitungsproblemen oder ' +
+             'einem &uuml;berlasteten Ger&auml;t.',
+        ovf: 'Interne Puffer waren voll (U/S/R/T = Empfang, Suche, Rahmen, Senden). Jeder Wert &uuml;ber 0 ' +
+             'bedeutet verlorene Daten.',
+        ackDrop: 'Das Ger&auml;t konnte ein Telegramm nicht rechtzeitig best&auml;tigen; der Sender wiederholt es.',
+        con: 'Der Bus-Chip hat ein gesendetes Telegramm nicht best&auml;tigt; das Ger&auml;t hat es selbst ' +
+             'abgeschlossen. Auff&auml;llig nur bei st&auml;ndigem Anstieg.',
+        sc: 'Zwei Teilnehmer haben gleichzeitig gesendet. Einzeln normal; dauerhaft hoch deutet auf ein ' +
+            'Adress- oder Leitungsproblem.',
+        lost: 'Telegramme, die das Ger&auml;t nicht weitergeben konnte, z.&nbsp;B. bei &Uuml;berlast oder ' +
+              'unterbrochener Verbindung. <b>Rot</b> = in den letzten ' + (LOST_FRESH_S / 60) +
+              '&nbsp;min, <b>orange</b> = l&auml;nger her.',
+        rxDrop: '<b>Empfang</b> = Pakete aus dem Netzwerk, die das Ger&auml;t nicht rechtzeitig annehmen konnte.',
+        // All four values, because all four are on the row.
+        load: 'Auslastung der KNX-Linie. <b>jetzt</b> = letzte Sekunde &middot; <b>Mittel</b> = Durchschnitt ' +
+              'der angezeigten Sekunden &middot; <b>Spitze</b> = h&ouml;chster Wert seit Start oder Zur&uuml;cksetzen ' +
+              '&middot; <b>B/s</b> = empfangene Bytes pro Sekunde. Kurzzeitig &uuml;ber 100&nbsp;% m&ouml;glich. ' +
+              '&bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; beginnt neu und setzt auch ' +
+              'die verlorenen Telegramme auf 0.',
+        addIa: 'Jeder Tunnel braucht eine eigene KNX-Adresse aus der ETS. Fehlt sie oder ist sie doppelt ' +
+               'vergeben, k&ouml;nnen weniger Clients gleichzeitig verbinden. Details im Tab ' +
                '&bdquo;Reservierte&ldquo;.',
-        routed: 'Vom Router weitergegeben.',
-        filt: 'Vom Filter absichtlich verworfen - kein Verlust.',
-        hop0: 'Kopplerdurchg&auml;nge aufgebraucht, wird nicht weitergereicht. Absicht ' +
-              '(Routing Count 0) oder eine Schleife im Netz.',
-        lostRx: 'ROUTING_LOST_MESSAGE anderer KNX-IP-Ger&auml;te: deren Warteschlange LAN&rarr;KNX ist ' +
-                '&uuml;bergelaufen, dort gingen Telegramme verloren. Gemeldete Verluste = Summe der darin genannten Anzahlen.',
-        busyRx: 'ROUTING_BUSY anderer KNX-IP-Ger&auml;te: deren Eingangswarteschlange f&uuml;llt sich, sie fordern ' +
-                'alle Sender zu einer Pause auf. Dieser Router legt diese Pause noch nicht ein.'
+        toIp: '<b>&rarr;IP</b> = ins Netzwerk gesendete Pakete &middot; <b>&rarr;TP</b> = auf der KNX-Linie ' +
+              'zugestellte Telegramme.',
+        cfg: 'Das Ger&auml;t hat keine g&uuml;ltige ETS-Konfiguration und keine Filtertabelle: noch nicht ' +
+             'programmiert oder nach einem Firmware-Wechsel ung&uuml;ltig. Tunnel funktionieren trotzdem; ' +
+             'fehlen Tunnel-Adressen, vergibt das Ger&auml;t vorl&auml;ufige.',
+        mc: 'Adresse, &uuml;ber die KNX-IP-Ger&auml;te im Netzwerk Telegramme austauschen. <b>TTL</b> = Reichweite: ' +
+            'begrenzt, &uuml;ber wie viele Netzwerk-Router ein Telegramm weitergereicht wird.',
+        routed: 'Telegramme, die der Router auf die andere Seite weitergeleitet hat.',
+        filt: 'Telegramme, die nicht auf die andere Seite geh&ouml;ren: laut Filtertabelle, Einstellung oder ' +
+              'Zieladresse. Gewollt, kein Fehler.',
+        hop0: 'Der Routing-Z&auml;hler (Hop-Count) des Telegramms war aufgebraucht, es wurde nicht ' +
+              'weitergeleitet. Entweder so gesendet oder Hinweis auf eine Schleife in der Anlage.',
+        lostRx: 'Andere KNX-IP-Ger&auml;te im Netzwerk haben gemeldet, dass bei ihnen Telegramme verloren gingen.',
+        busyRx: 'Andere KNX-IP-Ger&auml;te im Netzwerk haben &Uuml;berlast gemeldet. Der Router legt dann ' +
+                'eine kurze Sendepause ein.'
     };
 
     // --- Overview + status line ---
@@ -440,7 +436,7 @@
 
         // No usable tunnel address means no client can connect at all -- a blocking fault, so it
         // colours the row and the status bar, not just the tunnel header.
-        // Unprogrammed is the root state: no tunnel addresses, no group objects, PA 15.15.255. It
+        // Unconfigured is the root state: no loaded application; the address may still be a programmed one. It
         // outranks every other hint on the page, because all of them are consequences of it.
         const unconf = d.cfg === 0;
         const iaBad = !unconf && d.addIa !== undefined && d.addIa.used === 0;
@@ -460,27 +456,25 @@
         $('ii-ov').innerHTML =
             row('Rolle', esc(d.role), null, d.roleBad ? 'ii-bad' : '') +
             row('PA / Maske', esc(d.pa) + ' &middot; Maske ' + esc(d.mask) +
-                (unconf ? ' &middot; <span class="ii-bad">nicht programmiert</span>' : ''),
+                (unconf ? ' &middot; <span class="ii-bad">nicht konfiguriert</span>' : ''),
                 // Only when it is true: on a programmed device every sentence in WHY.cfg is false.
                 unconf ? WHY.cfg : null) +
             row('Multicast', d.mc === undefined
                     ? na('Die Multicast-Adresse konnte nicht gelesen werden')
-                    : esc(d.mc) + (d.ttl === undefined ? '' : ' &middot; TTL ' + d.ttl)) +
+                    : esc(d.mc) + (d.ttl === undefined ? '' : ' &middot; TTL ' + d.ttl), WHY.mc) +
             row('Tunnel', d.tun.n + ' / ' + d.tun.max + ' aktiv') +
-            (d.addIa ? row('Zus&auml;tzliche IAs', d.addIa.used + ' von ' + d.addIa.max + ' nutzbar',
+            (d.addIa ? row('Tunnel-Adressen', d.addIa.used + ' von ' + d.addIa.max + ' nutzbar',
                            WHY.addIa, iaBad ? 'ii-bad' : '') : '') +
             row('Weitergeleitet', '&rarr;IP ' + humanCount(d.rtIp) + ' &nbsp; &rarr;TP ' + humanCount(d.rtTp), WHY.routed) +
             row('Gefiltert', '&rarr;IP ' + humanCount(d.flIp) + ' &nbsp; &rarr;TP ' + humanCount(d.flTp), WHY.filt) +
-            row('Telegramme', '&rarr;IP ' + humanCount(d.toIp) + ' &nbsp; &rarr;TP ' + humanCount(d.toTp), WHY.toIp) +
+            row('Gesendet', '&rarr;IP ' + humanCount(d.toIp) + ' &nbsp; &rarr;TP ' + humanCount(d.toTp), WHY.toIp) +
             // Empfang only where the firmware counts it (RP2040, ESP32).
-            row('Verloren (Queue)', '&rarr;IP ' + lostCell(lostIp) + ' &nbsp; &rarr;TP ' + lostCell(lostTp) +
+            row('Verloren', '&rarr;IP ' + lostCell(lostIp) + ' &nbsp; &rarr;TP ' + lostCell(lostTp) +
                 (d.rxDrop === undefined ? '' : ' &nbsp; Empfang ' + lostCell(rxDrop)),
-                WHY.lost + ' Stand PID 72/73: &rarr;IP ' + d.lostIp + ' &middot; &rarr;TP ' + d.lostTp + '.' +
-                (d.rxDrop === undefined ? '' : ' ' + WHY.rxDrop + ' Stand seit Start: ' + d.rxDrop +
-                    ', wartend ' + d.rxQ + ', H&ouml;chststand ' + d.rxPeak + '.')) +
+                WHY.lost + (d.rxDrop === undefined ? '' : ' ' + WHY.rxDrop)) +
             row('Hop-Count 0', '&rarr;IP ' + humanCount(d.hop0Ip) + ' &nbsp; &rarr;TP ' + humanCount(d.hop0Tp), WHY.hop0) +
-            row('LOST empfangen', humanCount(d.lostRx) + ' &nbsp; gemeldete Verluste ' + humanCount(d.lostRxN), WHY.lostRx) +
-            row('BUSY empfangen', humanCount(d.busyRx), WHY.busyRx) +
+            row('Verlustmeldungen', humanCount(d.lostRx) + ' &nbsp; verlorene Telegramme ' + humanCount(d.lostRxN), WHY.lostRx) +
+            row('&Uuml;berlastmeldungen', humanCount(d.busyRx), WHY.busyRx) +
             '<details class="ii-rowd ii-row-wide" data-k="Buslast"' + (openWhy.has('Buslast') ? ' open' : '') +
                 '><summary class="ii-row wide">' +
                 '<i>Buslast</i><b>' + spark(l.hist) +
@@ -515,13 +509,12 @@
         const extra = d.tun.act.length - d.tun.n;
         $('ii-tn-head').innerHTML = d.tun.n + ' / ' + d.tun.max + ' Daten-Tunnel' +
             (extra > 0 ? ' &middot; ' + extra + ' weitere Verbindung' + (extra > 1 ? 'en' : '') : '') +
-            (unconf ? ' <span class="tn-busmon">&#9888; Ger&auml;t nicht programmiert</span>'
+            (unconf ? ' <span class="tn-busmon">&#9888; Ger&auml;t nicht konfiguriert</span>'
                    // "nutzbar" is the property the device actually tests (tunIaHasDevicePart), and it
                    // covers BOTH causes: a x.y.255 placeholder and an empty entry. The banner only sees
                    // the sum, so it must not diagnose which -- the reserved tab says that per slot.
-                   : iaBad ? ' <span class="tn-busmon">&#9888; Kein Platz hat eine eigene Adresse - alle ' +
-                     'sind leer oder Platzhalter. Jedem Tunnel eine Adresse zuweisen (Details im Tab ' +
-                     '&bdquo;Reservierte&ldquo;).</span>'
+                   : iaBad ? ' <span class="tn-busmon">&#9888; Kein Tunnel hat eine eigene KNX-Adresse. ' +
+                     'Bitte in der ETS zuweisen (Details im Tab &bdquo;Reservierte&ldquo;).</span>'
                    : iaThin ? ' <span class="gray">' + d.addIa.used + ' von ' + d.addIa.max +
                      ' Pl&auml;tzen mit eindeutiger Adresse</span>' : '');
         // Counts the ROWS of this table (every connection, not just the data tunnels of the heading).
@@ -581,8 +574,8 @@
         if (!g) return '';
         const row = function (label, cfg) {
             const lo = ftMode(cfg, 0), hi = ftMode(cfg, 0x7000);
-            return '<div class="ft-dir"><i>' + label + '</i><b class="m-' + lo + '">0&ndash;13: ' + FT_MODE_TXT[lo] +
-                '</b><b class="m-' + hi + '">14&ndash;31: ' + FT_MODE_TXT[hi] + '</b></div>';
+            return '<div class="ft-dir"><i>' + label + '</i><b class="m-' + lo + '">Hauptgruppen 0&ndash;13: ' + FT_MODE_TXT[lo] +
+                '</b><b class="m-' + hi + '">Hauptgruppen 14&ndash;31: ' + FT_MODE_TXT[hi] + '</b></div>';
         };
         return '<div class="ft-head">' + row('IP &rarr; Linie', g.main) + row('Linie &rarr; IP', g.sub) + '</div>';
     }
@@ -593,15 +586,15 @@
         const one = function (label, cfg) {
             const m = ftMode(cfg, raw);
             let res = 'unbekannt', cls = 'unk';
-            if (m === 'pass') { res = 'kommt durch (alle durchlassen)'; cls = 'ok'; }
-            else if (m === 'lock') { res = 'wird verworfen (gesperrt)'; cls = 'no'; }
+            if (m === 'pass') { res = 'wird weitergeleitet (alle durchlassen)'; cls = 'ok'; }
+            else if (m === 'lock') { res = 'wird nicht weitergeleitet (gesperrt)'; cls = 'no'; }
             else if (m === 'route') {
                 // an unloaded or unused table answers "not in table" for every address (router_object.cpp)
-                if (!f.loaded || f.inUse === false) { res = 'wird verworfen (Tabelle nicht in Benutzung)'; cls = 'no'; }
+                if (!f.loaded || f.inUse === false) { res = 'wird nicht weitergeleitet (Tabelle nicht aktiv)'; cls = 'no'; }
                 else if (f.building !== undefined) { res = 'Tabelle wird noch gelesen'; }
-                else if (ranges.some(function (r) { return raw >= r[0] && raw <= r[1]; })) { res = 'kommt durch (steht in der Tabelle)'; cls = 'ok'; }
-                else if (ftComplete(f)) { res = 'wird verworfen (nicht in der Tabelle)'; cls = 'no'; }
-                else res = 'nicht sicher - die Liste ist gek&uuml;rzt';
+                else if (ranges.some(function (r) { return raw >= r[0] && raw <= r[1]; })) { res = 'wird weitergeleitet (steht in der Tabelle)'; cls = 'ok'; }
+                else if (ftComplete(f)) { res = 'wird nicht weitergeleitet (nicht in der Tabelle)'; cls = 'no'; }
+                else res = 'unbekannt - die Liste ist unvollst&auml;ndig';
             }
             return '<span class="ft-v ' + cls + '">' + label + ': ' + res + '</span>';
         };
@@ -611,26 +604,23 @@
         const inp = $('ft-in'), out = $('ft-out');
         if (!inp || !out || !ftData) return;
         const v = inp.value.trim(), raw = gaRaw(v);
-        out.innerHTML = !v ? '' : raw < 0 ? '<span class="ft-v unk">keine Gruppenadresse a/b/c</span>' : ftVerdict(ftData, raw);
+        out.innerHTML = !v ? '' : raw < 0 ? '<span class="ft-v unk">keine g&uuml;ltige Gruppenadresse (a/b/c)</span>' : ftVerdict(ftData, raw);
     }
 
     function ftNotes(f) {
         const used = ftUsesTable(f.lcgrp), known = !!f.lcgrp;
+        const none = ' Wo &bdquo;nach Filtertabelle&ldquo; eingestellt ist, wird kein Gruppentelegramm weitergeleitet.</p>';
         if (!f.loaded)
-            return used ? '<p class="ft-note err">Die Filtertabelle ist nicht geladen. Wo &bdquo;nach Filtertabelle&ldquo; ' +
-                'eingestellt ist, kommt deshalb kein Gruppentelegramm durch.</p>'
-                : '<p class="meta">Die Filtertabelle ist nicht geladen' + (known ? ' - sie wird auch nicht gebraucht, keine ' +
-                'Richtung filtert nach Tabelle.' : '.') + '</p>';
+            return used ? '<p class="ft-note err">Die Filtertabelle ist nicht geladen.' + none
+                : '<p class="meta">Die Filtertabelle ist nicht geladen' +
+                  (known ? ' und wird derzeit auch nicht verwendet.' : '.') + '</p>';
         if (known && used && f.inUse === false)
-            return '<p class="ft-note err">Eine Richtung steht auf &bdquo;nach Filtertabelle&ldquo;, die Tabelle ist aber ' +
-                'nicht in Benutzung - dort kommt kein Gruppentelegramm des betroffenen Bereichs durch.</p>';
+            return '<p class="ft-note err">Die Filtertabelle ist nicht aktiv.' + none;
         if (known && !used)
-            return '<p class="ft-note warn">Die Filtertabelle ist geladen, wird aber in keiner Richtung angewendet - ' +
-                'der Router l&auml;sst alle Gruppentelegramme durch. Unten steht, was g&auml;lte, wenn eine Richtung ' +
-                'auf &bdquo;nach Filtertabelle&ldquo; steht (ETS-Parameter des Routers).</p>';
+            return '<p class="ft-note warn">Die Filtertabelle wird derzeit nicht verwendet: Keine Richtung steht auf ' +
+                '&bdquo;nach Filtertabelle&ldquo; (ETS-Parameter des Routers).</p>';
         if (used && f.inUse !== false && !f.count && f.building === undefined)
-            return '<p class="ft-note err">Die Filtertabelle ist leer - wo &bdquo;nach Filtertabelle&ldquo; eingestellt ist, ' +
-                'kommt kein Gruppentelegramm durch.</p>';
+            return '<p class="ft-note err">Die Filtertabelle ist leer.' + none;
         return '';
     }
 
@@ -695,15 +685,15 @@
                     (!c ? '<span class="gray">keine</span>' : node.segs.length <= 3 ? all.join(', ') : nWord(node.segs.length, 'Bereich', 'Bereiche')) +
                     '</span></div>';
                 node.warn.forEach(function (x) {
-                    h += '<div class="ft-warn">&#9888; ' + esc(x.ga) + ' wird gefiltert, ist aber aktiv (' + humanCount(x.n) + '&times;, ' +
+                    h += '<div class="ft-warn">&#9888; ' + esc(x.ga) + ' wurde ' + humanCount(x.n) + '&times; gefiltert (' +
                         (x.toIp ? 'Linie &rarr; IP' : 'IP &rarr; Linie') + ')</div>';
                 });
             });
             h += '</details>';
         });
-        h += '</div><p class="meta">' + (complete ? 'Alles, was nicht in der Tabelle steht, gilt als nicht enthalten.'
-            : 'Das Ger&auml;t schickt nur die ersten ' + (f.ranges || []).length + ' von ' + f.ranges_total +
-              ' Bereichen - der Baum ist unvollst&auml;ndig, die Adressenzahl oben ist vollst&auml;ndig.') + '</p>';
+        h += '</div><p class="meta">' + (complete ? 'Adressen, die hier fehlen, werden bei &bdquo;nach Filtertabelle&ldquo; nicht weitergeleitet.'
+            : 'Angezeigt werden nur die ersten ' + (f.ranges || []).length + ' von ' + f.ranges_total +
+              ' Bereichen; die Adressenzahl oben ist vollst&auml;ndig.') + '</p>';
         return h;
     }
 
@@ -771,9 +761,8 @@
         $('ii-rp-top').innerHTML =
             '<div>' + topList(d.topF || [], 'Gefiltert', 'gray') + '</div>' +
             '<div>' + topList(d.topR || [], 'Weitergeleitet', '') + '</div>' +
-            '<p class="meta ii-row-wide" style="margin:8px 0 0">Dauerz&auml;hler seit ' + esc(d.since) +
-            ', nicht die Liste von nebenan. Der Knopf &bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; in der ' +
-            '&Uuml;bersicht und <code>ipro reset</code> l&ouml;schen beides.</p>';
+            '<p class="meta ii-row-wide" style="margin:8px 0 0">Gez&auml;hlt seit ' + esc(d.since) +
+            '. &bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; in der &Uuml;bersicht beginnt neu.</p>';
 
         const f = d.filt;
         // only requested while the tab is open

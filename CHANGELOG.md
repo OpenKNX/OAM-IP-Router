@@ -1,6 +1,93 @@
 # Changes
 
 
+## ec/ALPHA-DEV-v8.1.0: 2026-10-11
+
+ETS product **8.1** (`IP-Router-Dev-v8.1.knxprod`), release variant **0.9**. The ETS parameter block moved in
+the device memory, so a device that carries 8.0 or 0.8 needs an ETS download with the new knxprod after the
+firmware update. The larger part of this version arrives with the libraries: the routing flow control, the IP
+system broadcast and the basic restart of the knx stack, the transmitter and acknowledge work of TPUart and the
+W5500 driver of OFM-Network. Measured with the KNX IP validation tool and the conformance suite on RP2040 and
+ESP32.
+
+### Product
+* Feature: the filter table tab of `/ipro` is a tree, main group > middle group > ranges, with one occupancy strip per middle group. It opens fully up to 12 lines and shows only the main groups beyond that, so a large table stays short
+* Feature: a head line names what the router does per direction and per main group range (0-13, 14-31): pass all, by filter table or lock. `/ipro/route?filt=1` carries the two `LCGRPCONFIG` values for it, read as the coupler reads them
+* Fix: the page claimed that everything outside the table is discarded while the router passed all group telegrams, and that nothing is filtered for an unused table, where a direction set to the filter table discards everything. Both now follow `LCGRPCONFIG`
+* Feature: a field checks one group address against the routing mode and the table, with one result per direction; with a list the device had to cut, it says "not sure" instead of a result
+* Feature: an address in the most-filtered list is marked in the tree as filtered but active
+* Feature: the overview shows the queue losses ->IP and ->TP and the routing receive queue, counted from boot or the last reset: red while the last rise is younger than 5 min, amber after, with the age beside it. PID 72 and PID 73 stay as they are
+* Feature: the overview shows the received `ROUTING_LOST_MESSAGE` and `ROUTING_BUSY` counts and the sum of reported lost messages
+* Fix: a tunnel the stack closed for a protocol version change is listed as "Protokollversion gewechselt" instead of "active"
+
+### ETS product
+* Fix: the parameter segment sits at 2200h with 0200h octets, above the filter table at 0200h-21FFh. It was declared at 0100h with 256 octets, shorter than the 295 parameter octets the firmware reads, and the metadata that every save writes from the start of the NVM ran into its first octets. A `static_assert` fails the build when the parameters outgrow the segment
+* Change: product 8.0.0 -> 8.1.0 (dev) and 0.8 -> 0.9 (release), because the moved segment needs a new knxprod
+
+### Device
+* Feature: `ipro` prints the received LOST and BUSY counts and the routing receive queue (waiting, peak, dropped, oversize), and labels PID 72/73 as counted since boot
+* Feature: the second `tun` line of a tunnel adds "held N" once a `TUNNELLING_ACK` was withheld for it
+* Change: five frames are queued per tunnel connection (`KNX_TUNNEL_RESEND_DEPTH=5`): a request to the device itself puts the `L_Data.con`, the `T_ACK` and the answer on the tunnel at once. The cost is 283 octets per slot, 23.5 KB over 17 connections
+
+### Build
+* Change: the ESP32 releases build on pioarduino 55.03.37 (ESP-IDF 5.5.2, Arduino core 3.3.7)
+* Change: `Build-Release.ps1` builds the PC tool from `oknx/`, its directory since the rename from ftc-cli, and stops with exit 1 when it is missing instead of skipping the tool silently
+
+### Tests
+* Change: `scripts/Test` is the copy of OAM-IP-Interface again, byte-identical: the suites 6b-SystemBroadcast, 9-Tcp, 10-Properties and 11-TunnellingV2, the run profiles, the host stack harness and the report tools are new here
+* Fix: the Reference stage names a reference that was not compared and is SKIPPED when no comparison ran. It reported PASS in both cases
+
+### Documentation
+* Change: the README states that a BCU key protects nothing on this device, as 08_03_07 2.11 p.45 requires for a device without key-protected areas, and names where the installation can be protected instead
+* Change: the host client links point at oknx
+
+### Known limits
+* Both `ROUTING_BUSY` triggers count system broadcasts, although 03_02_06 4.3.5.4 p.13 excludes them from the mechanism
+* A tunnelled frame for IP is refused during a `ROUTING_BUSY` pause instead of queued, so the first `ROUTING_INDICATION` after the pause waits for the client's next request
+* While a client holds a Device Management connection, the router answers no individual request from routing, tunnels or TP until that connection closes
+* A network OTA on the RP2040 with 2 MB can stop at a random point with a restart of the device; the running firmware stays, and a repeat goes through
+
+### Libraries
+
+The tags below are pinned in `dependencies.txt`. Each library carries its own CHANGELOG with the full
+list; this is what matters for this product.
+
+**knx** `ec/v2.5.0-beta.1` -> `ec/v2.6.0-beta.1`
+* Routing flow control: the router sends `ROUTING_LOST_MESSAGE` and `ROUTING_BUSY`, pauses on a received `ROUTING_BUSY` with a paced queue, and limits routing datagrams to 50 in any sliding second
+* IP system broadcast: received on the routing socket also in the delivery state, routed between TP and IP for the listed services only, answered as system broadcast, kept out of the 50 per second limit; RP2040 announces Routing version 2
+* Statistics: PID 70 reports 03h, PID 72 to 75 count what the standard names, and `PID_KNXNETIP_DEVICE_CAPABILITIES` reports routing and tunnelling instead of a fixed 0x0001
+* Device state: the router maintains and events PID 69, and `CONNECTIONSTATE_RESPONSE` reports `E_KNX_CONNECTION` when the TP bus voltage drops
+* Basic restart: `M_Reset.req` switches programming mode off, closes the transport connection and every KNXnet/IP connection, and applies a changed PID 66 or PID 67
+* Tunnelling: reserved slots and control requests are bound to the client's real endpoint, every unsupported layer is refused with `E_CONNECTION_OPTION`, the own address is never handed out, a depleted address list answers `E_NO_MORE_CONNECTIONS`, and the `L_Data.con` of a local request precedes its answer
+* A partner on IP whose address lies in the router's TP line gets its answer on the interface its request arrived on
+* Run state: `PID_RUN_STATE_CONTROL` stops and restarts the coupling for diagnostics, with management still reachable
+* Transport and application layer: frames with an undefined control field are ignored, and `A_ADC_Read` is answered only over a transport connection
+* RP2040 and ESP32 receive the routing socket through a raw `udp_pcb` with a datagram ring, and up to 8 datagrams are read per loop pass
+
+**TPUart** `ec/1.3.0-beta.1` -> `ec/1.4.0-beta.1`
+* The wait for the confirmation of an own frame survives a probe answer and a repetition; before, 0 to 4 frames of a burst of 1000 routing indications neither reached the bus nor were reported as lost
+* On RP2040 the UART interrupt sends from a 256-octet ring, and a parked acknowledge stays inside the time the shortest frame leaves
+* `busOperational()` reports the bus down about 2 to 3 s after a bus-powered chip stops answering
+* A repetition of a frame answered BUSY is acknowledged, which the `ROUTING_BUSY` pause of the router relies on
+* The build knobs are collected in `src/TPUart/Config.h`
+
+**OFM-Network** `b7d3fdd` (after `v0.8.1`) -> `ec/v0.9.0-beta.1`
+* RP2040 with W5500: the module runs its own copy of the driver with block SPI and bounded waits, so a chip that stops answering no longer hangs the main loop; a `ROUTING_INDICATION` is held while a `ROUTING_BUSY` waits in the chip
+* ESP32: KNX-IP is switched only from the main loop, and the network event handler is registered once
+* ESP32 with wired LAN and a display: the LAN speed widget, the overview page and `net` show packet counters, counted at the lwIP netif; the widget showed "n/a" there
+* `net` shows the W5500 socket reopens and timeouts
+
+**OFM-FileTransferModule** `ec/v0.2.0-beta.1` -> `ec/v0.3.0-beta.1`
+* The device info reads the bus voltage of every device over a transport connection of its own, and the info of a device with a router object completes instead of leaving the client busy
+* The scan reads every device by default, and the parallel range scan is gone
+* `oknx -i <ip> con` finds the console on the shared web socket
+
+**OGM-Common** `ec/v2.0.0-beta.1` -> `ec/v2.0.0-beta.2`
+* The build compares the knxprod it built with the header the firmware uses, and says why when it cannot
+* The time encoding initialises the tm block and sets the weekday
+* ESP-IDF builds carry the OpenKNX identity
+
+
 ## ec/ALPHA-DEV-v8.0.0: 2026-09-15
 
 ETS product **8.0** (`IP-Router-Dev-v8.0.knxprod`), release variant **0.8**. Alpha dev build for testers,

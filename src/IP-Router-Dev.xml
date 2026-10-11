@@ -47,7 +47,7 @@
     <op:verify File="../lib/OGM-Common/library.json" ModuleVersion="2.0" />
   </op:define>
   <op:define prefix="NET" ModuleType="11" share="../lib/OFM-Network/src/Network.share.xml" >
-    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.8" />
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.9" />
   </op:define>
   <!-- FTC access-control config. Pulled because this product builds with -D OPENKNX_FTC_SECURITY; the share
        carries 0 ComObjects, so the router stays KO-free. ModuleType 13 (10/11/99 taken). -->

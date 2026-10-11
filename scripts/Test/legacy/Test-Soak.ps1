@@ -26,7 +26,7 @@
 .PARAMETER Cycles     Number of loop cycles (0 = forever, default).
 .PARAMETER Tests      Scripted test selection, e.g. "all" or "A,B,E,G". Default: all.
 .PARAMETER Serial     Device console port for 'bcu stat'.                e.g. /dev/cu.usbmodem3101 (macOS) or COM5 (Windows)
-.PARAMETER LogDir     Directory for run logs (default: logs).
+.PARAMETER LogDir     Directory for run logs (default: Reports/Soak beside the test suite).
 .PARAMETER Log        Force a log file even in endless mode (off by default there).
 .PARAMETER Help       Show this help.
 
@@ -47,7 +47,7 @@ param(
     [string]$TrafficIp = "",
     [int]$Cycles = 0,
     [string]$Tests = "",
-    [string]$LogDir = "logs",
+    [string]$LogDir = "",
     [string]$Serial = "",
     [switch]$Log,
     [switch]$Help
@@ -85,11 +85,11 @@ if ($Help) {
     -Ip / -TrafficIp  target / traffic-source interface (source must differ from target)
     -Cycles     loop count, 0 = forever (default)
     -Serial     device console port -> 'bcu stat' each cycle
-    -LogDir     log directory (default: logs)
+    -LogDir     log directory (default: Reports/Soak beside the test suite)
     -Log        force a log file even in endless mode (off by default there -- it would grow forever)
 
   LOGGING
-    A finite run (-Cycles N) always writes logs/soak_<timestamp>.log (console + file).
+    A finite run (-Cycles N) always writes Reports/Soak/soak_<timestamp>.log (console + file).
     An endless run writes NO file unless -Log is given.
 "@ -ForegroundColor Cyan
     return
@@ -220,6 +220,8 @@ if (-not $TrafficIp) { $enabled.D = $false }   # busmon test needs an external t
 $doLog = ($Cycles -gt 0) -or $Log
 $logPath = $null
 if ($doLog) {
+    # Anchored at the suite, not at the current directory: the logs ended up wherever the script was started.
+    if (-not $LogDir) { $LogDir = Join-Path (Split-Path -Parent $PSScriptRoot) (Join-Path 'Reports' 'Soak') }
     if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
     $logPath = Join-Path $LogDir ("soak_{0}.log" -f ([datetime]::Now.ToString('yyyyMMdd_HHmmss')))
     try { Start-Transcript -Path $logPath | Out-Null } catch {}

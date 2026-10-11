@@ -77,6 +77,14 @@
     Device under test IPs whose TP the relays cut, comma separated, e.g. 11.11.0.126. The FIRST
     -PowerRelayWrite GA must cut the TP of every device listed; -PowerRelayVia must not be listed.
     The KNX-fault cases of the Device state stage run only for an -Ip in this list.
+.PARAMETER SkipNetworkCheck
+    Do not check the routes to the rig before the run. By default Tools/Test-RigNetwork.ps1 runs first
+    and the run is not started when a device cannot be reached or multicast leaves on another interface.
+.PARAMETER SkipDeviceCheck
+    Do not check the TP devices of the rig before the run. By default Tools/Test-RigDevices.ps1 asks
+    -P2pTarget, -DeviceTargets, -FtcTarget and -SpeedTarget for their device descriptor, and the run is
+    not started when one of them does not answer.
+
 .PARAMETER Yes
     Take the remembered defaults for everything and do not ask.
 #>
@@ -122,6 +130,8 @@ param(
     [string]$PowerRelayVia = '',
     [string]$ProtectedTargets = '',
     [string]$PowerRelayFeeds = '',
+    [switch]$SkipNetworkCheck,    # do not check the routes to the rig before the run
+    [switch]$SkipDeviceCheck,     # do not check the TP devices of the rig before the run
     [switch]$Yes
 )
 
@@ -131,6 +141,7 @@ $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $stateFile = Join-Path $here '.last-run.json'
 $profileDir = Join-Path $here 'Profiles'
+. (Join-Path $here 'lib/KnxBench.ps1')
 
 function Show-Logo {
     . (Join-Path $PSScriptRoot 'lib/KnxLogo.ps1')
@@ -167,12 +178,34 @@ function Get-TestProfiles {
     #>
     if (-not (Test-Path $profileDir)) { return @() }
     $out = @()
+    # The bench is described once in Test-Bench-Config.json; a profile that refers to it is filled from there.
+    $bench = Read-KnxBenchConfig -TestRoot $here
+    $testJson = Get-Command Test-Json -ErrorAction SilentlyContinue
+    $needBench = @()
     foreach ($f in (Get-ChildItem -Path $profileDir -Filter '*.json' | Sort-Object Name)) {
         try { $o = Get-Content $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json }
         catch { Write-Host ("  profile $($f.Name) is not readable JSON - ignored") -ForegroundColor Yellow; continue }
         if (-not $o.PSObject.Properties.Match('name').Count) { continue }
+        # A misspelt field is otherwise just a missing value; the schema names it. It refers to the bench
+        # schema, which Test-Json resolves only with -SchemaFile (PowerShell 7.4 and later).
+        $schemaFile = Join-Path $profileDir 'schema/profile.schema.json'
+        if ((Test-Path $schemaFile) -and $testJson -and $testJson.Parameters.ContainsKey('SchemaFile')) {
+            $schemaErr = $null
+            $valid = Test-Json -Path $f.FullName -SchemaFile $schemaFile -ErrorVariable schemaErr -ErrorAction SilentlyContinue
+            if (-not $valid) {
+                Write-Host ("  profile $($f.Name) does not match Profiles/schema/profile.schema.json:") -ForegroundColor Yellow
+                foreach ($e in @($schemaErr | Select-Object -First 3)) { Write-Host ("    $($e.Exception.Message)") -ForegroundColor Yellow }
+            }
+        }
+        if ($null -eq $bench -and (Test-KnxProfileNeedsBench $o)) { $needBench += "$($o.name)"; continue }
+        try { $o = Resolve-KnxTestProfile -TestProfile $o -Bench $bench }
+        catch { Write-Host ("  $($_.Exception.Message) - profile left out") -ForegroundColor Yellow; continue }
         Add-Member -InputObject $o -NotePropertyName 'file' -NotePropertyValue $f.FullName -Force
         $out += $o
+    }
+    if ($needBench.Count -gt 0) {
+        Write-Host "  Test-Bench-Config.json does not exist, so these profiles are left out: $($needBench -join ', ')" -ForegroundColor Yellow
+        Write-Host '  Copy Test-Bench-Config.example.json to Test-Bench-Config.json and enter the addresses of your bench.' -ForegroundColor Yellow
     }
     # NOT "return , $out": that hands the whole list to the caller as a single object, and a
     # foreach over it then runs once with the array - the display printed all three names in one line.
@@ -533,6 +566,7 @@ function Test-ProfilePromises {
             '-TestGa'              { if (-not $Values.TestGa)        { $missing += "$req (a group address only the target acts on)" } }
             '-WitnessIp'           { if (-not $Values.WitnessIp)     { $missing += "$req (an interface with a hardware busmonitor to watch the line)" } }
             '-SerialPort'          { if (-not $Values.SerialPort)    { $missing += "$req (the device console the FTC client is driven over)" } }
+            '-FtcTarget'           { if (-not $Values.FtcTarget)     { $missing += "$req (the TP device the FTC client works against)" } }
             '-IncludeDestructive'  { if (-not $Values.IncludeDestructive) { $missing += "$req (the profile covers cases that change device state)" } }
             '-Guided'              { if (-not $Values.Guided)        { $missing += "$req (the profile covers cases that need a hand at the device)" } }
             '-Multicast'           { if (-not $Values.Multicast -or $Values.Multicast -eq '224.0.23.12') {
@@ -705,6 +739,23 @@ if ($rememberRole) { $state["Role@$Ip"] = $rememberRole }
 if ($rememberBusmon) { $state["Busmon@$Ip"] = $rememberBusmon }
 Save-LastRun $state
 
+# ─── The rig must be reachable before anything is judged ────────────────────────
+# A device this computer cannot reach, or a discovery group that leaves on the wrong interface, turns into red
+# cases about the device under test half an hour later. Tools/Test-RigNetwork.ps1 says so now and names the fix.
+if (-not $SkipNetworkCheck -and $What -ne 'Clean') {
+    $netHosts = @()
+    foreach ($h in (@($Ip, $TrafficIp, $WitnessIp, $ReferenceIp, $PowerRelayVia) + @($ReferenceIps -split '[,;\s]+'))) {
+        if ($h -and $h -match '^\d{1,3}(\.\d{1,3}){3}$' -and $netHosts -notcontains $h) { $netHosts += $h }
+    }
+    if ($netHosts.Count -gt 0) {
+        & pwsh -NoProfile -File (Join-Path $here 'Tools/Test-RigNetwork.ps1') -Hosts ($netHosts -join ',') -Quiet
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host '  The run is not started. Fix the network, or pass -SkipNetworkCheck to run anyway.' -ForegroundColor Red
+            exit 2
+        }
+    }
+}
+
 # ─── Run ────────────────────────────────────────────────────────────────────────
 
 # ─── One run, one bundle ────────────────────────────────────────────────────────
@@ -745,6 +796,7 @@ if ($null -ne $activeProfile -and $activeProfile.PSObject.Properties.Match('safe
     if ($BdutPa)    { $check += @{ what = '-BdutPa'; pa = $BdutPa } }
     if ($P2pTarget) { $check += @{ what = '-P2pTarget'; pa = $P2pTarget } }
     if ($FtcTarget) { $check += @{ what = '-FtcTarget'; pa = $FtcTarget } }
+    if ($SpeedTarget) { $check += @{ what = '-SpeedTarget'; pa = $SpeedTarget } }
     foreach ($t in @($DeviceTargets -split '[,;\s]+' | Where-Object { $_ })) { $check += @{ what = '-DeviceTargets'; pa = $t } }
     foreach ($c in $check) {
         $line = ($c.pa -split '\.')[0, 1] -join '.'
@@ -762,8 +814,32 @@ if ($null -ne $activeProfile -and $activeProfile.PSObject.Properties.Match('safe
 
 Test-ProfilePromises -TestProfile $activeProfile -Values @{
     BdutPa = $BdutPa; TrafficIp = $TrafficIp; P2pTarget = $P2pTarget; DeviceTargets = $DeviceTargets
-    TestGa = $TestGa; WitnessIp = $WitnessIp; SerialPort = $SerialPort; Multicast = $Multicast
+    TestGa = $TestGa; WitnessIp = $WitnessIp; SerialPort = $SerialPort; FtcTarget = $FtcTarget; Multicast = $Multicast
     IncludeDestructive = [bool]$IncludeDestructive; Guided = [bool]$Guided
+}
+
+# ─── The TP devices of the rig must be on the bus ───────────────────────────────
+# Asked after the line check above, so no address outside the rig is ever sent to. The traffic interface is
+# tried first: whether the targets are there must not depend on the device the run is about to judge.
+if (-not $SkipDeviceCheck -and $What -ne 'Clean') {
+    $devTargets = @(@($P2pTarget, $FtcTarget, $SpeedTarget) + @($DeviceTargets -split '[,;\s]+') | Where-Object { $_ } | Select-Object -Unique)
+    $devVia = @(@($TrafficIp, $Ip) | Where-Object { $_ } | Select-Object -Unique)
+    if ($devTargets.Count -gt 0 -and $devVia.Count -gt 0) {
+        $devArgs = @('-Targets', ($devTargets -join ','), '-Via', ($devVia -join ','), '-Quiet')
+        if ($null -ne $activeProfile -and $activeProfile.PSObject.Properties.Match('safety').Count -and
+            $activeProfile.safety.PSObject.Properties.Match('allowedLines').Count) {
+            $devArgs += @('-AllowedLines', (@($activeProfile.safety.allowedLines) -join ','))
+        }
+        & pwsh -NoProfile -File (Join-Path $here 'Tools/Test-RigDevices.ps1') @devArgs
+        if ($LASTEXITCODE -eq 1) {
+            Write-Host '  The run is not started. Bring the device back, or pass -SkipDeviceCheck to run anyway.' -ForegroundColor Red
+            exit 2
+        }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host '  The run is not started: the device check could not be made. Pass -SkipDeviceCheck to run anyway.' -ForegroundColor Red
+            exit 2
+        }
+    }
 }
 
 $reportsRoot = Join-Path $here 'Reports'

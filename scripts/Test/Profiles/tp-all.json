@@ -1,33 +1,13 @@
 {
+  "$schema": "./schema/profile.schema.json",
   "name": "tp-all",
   "description": "Everything the rig can judge on the TP DEVICES themselves (tp), destructive included. The interface is only the instrument looked through.",
   "what": "All",
   "stages": "SelfTest,Dpt,HostStack,Devices,Hardening,Speed",
-  "device": {
-    "ip": "11.11.0.210",
-    "pa": "1.1.13",
-    "role": "Interface",
-    "hardwareBusmonitor": "yes"
-  },
+  "device": "interface",
+  "traffic": "router",
   "rig": {
-    "trafficIp": "11.11.0.126",
-    "witnessIp": "11.11.0.2",
-    "p2pTarget": "1.1.5",
-    "deviceTargets": "1.1.5,1.1.8",
-    "testGa": "",
-    "serialPort": "/dev/cu.usbmodem3101",
-    "ftcTarget": "1.1.8",
-    "referenceIp": "11.11.0.2",
-    "referenceIps": "11.11.0.2,11.11.0.5",
-    "speedTarget": "1.1.8",
-    "speedKb": "50",
-    "multicast": "224.0.23.13",
-    "powerGuard": "on",
-    "powerRelayWrite": "0/3/100,0/3/110",
-    "powerRelayStatus": "0/3/101,0/3/111",
-    "powerRelayVia": "11.11.0.2",
-    "protectedTargets": "1.1.3",
-    "powerRelayFeeds": "11.11.0.126"
+    "fromBench": "all"
   },
   "flags": {
     "guided": false,
@@ -40,6 +20,8 @@
     "-FtcTarget"
   ],
   "safety": {
-    "allowedLines": ["1.1"]
+    "allowedLines": [
+      "1.1"
+    ]
   }
 }

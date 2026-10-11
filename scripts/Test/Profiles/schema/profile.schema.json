@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenKNX test profile",
+  "description": "A named, reviewable description of one test run: what is run, on which device, and what the run promises to cover. Read by Run-Tests.ps1 (-TestProfile <name>). The addresses come from Test-Bench-Config.json: device and traffic name a device there, rig.fromBench takes the bench values. A value given on the command line wins over the profile.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to this schema, so an editor shows the field descriptions and checks the file."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the profile is started with: Run-Tests.ps1 -TestProfile <name>. A file without it is not a profile."
+    },
+    "description": {
+      "type": "string",
+      "description": "One sentence for the profile list (Run-Tests.ps1 -ListProfiles)."
+    },
+    "what": {
+      "type": "string",
+      "enum": [
+        "Conformance",
+        "Features",
+        "All",
+        "Endurance",
+        "Reference",
+        "Stress",
+        "Busmonitor",
+        "Devices",
+        "Hardening"
+      ],
+      "description": "The stage the profile runs, as -What. All runs every stage, or the ones named in stages."
+    },
+    "stages": {
+      "type": "string",
+      "description": "Only with what = All: the stages to run, comma separated. Known stages: SelfTest, Dpt, HostStack, Conformance, Features, Rename, Busmonitor, Fidelity, DeviceState, Devices, Hardening, Legacy, Reference, EtsReadback, Speed. Without it every stage runs."
+    },
+    "device": {
+      "description": "The device under test: the name of a device in Test-Bench-Config.json, or the values themselves.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/device"
+        }
+      ]
+    },
+    "traffic": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The traffic interface of the run: the name of a device in Test-Bench-Config.json whose IP becomes -TrafficIp. It must sit on the TP line of the device under test. rig.trafficIp, when given, wins."
+    },
+    "rig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The test rig around the device under test. Usually only fromBench plus the values that differ for this profile.",
+      "properties": {
+        "fromBench": {
+          "description": "Which values the profile takes from the rig block of Test-Bench-Config.json: \"all\", or a list of field names. A field written out in this profile wins over the bench value. Without fromBench nothing is taken.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "all"
+              ]
+            },
+            {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "witnessIp",
+                  "p2pTarget",
+                  "deviceTargets",
+                  "testGa",
+                  "serialPort",
+                  "ftcTarget",
+                  "referenceIp",
+                  "referenceIps",
+                  "speedTarget",
+                  "speedKb",
+                  "multicast",
+                  "powerGuard",
+                  "powerRelayWrite",
+                  "powerRelayStatus",
+                  "powerRelayVia",
+                  "protectedTargets",
+                  "powerRelayFeeds"
+                ]
+              }
+            }
+          ]
+        },
+        "trafficIp": {
+          "type": "string",
+          "pattern": "^$|^\\d{1,3}(\\.\\d{1,3}){3}$",
+          "description": "Second interface that puts telegrams on the bus (-TrafficIp). It must sit on the TP line of the device under test."
+        },
+        "witnessIp": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/witnessIp"
+        },
+        "p2pTarget": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/p2pTarget"
+        },
+        "deviceTargets": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/deviceTargets"
+        },
+        "testGa": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/testGa"
+        },
+        "serialPort": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/serialPort"
+        },
+        "ftcTarget": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/ftcTarget"
+        },
+        "referenceIp": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/referenceIp"
+        },
+        "referenceIps": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/referenceIps"
+        },
+        "speedTarget": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/speedTarget"
+        },
+        "speedKb": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/speedKb"
+        },
+        "multicast": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/multicast"
+        },
+        "powerGuard": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/powerGuard"
+        },
+        "powerRelayWrite": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/powerRelayWrite"
+        },
+        "powerRelayStatus": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/powerRelayStatus"
+        },
+        "powerRelayVia": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/powerRelayVia"
+        },
+        "protectedTargets": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/protectedTargets"
+        },
+        "powerRelayFeeds": {
+          "$ref": "../../Test-Bench-Config.schema.json#/definitions/rig/properties/powerRelayFeeds"
+        }
+      }
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Switches of the run.",
+      "properties": {
+        "guided": {
+          "type": "boolean",
+          "description": "Allow cases that ask for a hand at the device or in ETS (-Guided)."
+        },
+        "includeDestructive": {
+          "type": "boolean",
+          "description": "Allow cases that change device state; each one restores it (-IncludeDestructive)."
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of passes for what = Endurance (-Iterations). 0 leaves the default."
+        }
+      }
+    },
+    "requires": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "What the profile promises to cover. Each entry names an argument that must have a value, from the profile or the command line; if one is missing the run is not started (exit 3), so a profile cannot report PASS over cases it never ran.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "-BdutPa",
+          "-TrafficIp",
+          "-P2pTarget",
+          "-DeviceTargets",
+          "-TestGa",
+          "-WitnessIp",
+          "-SerialPort",
+          "-FtcTarget",
+          "-IncludeDestructive",
+          "-Guided",
+          "-Multicast"
+        ]
+      }
+    },
+    "safety": {
+      "$ref": "../../Test-Bench-Config.schema.json#/definitions/safety"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free text for the reader: what is special about this profile."
+    }
+  }
+}

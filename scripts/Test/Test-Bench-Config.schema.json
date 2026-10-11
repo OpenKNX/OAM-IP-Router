@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenKNX test bench configuration",
+  "description": "The one description of the test bench (rig): the devices under test, the other interfaces, the TP devices and the bench power. Kept next to Run-Tests.ps1 as Test-Bench-Config.json, local to this computer. The profiles in Profiles/ refer to it instead of repeating the addresses.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "devices"
+  ],
+  "definitions": {
+    "ip": {
+      "type": "string",
+      "pattern": "^$|^\\d{1,3}(\\.\\d{1,3}){3}$"
+    },
+    "ipList": {
+      "type": "string",
+      "pattern": "^$|^\\d{1,3}(\\.\\d{1,3}){3}([,; ]+\\d{1,3}(\\.\\d{1,3}){3})*$"
+    },
+    "pa": {
+      "type": "string",
+      "pattern": "^$|^\\d{1,2}\\.\\d{1,2}\\.\\d{1,3}$"
+    },
+    "paList": {
+      "type": "string",
+      "pattern": "^$|^\\d{1,2}\\.\\d{1,2}\\.\\d{1,3}([,; ]+\\d{1,2}\\.\\d{1,2}\\.\\d{1,3})*$"
+    },
+    "gaList": {
+      "type": "string",
+      "pattern": "^$|^\\d{1,2}/\\d{1,2}/\\d{1,3}([,; ]+\\d{1,2}/\\d{1,2}/\\d{1,3})*$"
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "One device that can be the device under test or the traffic interface of a run.",
+      "properties": {
+        "ip": {
+          "$ref": "#/definitions/ip",
+          "description": "IP address of the device under test (-Ip)."
+        },
+        "pa": {
+          "$ref": "#/definitions/pa",
+          "description": "Individual address of the device under test (-BdutPa). The run reads the address the device reports; an explicit -BdutPa that differs aborts."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "",
+            "Interface",
+            "Router"
+          ],
+          "description": "Interface or Router (-Role). Decides which cases apply: a router is expected to advertise ROUTING, an interface must not."
+        },
+        "hardwareBusmonitor": {
+          "type": "string",
+          "enum": [
+            "",
+            "yes",
+            "no"
+          ],
+          "description": "Whether the device has a hardware busmonitor (-Busmon). The busmonitor cases run only with yes."
+        }
+      }
+    },
+    "rig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Everything around the device under test that is the same for every run on this bench.",
+      "properties": {
+        "witnessIp": {
+          "$ref": "#/definitions/ip",
+          "description": "An interface with a hardware busmonitor that watches the line (-WitnessIp). It must be neither the device under test nor the traffic interface."
+        },
+        "p2pTarget": {
+          "$ref": "#/definitions/pa",
+          "description": "A TP device on the line that answers point-to-point requests (-P2pTarget)."
+        },
+        "deviceTargets": {
+          "$ref": "#/definitions/paList",
+          "description": "The TP devices the device stage judges, comma separated (-DeviceTargets)."
+        },
+        "testGa": {
+          "$ref": "#/definitions/gaList",
+          "description": "Group address(es) only the target acts on, for the device cases that write a group telegram (-TestGa)."
+        },
+        "serialPort": {
+          "type": "string",
+          "description": "Serial console of the device under test (-SerialPort), e.g. /dev/cu.usbmodem3101 or COM5. The hardening stage drives the FTC client over it and is skipped without it."
+        },
+        "ftcTarget": {
+          "$ref": "#/definitions/pa",
+          "description": "The TP device the FTC client works against in the hardening stage (-FtcTarget)."
+        },
+        "referenceIp": {
+          "$ref": "#/definitions/ip",
+          "description": "A certified interface to compare against (-ReferenceIp). Used when referenceIps is empty."
+        },
+        "referenceIps": {
+          "$ref": "#/definitions/ipList",
+          "description": "Several certified interfaces for the Fidelity and Reference stages, comma separated (-ReferenceIps)."
+        },
+        "speedTarget": {
+          "$ref": "#/definitions/pa",
+          "description": "The TP device that receives the throughput transfer of the Speed stage (-SpeedTarget)."
+        },
+        "speedKb": {
+          "type": "string",
+          "pattern": "^$|^\\d+$",
+          "description": "Payload in KB per transfer mode of the Speed stage (-SpeedKb). A string holding a number."
+        },
+        "multicast": {
+          "$ref": "#/definitions/ip",
+          "description": "Routing multicast group of the run (-Multicast). 224.0.23.12 is the production group: with it the routing suite is dropped, so a rig uses a lab group such as 224.0.23.13."
+        },
+        "powerGuard": {
+          "type": "string",
+          "enum": [
+            "",
+            "on",
+            "off"
+          ],
+          "description": "Rig power guard (-PowerGuard). With on, the bench power relays are checked before every stage and before a restart is judged, and protectedTargets is enforced."
+        },
+        "powerRelayWrite": {
+          "$ref": "#/definitions/gaList",
+          "description": "Relay switch group addresses, comma separated (-PowerRelayWrite). A GroupValue_Write 1 switches a relay on. The first one must cut the TP of every device in powerRelayFeeds."
+        },
+        "powerRelayStatus": {
+          "$ref": "#/definitions/gaList",
+          "description": "Relay status group addresses, in the order of powerRelayWrite (-PowerRelayStatus)."
+        },
+        "powerRelayVia": {
+          "$ref": "#/definitions/ip",
+          "description": "The interface every guard telegram goes through (-PowerRelayVia). It must not hang on the relays itself."
+        },
+        "protectedTargets": {
+          "$ref": "#/definitions/paList",
+          "description": "Devices that power the rig (-ProtectedTargets). With the guard on, no restart, master reset, address, memory or property write is sent to them."
+        },
+        "powerRelayFeeds": {
+          "$ref": "#/definitions/ipList",
+          "description": "Devices under test whose TP the relays cut, by IP (-PowerRelayFeeds). The KNX-fault cases of the DeviceState stage run only for a device in this list."
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the run may address.",
+      "properties": {
+        "allowedLines": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d{1,2}\\.\\d{1,2}$"
+          },
+          "description": "The TP lines the rig owns, as area.line, e.g. 1.1. The run aborts before the first telegram when the device under test, p2pTarget, ftcTarget or a deviceTargets entry lies on another line."
+        },
+        "note": {
+          "type": "string",
+          "description": "Why these lines, for the reader."
+        }
+      }
+    }
+  },
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to this schema, so an editor shows the field descriptions and checks the file."
+    },
+    "networkInterface": {
+      "type": "string",
+      "description": "The network interface of this computer that is wired to the bench, e.g. en0, eth0 or \"Ethernet 2\". Tools/Test-RigNetwork.ps1 checks and sets the routes for it. Empty when the computer has only one interface in the bench subnet."
+    },
+    "devices": {
+      "type": "object",
+      "description": "The KNXnet/IP devices of the bench by a short name of your choice, e.g. interface and router. A profile names its device under test and its traffic interface by these names.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/device"
+      }
+    },
+    "rig": {
+      "$ref": "#/definitions/rig"
+    },
+    "safety": {
+      "$ref": "#/definitions/safety"
+    }
+  }
+}

@@ -814,7 +814,8 @@ if ($want -contains 'Legacy') {
         if ((Test-Path $soak) -and -not $Quick) {
             Write-Host ''
             Write-Host '  --- Test-Soak (bounded) ---' -ForegroundColor DarkCyan
-            $sa = @('-Ip', $Ip, '-Cycles', '2')
+            # into the run's folder, beside the other artifacts of this run
+            $sa = @('-Ip', $Ip, '-Cycles', '2', '-LogDir', $ReportDir)
             if ($TrafficIp) { $sa += @('-TrafficIp', $TrafficIp) }
             & pwsh -NoProfile -File $soak @sa
             if ($LASTEXITCODE -ne 0) { $legacyFails += "Test-Soak (exit $LASTEXITCODE)" }

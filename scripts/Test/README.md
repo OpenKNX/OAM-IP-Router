@@ -15,6 +15,16 @@ pwsh ./Run-Tests.ps1
 
 Fragt alles ab, erklärt jede Eingabe, merkt sich die Antworten für den nächsten Lauf.
 
+**Ich habe einen festen Testaufbau** – einmal eintragen, dann nur noch das Profil nennen:
+
+```
+cp Test-Bench-Config.example.json Test-Bench-Config.json     # die eigenen Adressen eintragen
+pwsh ./Run-Tests.ps1 -ListProfiles
+pwsh ./Run-Tests.ps1 -TestProfile interface-all
+```
+
+Wie die Bench-Config und die Profile aufgebaut sind, steht in [`Profiles/README.md`](Profiles/README.md).
+
 **Ich kenne meine Werte:**
 
 ```
@@ -55,6 +65,122 @@ Die vier Werte, die fast alles steuern:
 | `-P2pTarget` | ein Gerät auf der Linie, das auf Punkt-zu-Punkt antwortet, z. B. `1.1.5` |
 
 Läuft unter **PowerShell 7** (macOS/Linux/Windows) und **Windows PowerShell 5.1**.
+
+---
+
+## Architektur der Testsuite
+
+Die Suite hat fünf Schichten. Jede kennt nur die unter ihr; ein Testfall weiß nichts vom Profil, ein Profil
+nichts von Rahmen und Sockets.
+
+```
+ Test-Bench-Config.json   Profiles/*.json   Kommandozeile   .last-run.json
+            \                  |                 |                /
+             +-----------------+--------+--------+---------------+
+                                        |
+                                 Run-Tests.ps1              Einstieg: Werte, Vorprüfungen, Bündel, Bericht
+                                        |
+              +-------------------------+--------------------------+
+              |                         |                          |
+   runners/Invoke-AllTests     runners/Invoke-*.ps1        Features/Test-*.ps1     Runner: je eine Stufe
+     (fährt die Stufen                  |                          |
+      nacheinander)                     |                          |
+              +-------------------------+--------------------------+
+                                        |
+                               Suites/*.Tests.ps1                                 Fälle: Id, Klausel, Prüfung
+                                        |
+                      lib/KnxTest.psm1 · KnxDevice.psm1 · KnxSerial.psm1 · KnxTcp.psm1
+                                        |                                         Bibliothek: Rahmen, Tunnel,
+                              KNXnet/IP · TP · serielle Konsole                   Ergebnislogik
+```
+
+### 1. Konfiguration – woher die Werte kommen
+
+| Datei | Inhalt | Eingecheckt |
+|---|---|---|
+| `Test-Bench-Config.json` | der eigene Testaufbau: Geräte, Adressen, Netzwerkschnittstelle, erlaubte Linien | nein, nur die Vorlage `.example.json` |
+| `Profiles/*.json` | ein benannter Lauf: Stufe, Prüfling, was der Lauf abzudecken verspricht | ja |
+| `.last-run.json` | die zuletzt eingegebenen Antworten, als Vorschlag in der Nachfrage | nein |
+
+`lib/KnxBench.ps1` liest die Bench-Config und setzt ihre Werte in ein Profil ein. Es gilt: Kommandozeile vor
+Profil vor Bench-Config vor gemerkter Antwort vor Nachfrage.
+
+### 2. Einstieg – `Run-Tests.ps1`
+
+Sammelt die Werte und prüft, **bevor** ein Fall läuft, in dieser Reihenfolge:
+
+| Schritt | Prüft | Bei Befund |
+|---|---|---|
+| Netzwerk | `Tools/Test-RigNetwork.ps1`: erreicht der Rechner die KNXnet/IP-Geräte, verlässt Multicast den Rechner auf der Testschnittstelle | Exit 2, abschaltbar mit `-SkipNetworkCheck` |
+| Adresse | meldet das Gerät unter `-Ip` die physikalische Adresse, die der Lauf annimmt | die gemeldete Adresse wird benutzt; ein abweichendes ausdrückliches `-BdutPa` bricht ab (Exit 3) |
+| Linien | liegen Prüfling und Zielgeräte auf den Linien aus `safety.allowedLines` | Exit 3, nichts wurde gesendet |
+| Zusagen | hat jedes Argument aus `requires` des Profils einen Wert | Exit 3 |
+| TP-Geräte | `Tools/Test-RigDevices.ps1`: antworten `-P2pTarget`, `-DeviceTargets`, `-FtcTarget` und `-SpeedTarget` auf eine Geräte-Deskriptor-Anfrage | Exit 2, abschaltbar mit `-SkipDeviceCheck` |
+
+Danach legt es den Ordner des Laufs an (`Reports/<What>_<Zeit>/`), schreibt `settings.json` (die Werte des Laufs,
+ohne Passwort), startet den Runner der gewählten Stufe und baut am Ende mit `Tools/New-TestReport.ps1` den
+HTML-Bericht.
+
+### 3. Runner – je eine Stufe
+
+| Runner | Stufe |
+|---|---|
+| `runners/Invoke-Conformance.ps1` | Conformance: lädt die Suiten `3-Core` … `11-TunnellingV2` |
+| `runners/Invoke-DeviceTests.ps1` | Devices: `Suites/D-Device.Tests.ps1` je Zielgerät |
+| `Features/Test-Features.ps1`, `Test-Busmonitor.ps1`, `Test-Rename.ps1` | Features, Busmonitor, Rename |
+| `runners/Invoke-Endurance.ps1`, `Compare-Reference.ps1` | Dauerlauf, Referenzvergleich |
+| `runners/Invoke-DptVectors.ps1`, `Invoke-HostStackTests.ps1` | Dpt, HostStack: laufen auf dem Rechner, ohne Gerät |
+| `runners/Invoke-EtsReadback.ps1` | EtsReadback |
+| `stress/Invoke-Stress.ps1`, `legacy/*.ps1` | Stress, Legacy |
+| `runners/Invoke-AllTests.ps1` | `-What All`: fährt die Stufen nacheinander und fasst sie zu einem Ergebnis zusammen |
+
+`Invoke-AllTests.ps1` kennt fünfzehn Stufen: `SelfTest`, `Dpt`, `HostStack`, `Conformance`, `Features`, `Rename`,
+`Busmonitor`, `Fidelity`, `DeviceState`, `Devices`, `Hardening`, `Legacy`, `Reference`, `EtsReadback`, `Speed`.
+Eine Stufe, der eine Eingabe fehlt, wird als `SKIPPED` mit Grund geführt und macht den Lauf unvollständig
+(Exit 3), statt still zu fehlen. Mit `powerGuard: on` prüft der Runner vor jeder Stufe die Netzteil-Relais des
+Aufbaus (Abschnitt 2b).
+
+### 4. Suiten – die Fälle
+
+Ein Fall ist ein Aufruf von `Invoke-KnxTestCase` mit Suite, Id, Titel, der Klausel der Spezifikation und einem
+Prüfblock:
+
+```powershell
+Invoke-KnxTestCase -Suite $SuiteTitle -Id 'D-1.1' -Title 'Device Descriptor Type 0 - the device identifies itself' `
+                   -Clause '03_03_07 clause 3.4.2.1, p.48' -Body {
+    ...
+    Add-KnxEvidence -Sent $r.Sent                       # was gesendet und empfangen wurde, kommt in den Bericht
+    Assert-KnxTrue ($null -ne $r.Response) 'no A_DeviceDescriptor_Response'
+}
+```
+
+`Assert-KnxTrue` entscheidet über PASS und FAIL, `Set-KnxTestSkip` und `Set-KnxTestNotApplicable` führen einen
+Fall mit Grund als SKIP oder N-A. Ein Fall, der ohne eine einzige Zusicherung endet, wird NO-PROOF (Abschnitt 4).
+Die Id trägt die Herkunft im Präfix, z. B. `D-` Geräte am TP, `X-` Produktverhalten, `B-` Busmonitor, `K-` TCP,
+`V-` Tunnelling v2.
+
+### 5. Bibliothek – `lib/`
+
+| Datei | Aufgabe |
+|---|---|
+| `KnxTest.psm1` | KNXnet/IP-Rahmen bauen und lesen, Tunnel und Verbindungen, Ergebnislogik der Fälle, Selbsttest |
+| `KnxDevice.psm1` | Gerätedienste am TP durch einen Tunnel: Transportschicht, Eigenschaften, Speicher, Relais des Aufbaus |
+| `KnxSerial.psm1` | serielle Konsole: Port finden, Gerät erkennen, Befehle senden |
+| `KnxTcp.psm1` | KNXnet/IP über TCP |
+| `KnxBench.ps1` | Bench-Config lesen, Profile damit auflösen |
+| `KnxLogo.ps1` | Logo-Kopf aller Skripte |
+
+Der Selbsttest der Bibliothek läuft offline vor jedem Urteil. Schlägt er fehl, endet der Runner mit Exit 2 und
+beurteilt nichts: ein Fehler in der Bibliothek darf nicht als Gerätefehler erscheinen.
+
+### Exit-Codes
+
+| Code | Bedeutung |
+|---|---|
+| 0 | alles grün |
+| 1 | mindestens ein FAIL, oder ein Bericht war nicht lesbar |
+| 2 | es wurde nichts beurteilt: eine Vorprüfung hat den Lauf nicht gestartet, oder der Selbsttest der Bibliothek schlug fehl |
+| 3 | unvollständig oder abgebrochen: kein Fall schlug fehl, aber nicht alles lief oder wurde belegt; auch eine fehlende Zusage des Profils |
 
 ---
 
@@ -351,6 +477,9 @@ Ergebnisse statt still N-A zu bleiben.
 | Bibliothek offline prüfen | `pwsh runners/Invoke-Conformance.ps1 -SelfTest` |
 | Ergebnislogik offline prüfen | `pwsh Tools/Test-ResultContract.ps1` |
 | Geräte im Netz finden | `pwsh Tools/Find-KnxDevices.ps1` |
+| Ein Profil fahren | `./Run-Tests.ps1 -TestProfile interface-all` |
+| Netzwerk zum Testaufbau prüfen | `pwsh Tools/Test-RigNetwork.ps1` |
+| TP-Geräte des Testaufbaus prüfen | `pwsh Tools/Test-RigDevices.ps1` |
 
 `wreck` aus der Stress-Stufe läuft **nie** automatisch: Er kann den Watchdog auslösen, und
 OpenKNX-Auto-Erase löscht dann die KNX-Konfiguration. Bei Bedarf direkt:
@@ -362,9 +491,15 @@ OpenKNX-Auto-Erase löscht dann die KNX-Konfiguration. Bei Bedarf direkt:
 
 ```
 Run-Tests.ps1     der eine Einstieg, fragt den Aufbau ab
+Test-Bench-Config.example.json   Vorlage für den eigenen Testaufbau; die Kopie Test-Bench-Config.json
+                                 ist nicht eingecheckt
+Test-Bench-Config.schema.json    Schema dazu, mit der Beschreibung jedes Feldes
+Profiles/         benannte Läufe (*.json), ihr Schema und die Doku dazu (README.md)
 lib/              KnxTest.psm1 (Frames, Parser, Ergebnislogik, Selbsttest)
                   KnxDevice.psm1 (Gerätedienste am TP für die Devices-Stufe)
                   KnxSerial.psm1 (Ports finden, Gerät erkennen, Konsole bedienen)
+                  KnxTcp.psm1 (KNXnet/IP über TCP)
+                  KnxBench.ps1 (Bench-Config lesen, Profile auflösen)
                   KnxLogo.ps1 (Logo-Kopf aller Skripte)
                   Sync-TestLib.ps1 (Abgleich mit dem Router-Repo)
 runners/          Invoke-AllTests · Invoke-Conformance · Invoke-Endurance
@@ -375,6 +510,9 @@ Features/         Test-Features (X-*) · Test-Busmonitor (B-*)
 stress/           Invoke-Stress.ps1 — Last, Lecks, Robustheit
 legacy/           Test-Tunnels · Test-Soak · Test-Fuzz
 Tools/            Find-KnxDevices · Start-FakeKnxDevice (Offline-Gerät)
+                  Test-RigNetwork.ps1 — erreicht der Rechner den Testaufbau; setzt die Wege für eine
+                  Sitzung (-Apply) und nimmt sie wieder weg (-Reset)
+                  Test-RigDevices.ps1 — antworten die TP-Geräte des Testaufbaus
                   Clear-Reports.ps1 — Berichte aufräumen (zeigt erst, fragt dann)
                   Test-ResultContract.ps1 — prüft offline, welches Ergebnis ein Fall bekommt
                   New-TestReport.ps1 — HTML-Bericht aus den Lauf-Daten

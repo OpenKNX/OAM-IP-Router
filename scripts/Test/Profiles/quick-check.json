@@ -1,17 +1,15 @@
 {
+  "$schema": "./schema/profile.schema.json",
   "name": "quick-check",
   "description": "The conformance suite alone, read-only, as a smoke test after a flash",
   "what": "Conformance",
-  "device": {
-    "ip": "11.11.0.126",
-    "pa": "1.1.0",
-    "role": "Router",
-    "hardwareBusmonitor": "no"
-  },
+  "device": "router",
+  "traffic": "interface",
   "rig": {
-    "trafficIp": "11.11.0.210",
-    "p2pTarget": "1.1.5",
-    "multicast": "224.0.23.13",
+    "fromBench": [
+      "p2pTarget",
+      "multicast"
+    ],
     "powerGuard": "off"
   },
   "flags": {
@@ -23,11 +21,5 @@
     "-BdutPa",
     "-TrafficIp"
   ],
-  "safety": {
-    "allowedLines": [
-      "1.1"
-    ],
-    "note": "line 1.1 is the isolated test rig; 1.0.x and 2.0.x are the live installation - a test must never address them"
-  },
   "notes": "Deliberately not destructive and not complete - a smoke test, not a certification run."
 }

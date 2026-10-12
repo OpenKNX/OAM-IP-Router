@@ -402,12 +402,12 @@
               '&middot; <b>B/s</b> = empfangene Bytes pro Sekunde. Kurzzeitig &uuml;ber 100&nbsp;% m&ouml;glich. ' +
               '&bdquo;Z&auml;hler zur&uuml;cksetzen&ldquo; beginnt neu und setzt auch ' +
               'die verlorenen Telegramme auf 0.',
-        addIa: 'Jeder Tunnel braucht eine eigene KNX-Adresse aus der ETS. Fehlt sie oder ist sie doppelt ' +
+        addIa: 'Jeder Tunnel braucht eine eigene KNX-Adresse aus dem KNX-Projekt. Fehlt sie oder ist sie doppelt ' +
                'vergeben, k&ouml;nnen weniger Clients gleichzeitig verbinden. Details im Tab ' +
                '&bdquo;Reservierte&ldquo;.',
         toIp: '<b>&rarr;IP</b> = ins Netzwerk gesendete Pakete &middot; <b>&rarr;TP</b> = auf der KNX-Linie ' +
               'zugestellte Telegramme.',
-        cfg: 'Das Ger&auml;t hat keine g&uuml;ltige ETS-Konfiguration und keine Filtertabelle: noch nicht ' +
+        cfg: 'Das Ger&auml;t hat keine g&uuml;ltige KNX-Konfiguration und keine Filtertabelle: noch nicht ' +
              'programmiert oder nach einem Firmware-Wechsel ung&uuml;ltig. Tunnel funktionieren trotzdem; ' +
              'fehlen Tunnel-Adressen, vergibt das Ger&auml;t vorl&auml;ufige.',
         mc: 'Adresse, &uuml;ber die KNX-IP-Ger&auml;te im Netzwerk Telegramme austauschen. <b>TTL</b> = Reichweite: ' +
@@ -514,7 +514,7 @@
                    // covers BOTH causes: a x.y.255 placeholder and an empty entry. The banner only sees
                    // the sum, so it must not diagnose which -- the reserved tab says that per slot.
                    : iaBad ? ' <span class="tn-busmon">&#9888; Kein Tunnel hat eine eigene KNX-Adresse. ' +
-                     'Bitte in der ETS zuweisen (Details im Tab &bdquo;Reservierte&ldquo;).</span>'
+                     'Bitte im KNX-Projekt zuweisen (Details im Tab &bdquo;Reservierte&ldquo;).</span>'
                    : iaThin ? ' <span class="gray">' + d.addIa.used + ' von ' + d.addIa.max +
                      ' Pl&auml;tzen mit eindeutiger Adresse</span>' : '');
         // Counts the ROWS of this table (every connection, not just the data tunnels of the heading).
@@ -618,7 +618,7 @@
             return '<p class="ft-note err">Die Filtertabelle ist nicht aktiv.' + none;
         if (known && !used)
             return '<p class="ft-note warn">Die Filtertabelle wird derzeit nicht verwendet: Keine Richtung steht auf ' +
-                '&bdquo;nach Filtertabelle&ldquo; (ETS-Parameter des Routers).</p>';
+                '&bdquo;nach Filtertabelle&ldquo; (Parameter des Routers).</p>';
         if (used && f.inUse !== false && !f.count && f.building === undefined)
             return '<p class="ft-note err">Die Filtertabelle ist leer.' + none;
         return '';

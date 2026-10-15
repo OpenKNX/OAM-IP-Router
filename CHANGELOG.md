@@ -91,6 +91,7 @@ list; this is what matters for this product.
 * ESP32 with wired LAN and a display: the LAN speed widget, the overview page and `net` show packet counters, counted at the lwIP netif; the widget showed "n/a" there
 * `net` shows the W5500 socket reopens and timeouts
 * The network widgets are named Network and NETWORK
+* RP2040 with W5500: a chip that does not answer at boot no longer leads to a watchdog loop that ends with the programming erased; the device starts without network and keeps retrying
 
 **OFM-FileTransferModule** `ec/v0.2.0-beta.1` -> `ec/v0.3.0-beta.1`
 * The device info reads the bus voltage of every device over a transport connection of its own, and the info of a device with a router object completes instead of leaving the client busy
@@ -105,6 +106,7 @@ list; this is what matters for this product.
 * The time encoding initialises the tm block and sets the weekday
 * ESP-IDF builds carry the OpenKNX identity
 * The KNX and system info widgets label Address and Number in English
+* RP2040: the watchdog fires after the configured 16 s instead of about 8.4 s (erratum RP2040-E1)
 
 **OFM-DeviceDisplay** `4fab100` -> `v0.1.1`
 * Every text on the display is English: menu, options, confirmations, toasts, the gesture and programming overlays and the clock; Dim after, Saver after and Sleep after fit one row with their value

@@ -63,7 +63,7 @@ class HostBau : public Bau07B0
 {
   public:
     using Bau07B0::Bau07B0;
-    using Bau07B0::getInterfaceObject;
+    using BauSystemB::getInterfaceObject; // the index lookup lives in the common base now
 };
 } // namespace
 

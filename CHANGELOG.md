@@ -1,7 +1,7 @@
 # Changes
 
 
-## ec/ALPHA-DEV-v8.1.0: 2026-10-11
+## ec/ALPHA-DEV-v8.1.0: 2026-10-15
 
 ETS product **8.1** (`IP-Router-Dev-v8.1.knxprod`), release variant **0.9**. The ETS parameter block moved in
 the device memory, so a device that carries 8.0 or 0.8 needs an ETS download with the new knxprod after the
@@ -24,6 +24,10 @@ ESP32.
 * Fix: the note for a loaded but unused filter table said every group telegram passes, which is wrong when a direction is locked. It now says that no direction uses the table
 * Fix: an unconfigured router was described with the address 15.15.255. Its default is 15.15.0, and the state follows the loaded router object, not the address
 * Change: "filtered" is described as telegrams that do not belong on the other side by filter table, setting or destination address, and the multicast row explains the address and the TTL
+
+* Feature: the status page shows the telegrams to TP that were not confirmed (individual, group) in the overview, and under "Bus + Diagnose" the confirmed, unconfirmed and not-sent telegrams per cause
+* Fix: the help text of PE names both causes: a bit error on the bus, which the chip reports in the parity bit, and a corrupted octet from the chip
+* Change: every text on the display is English (see Libraries)
 
 ### ETS product
 * Fix: the parameter segment sits at 2200h with 0200h octets, above the filter table at 0200h-21FFh. It was declared at 0100h with 256 octets, shorter than the 295 parameter octets the firmware reads, and the metadata that every save writes from the start of the NVM ran into its first octets. A `static_assert` fails the build when the parameters outgrow the segment
@@ -68,6 +72,11 @@ list; this is what matters for this product.
 * Run state: `PID_RUN_STATE_CONTROL` stops and restarts the coupling for diagnostics, with management still reachable
 * Transport and application layer: frames with an undefined control field are ignored, and `A_ADC_Read` is answered only over a transport connection
 * RP2040 and ESP32 receive the routing socket through a raw `udp_pcb` with a datagram ring, and up to 8 datagrams are read per loop pass
+* Stored image: the apiVersion 2 image of 8.0.0 is migrated instead of discarded -- the individual address and IP settings are kept and the tables wait for the ETS download the new knxprod needs. Taken from the code, not yet measured on a router
+* TP send counters per cause and per address type next to PID 73 and 75, which keep their values
+* The broadcast confirm of a frame with the router's own source address passes up only a `T_Data_Broadcast` and checks its length per service
+* A table unloaded while loading or in error frees its memory, and a cEMI `T_Data` request without APCI octet is dropped
+* The description of `PID_IO_LIST` reports 9 elements (was 8); the router's object list itself is unchanged
 
 **TPUart** `ec/1.3.0-beta.1` -> `ec/1.4.0-beta.1`
 * The wait for the confirmation of an own frame survives a probe answer and a repetition; before, 0 to 4 frames of a burst of 1000 routing indications neither reached the bus nor were reported as lost
@@ -81,17 +90,28 @@ list; this is what matters for this product.
 * ESP32: KNX-IP is switched only from the main loop, and the network event handler is registered once
 * ESP32 with wired LAN and a display: the LAN speed widget, the overview page and `net` show packet counters, counted at the lwIP netif; the widget showed "n/a" there
 * `net` shows the W5500 socket reopens and timeouts
+* The network widgets are named Network and NETWORK
 
 **OFM-FileTransferModule** `ec/v0.2.0-beta.1` -> `ec/v0.3.0-beta.1`
 * The device info reads the bus voltage of every device over a transport connection of its own, and the info of a device with a router object completes instead of leaving the client busy
 * The scan reads every device by default, and the parallel range scan is gone
 * `oknx -i <ip> con` finds the console on the shared web socket
 * knxOTA page: it explains itself to the person doing the update (help per step, for the capabilities and for the method), safe is the default method, a locked target shows the next step, and the transfer has a block map
+* The client counts a BCU identity chunk only from the answer to the address it asked for, and skips a table whose reference is 0 instead of reading 0000h
+* `oknx` reads and writes several group addresses at once and reads them at an interval
 
 **OGM-Common** `ec/v2.0.0-beta.1` -> `ec/v2.0.0-beta.2`
 * The build compares the knxprod it built with the header the firmware uses, and says why when it cannot
 * The time encoding initialises the tm block and sets the weekday
 * ESP-IDF builds carry the OpenKNX identity
+* The KNX and system info widgets label Address and Number in English
+
+**OFM-DeviceDisplay** `4fab100` -> `v0.1.1`
+* Every text on the display is English: menu, options, confirmations, toasts, the gesture and programming overlays and the clock; Dim after, Saver after and Sleep after fit one row with their value
+* The other changes of this version are listed in the changelog of the module
+
+**OFM-SDCard** `v0.1.0` -> `v0.1.1`
+* The SD card menu, the file browser and the format messages are English
 
 
 ## ec/ALPHA-DEV-v8.0.0: 2026-09-15

@@ -575,7 +575,7 @@ bool IPRouterModule::processCommand(const std::string cmd, bool diagnoseKo)
         // 03_08_03: ->IP counts EVERY KNXnet/IP datagram, tunnelling and ACKs included.
         logInfoP("Telegrams  ->IP %lu   ->TP %lu   (PID 74/75)",
                  (unsigned long)c.transmitToIp(), (unsigned long)c.transmitToKnx());
-        logInfoP("Lost       ->IP %u    ->TP %u    (PID 72/73 since boot, queue overflow)",
+        logInfoP("Lost       ->IP %u    ->TP %u    (PID 72/73 since boot)",
                  c.overflowToIp(), c.overflowToKnx());
         {
             // Receive queue of the KNXnet/IP socket (RP2040, ESP32): drops here never reach PID 72/73.
@@ -958,6 +958,10 @@ static const std::string &buildIproJson()
     // lostIp/lostTp above stay the raw PID values; these two carry the page's view of them.
     appendLost(json, "lostIp", 0);
     appendLost(json, "lostTp", 1);
+    // Sent on TP without a positive L_Data.con: [individual address, group].
+    snprintf(buf, sizeof(buf), ",\"nakTp\":[%lu,%lu]", (unsigned long)c.unconfirmedToKnx(false),
+             (unsigned long)c.unconfirmedToKnx(true));
+    json += buf;
     // Receive queue, only where the platform keeps one (RP2040, ESP32): datagrams dropped on arrival.
     MulticastRxStats rx;
     if (knx.platform().multicastRxStats(rx))
@@ -1045,6 +1049,18 @@ static const std::string &buildIproBusJson()
              (unsigned long)st.getRxUartOverflow(), (unsigned long)st.getRxSearchBufferOverflow(),
              (unsigned long)st.getRxFrameBufferOverflow(), (unsigned long)st.getTxOverflowFrameBuffer());
     json += buf;
+    {
+        // Telegrams to TP: [acknowledged, unconfirmed individual, unconfirmed group, not sent: queue full,
+        // no memory, chip not ready, dropped by the transmitter].
+        KnxIpCounters &c = knx.bau().getCounters();
+        snprintf(buf, sizeof(buf), ",\"snd\":[%lu,%lu,%lu,%lu,%lu,%lu,%lu]", (unsigned long)c.transmitToKnx(),
+                 (unsigned long)c.unconfirmedToKnx(false), (unsigned long)c.unconfirmedToKnx(true),
+                 (unsigned long)c.notSentToKnx(KnxIpCounters::NotSentQueueFull),
+                 (unsigned long)c.notSentToKnx(KnxIpCounters::NotSentNoMemory),
+                 (unsigned long)c.notSentToKnx(KnxIpCounters::NotSentChipNotReady),
+                 (unsigned long)c.notSentToKnx(KnxIpCounters::NotSentDropped));
+        json += buf;
+    }
 
 #if defined(TPUART_API_LEVEL) && TPUART_API_LEVEL >= 2
     snprintf(buf, sizeof(buf), ",\"autoack\":%s,\"crc\":%s,\"ack\":%lu",

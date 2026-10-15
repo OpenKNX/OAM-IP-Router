@@ -379,12 +379,24 @@
                (age >= 0 && !v[2] ? ' <span class="gray">zuletzt vor ' + ago(age) + '</span>' : '');
     }
 
+    // An unconfirmed telegram to one device is a fault; to a group address it is often just an unused address.
+    function nakCell(n) { return n ? '<span class="ii-warn">' + humanCount(n) + '</span>' : '0'; }
+
     // Written for the person operating the installation: what the value says and when it matters.
     const WHY = {
         byteErr: 'FE = Verbindung zum Bus-Chip gest&ouml;rt &middot; PE = Bitfehler beim Empfang &middot; ' +
                  'BE = Verbindung zum Bus-Chip unterbrochen &middot; OE = Zeichen verpasst, Ger&auml;t zu langsam.',
-        rep: 'Ein Telegramm wurde nicht best&auml;tigt und wiederholt. H&auml;ufig bei Leitungsproblemen oder ' +
-             'einem &uuml;berlasteten Ger&auml;t.',
+        rep: 'Wiederholte Telegramme auf der Linie, deren erster Versuch auch empfangen wurde, dazu die eigenen. ' +
+             'Ein Sender wiederholt, wenn kein Empf&auml;nger quittiert oder einer &bdquo;belegt&ldquo; oder NACK meldet. ' +
+             'H&auml;ufig bei Leitungsproblemen oder &uuml;berlasteten Ger&auml;ten.',
+        nak: 'Gesendet, aber ohne positive Best&auml;tigung: kein Empf&auml;nger hat quittiert, einer war bei jedem ' +
+             'Versuch belegt, oder die Best&auml;tigung des Bus-Chips ging verloren (dann auch unter CON-Rettungen). ' +
+             '<b>Einzel</b> = an eine Einzeladresse, meist antwortet das Zielger&auml;t nicht. <b>Gruppe</b> = ' +
+             'oft eine Gruppenadresse, die kein Ger&auml;t der Linie kennt; dann normal.',
+        snd: 'Z&auml;hler der Telegramme zur KNX-Linie seit dem Start. <b>Nicht gesendet</b> z&auml;hlt als verloren. ' +
+             '<b>Bus-Chip nicht bereit</b> = Chip getrennt. <b>Vom Sender verworfen</b> = ' +
+             'der Sender wurde zur&uuml;ckgesetzt; das Telegramm kann schon auf der Linie gewesen sein, nur seine ' +
+             'Best&auml;tigung kam nicht.',
         ovf: 'Interne Puffer waren voll (U/S/R/T = Empfang, Suche, Rahmen, Senden). Jeder Wert &uuml;ber 0 ' +
              'bedeutet verlorene Daten.',
         ackDrop: 'Das Ger&auml;t konnte ein Telegramm nicht rechtzeitig best&auml;tigen; der Sender wiederholt es.',
@@ -393,7 +405,7 @@
         sc: 'Zwei Teilnehmer haben gleichzeitig gesendet. Einzeln normal; dauerhaft hoch deutet auf ein ' +
             'Adress- oder Leitungsproblem.',
         lost: 'Telegramme, die das Ger&auml;t nicht weitergeben konnte, z.&nbsp;B. bei &Uuml;berlast oder ' +
-              'unterbrochener Verbindung. <b>Rot</b> = in den letzten ' + (LOST_FRESH_S / 60) +
+              'unterbrochener Verbindung. Die Ursachen zur KNX-Linie stehen unter &bdquo;Bus + Diagnose&ldquo;. <b>Rot</b> = in den letzten ' + (LOST_FRESH_S / 60) +
               '&nbsp;min, <b>orange</b> = l&auml;nger her.',
         rxDrop: '<b>Empfang</b> = Pakete aus dem Netzwerk, die das Ger&auml;t nicht rechtzeitig annehmen konnte.',
         // All four values, because all four are on the row.
@@ -468,6 +480,9 @@
             row('Weitergeleitet', '&rarr;IP ' + humanCount(d.rtIp) + ' &nbsp; &rarr;TP ' + humanCount(d.rtTp), WHY.routed) +
             row('Gefiltert', '&rarr;IP ' + humanCount(d.flIp) + ' &nbsp; &rarr;TP ' + humanCount(d.flTp), WHY.filt) +
             row('Gesendet', '&rarr;IP ' + humanCount(d.toIp) + ' &nbsp; &rarr;TP ' + humanCount(d.toTp), WHY.toIp) +
+            (d.nakTp === undefined ? '' :
+                row('Nicht best&auml;tigt', 'Einzel ' + nakCell(d.nakTp[0]) +
+                    ' &nbsp; Gruppe ' + humanCount(d.nakTp[1]), WHY.nak)) +
             // Empfang only where the firmware counts it (RP2040, ESP32).
             row('Verloren', '&rarr;IP ' + lostCell(lostIp) + ' &nbsp; &rarr;TP ' + lostCell(lostTp) +
                 (d.rxDrop === undefined ? '' : ' &nbsp; Empfang ' + lostCell(rxDrop)),
@@ -807,6 +822,20 @@
                 ? (b.be[1] > 100 ? '<span class="ii-bad">' + b.be.map(humanCountShort).join('/') + '</span>'
                                  : b.be.map(humanCountShort).join('/'))
                 : na('Diese Firmware f&uuml;hrt die Byte-Fehlerz&auml;hler nicht'), WHY.byteErr);
+
+        // [acked, unconfirmed individual, unconfirmed group, queue full, no memory, chip not ready, dropped].
+        if (b.snd) {
+            const s = b.snd;
+            const drop = function (n) { return n ? '<span class="ii-bad">' + humanCount(n) + '</span>' : '0'; };
+            h += head('Senden zur KNX-Linie') +
+                row('Best&auml;tigt', humanCount(s[0]), WHY.snd) +
+                row('Ohne Best&auml;tigung', 'Einzel ' + nakCell(s[1]) + ' &nbsp; Gruppe ' + humanCount(s[2]), WHY.nak) +
+                head('Nicht gesendet') +
+                row('Warteschlange voll', drop(s[3])) +
+                row('Kein Speicher', drop(s[4])) +
+                row('Bus-Chip nicht bereit', drop(s[5])) +
+                row('Vom Sender verworfen', drop(s[6]));
+        }
 
         if (!b.health)
             h += head('Gesundheit') +

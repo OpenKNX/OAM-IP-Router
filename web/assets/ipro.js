@@ -384,7 +384,7 @@
 
     // Written for the person operating the installation: what the value says and when it matters.
     const WHY = {
-        byteErr: 'FE = Verbindung zum Bus-Chip gest&ouml;rt &middot; PE = Bitfehler beim Empfang &middot; ' +
+        byteErr: 'FE = Verbindung zum Bus-Chip gest&ouml;rt &middot; PE = Bitfehler auf dem Bus oder gest&ouml;rtes Zeichen vom Bus-Chip &middot; ' +
                  'BE = Verbindung zum Bus-Chip unterbrochen &middot; OE = Zeichen verpasst, Ger&auml;t zu langsam.',
         rep: 'Wiederholte Telegramme auf der Linie, deren erster Versuch auch empfangen wurde, dazu die eigenen. ' +
              'Ein Sender wiederholt, wenn kein Empf&auml;nger quittiert oder einer &bdquo;belegt&ldquo; oder NACK meldet. ' +

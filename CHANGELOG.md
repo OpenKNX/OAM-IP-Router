@@ -1,7 +1,7 @@
 # Changes
 
 
-## ec/ALPHA-DEV-v8.1.0: 2026-10-15
+## ec/ALPHA-DEV-v8.1.0: 2026-10-16
 
 ETS product **8.1** (`IP-Router-Dev-v8.1.knxprod`), release variant **0.9**. The ETS parameter block moved in
 the device memory, so a device that carries 8.0 or 0.8 needs an ETS download with the new knxprod after the
@@ -99,14 +99,19 @@ list; this is what matters for this product.
 * `oknx -i <ip> con` finds the console on the shared web socket
 * knxOTA page: it explains itself to the person doing the update (help per step, for the capabilities and for the method), safe is the default method, a locked target shows the next step, and the transfer has a block map
 * The client counts a BCU identity chunk only from the answer to the address it asked for, and skips a table whose reference is 0 instead of reading 0000h
-* `oknx` reads and writes several group addresses at once and reads them at an interval
+* `oknx` reads and writes several group addresses at once and reads them at an interval, and `ga ask` writes a command and collects the answers of an object such as the OpenKNX diagnose object
+* `oknx setpa` follows NM_IndividualAddress_Write: it stops when another device already holds the address, and confirms over a connection; once the device acknowledges that read, it restarts the device, which ends its programming mode
+* `oknx unload` finds the loadable objects by type; the fixed indices it used hit the group object table instead of the application on a System B device, and the filter table on a router
+* A telegram the interface reports as not confirmed names both causes: nobody on the TP line acknowledged it, or it was not sent
+* `oknx` takes a command's long options also before the command; `scan -q` starts every line with its record type and gives each a fixed field count (the device and tunnel lines used to start with the address)
+* The device info closes its scan session with one T_Disconnect, and a lost table reference is asked once more before System 7 falls back to the fixed table base
 
 **OGM-Common** `ec/v2.0.0-beta.1` -> `ec/v2.0.0-beta.2`
 * The build compares the knxprod it built with the header the firmware uses, and says why when it cannot
 * The time encoding initialises the tm block and sets the weekday
 * ESP-IDF builds carry the OpenKNX identity
 * The KNX and system info widgets label Address and Number in English
-* RP2040: the watchdog fires after the configured 16 s instead of about 8.4 s (erratum RP2040-E1)
+* RP2040: the watchdog fires 16 to 17 s after the last loop pass (configured 16 s) instead of after about 8.4 s (erratum RP2040-E1); with interrupts off it fires at most 8 s after the last feed
 
 **OFM-DeviceDisplay** `4fab100` -> `v0.1.1`
 * Every text on the display is English: menu, options, confirmations, toasts, the gesture and programming overlays and the clock; Dim after, Saver after and Sleep after fit one row with their value

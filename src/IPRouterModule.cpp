@@ -437,6 +437,9 @@ static void appendLost(std::string &json, const char *key, uint8_t dir)
 
 IPRouterModule *IPRouterModule::_instance = nullptr;
 
+const char *IPRouterModule::routingGroup() { return mcAddr; }
+int IPRouterModule::routingTtl() { return mcTtlValid ? mcTtl : -1; }
+
 IPRouterModule::IPRouterModule()
 {
     IPRouterModule::_instance = this;

@@ -13,6 +13,9 @@ class IPRouterModule : public OpenKNX::Module
     const std::string logPrefix() { return "ipro"; }
     const std::string version() override;
     static IPRouterModule *instance();
+    /** @brief Routing multicast group as text ("" until read) and its TTL (-1 when unreadable), from the KNX-loop mirror. */
+    static const char *routingGroup();
+    static int routingTtl();
     bool processCommand(const std::string cmd, bool diagnoseKo) override;
     void showHelp() override;
     void setup(bool configured) override; // registers the tunnel status page (webserver builds only)

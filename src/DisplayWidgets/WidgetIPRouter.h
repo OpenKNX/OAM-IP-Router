@@ -31,7 +31,24 @@ class WidgetIPRouter : public Widget
     void setDisplayModule(i2cDisplay *displayModule) override;
     i2cDisplay *getDisplayModule() const override;
 
+    // Multi-page API: the WidgetsManager rotates pages by time and flips them on button input.
+    size_t getPageCount() const override { return PAGE_COUNT; }
+    size_t getCurrentPage() const override { return _page; }
+    void setPage(size_t page) override;
+    void nextPage() override { setPage((_page + 1) % PAGE_COUNT); }
+    void prevPage() override { setPage((_page + PAGE_COUNT - 1) % PAGE_COUNT); }
+
   private:
+    enum Page : uint8_t
+    {
+        PAGE_IP = 0,
+        PAGE_COUPLER,
+        PAGE_ROUTING,
+        PAGE_COUNT
+    };
+    size_t _page = 0;
+    bool _forceRedraw = true;
+
     WidgetState _state;
     uint32_t _displayTime;
     WidgetFlags _action;
@@ -47,6 +64,11 @@ class WidgetIPRouter : public Widget
     uint16_t lastTxBytes = 0;
 
     void drawIPInfo();
+    void drawCoupler();
+    void drawRouting();
+    void drawHeader(const char *title);
+    void printRow(int16_t y, const char *text);
+    void printCentered(int16_t y, const char *text);
 };
 
 #endif // DEVICE_DISPLAY_MODULE

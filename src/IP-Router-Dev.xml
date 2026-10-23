@@ -8,12 +8,12 @@
   <op:config name="%NET_ServiceHTTP%" value="1" />
   <op:config name="%NET_LanMode%" value="1" />
 
-  <op:config name="%BASE_Info1LedLabel%" value=" (KNX-IP)"></op:config>
-  <op:config name="%BASE_Info2LedLabel%" value=" (IP)"></op:config>
-  <op:config name="%BASE_Info3LedLabel%" value=" (KNX)"></op:config>
-  <op:config name="%BASE_Info1LedFunc%" value="11"></op:config>
+  <op:config name="%BASE_Info1LedLabel%" value=""></op:config>
+  <op:config name="%BASE_Info2LedLabel%" value=""></op:config>
+  <op:config name="%BASE_Info3LedLabel%" value=""></op:config>
+  <op:config name="%BASE_Info1LedFunc%" value="3"></op:config>
   <op:config name="%BASE_Info2LedFunc%" value="10"></op:config>
-  <op:config name="%BASE_Info3LedFunc%" value="3"></op:config>
+  <op:config name="%BASE_Info3LedFunc%" value="11"></op:config>
   <op:config name="%BASE_Info1LedFunc_Access%" value="ReadWrite"></op:config>
   <op:config name="%BASE_Info2LedFunc_Access%" value="ReadWrite"></op:config>
   <op:config name="%BASE_Info3LedFunc_Access%" value="ReadWrite"></op:config>

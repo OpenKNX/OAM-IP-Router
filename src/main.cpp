@@ -59,12 +59,6 @@ void setup()
     openknx.addModule(30, sdCardModule);
 #endif
 
-    if (!knx.configured())
-    {
-        openknx.ledFunctions.assignLed2Function(openknx.leds.getLed(OpenKNX::Led::LedType::LED_TYPE_INFO3), OPENKNX_LEDFUNC_BASE_KNX);
-        openknx.ledFunctions.assignLed2Function(openknx.leds.getLed(OpenKNX::Led::LedType::LED_TYPE_INFO2), OPENKNX_LEDFUNC_NET_STATE);
-    }
-
     openknx.setup();
 
 #ifdef DEVICE_DISPLAY_MODULE

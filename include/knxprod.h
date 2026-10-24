@@ -12,18 +12,20 @@
 #define ETS_ModuleId_BASE 1
 #define ETS_ModuleId_NET 2
 #define ETS_ModuleId_FTM 3
-#define ETS_ModuleId_ROUTE 4
+#define ETS_ModuleId_NETW 4
+#define ETS_ModuleId_ROUTE 5
 #define MAIN_FirmwareName "IP-Router (Dev)"
 #define MAIN_OpenKnxId 0xA1
 #define MAIN_ApplicationNumber 30
-#define MAIN_ApplicationVersion 129
+#define MAIN_ApplicationVersion 130
 #define MAIN_FirmwareRevision 0
 #define MAIN_ApplicationEncoding iso-8859-15
-#define MAIN_ParameterSize 295
+#define MAIN_ParameterSize 329
 #define MAIN_MaxKoNumber 0
 #define MAIN_OrderNumber "IP-Router"
 #define BASE_ModuleVersion 32
-#define NET_ModuleVersion 8
+#define NET_ModuleVersion 9
+#define NETW_ModuleVersion 9
 // Parameter with single occurrence
 
 
@@ -67,11 +69,11 @@
 #define ParamBASE_Watchdog                            ((bool)(knx.paramByte(BASE_Watchdog) & BASE_WatchdogMask))
 // InternalTime
 #define ParamBASE_InternalTime                        ((bool)(knx.paramByte(BASE_InternalTime) & BASE_InternalTimeMask))
-// Info1 (KNX-IP)
+// Info1
 #define ParamBASE_Info1LedFunc                        (knx.paramWord(BASE_Info1LedFunc))
-// Info2 (IP)
+// Info2
 #define ParamBASE_Info2LedFunc                        (knx.paramWord(BASE_Info2LedFunc))
-// Info3 (KNX)
+// Info3
 #define ParamBASE_Info3LedFunc                        (knx.paramWord(BASE_Info3LedFunc))
 // 
 #define ParamBASE_DefaultLedFunc                      ((bool)(knx.paramByte(BASE_DefaultLedFunc) & BASE_DefaultLedFuncMask))
@@ -194,6 +196,39 @@
 #define ParamFTM_PasswordStr                         (knx.paramString(FTM_Password, FTM_PasswordLength))
 // Abmeldung bei Leerlauf
 #define ParamFTM_AuthTimeout                         (knx.paramWord(FTM_AuthTimeout))
+
+#define NETW_Mode                                295      // 1 Bit, Bit 7
+#define     NETW_ModeMask 0x80
+#define     NETW_ModeShift 7
+#define NETW_SetupAp                             295      // 1 Bit, Bit 6
+#define     NETW_SetupApMask 0x40
+#define     NETW_SetupApShift 6
+#define NETW_Band                                295      // 2 Bits, Bit 5-4
+#define     NETW_BandMask 0x30
+#define     NETW_BandShift 4
+#define NETW_Channel                             296      // 8 Bits, Bit 7-0
+#define NETW_Channel5                            296      // 8 Bits, Bit 7-0
+#define NETW_CustomApSsid                        295      // 1 Bit, Bit 1
+#define     NETW_CustomApSsidMask 0x02
+#define     NETW_CustomApSsidShift 1
+#define NETW_ApSsid                              297      // char*, 32 Byte
+#define     NETW_ApSsidLength 32
+
+// WiFi-Betriebsart
+#define ParamNETW_Mode                                ((bool)(knx.paramByte(NETW_Mode) & NETW_ModeMask))
+// Einrichtungs-WiFi
+#define ParamNETW_SetupAp                             ((bool)(knx.paramByte(NETW_SetupAp) & NETW_SetupApMask))
+// Frequenzband
+#define ParamNETW_Band                                ((knx.paramByte(NETW_Band) & NETW_BandMask) >> NETW_BandShift)
+// Kanal (2,4 GHz)
+#define ParamNETW_Channel                             (knx.paramByte(NETW_Channel))
+// Kanal (5 GHz)
+#define ParamNETW_Channel5                            (knx.paramByte(NETW_Channel5))
+// Netzname anpassen
+#define ParamNETW_CustomApSsid                        ((bool)(knx.paramByte(NETW_CustomApSsid) & NETW_CustomApSsidMask))
+// Netzname (SSID)
+#define ParamNETW_ApSsid                              (knx.paramData(NETW_ApSsid))
+#define ParamNETW_ApSsidStr                           (knx.paramString(NETW_ApSsid, NETW_ApSsidLength))
 
 #define ROUTE_AckOfPhysTelSubMain                  0      // 2 Bits, Bit 7-6
 #define     ROUTE_AckOfPhysTelSubMainMask 0xC0

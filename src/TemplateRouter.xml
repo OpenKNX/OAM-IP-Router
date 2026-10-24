@@ -86,7 +86,16 @@
               </ParameterBlock>
               <op:include href="../lib/OGM-Common/src/Common.Router.share.xml" xpath="//ApplicationProgram/Dynamic/Channel/*[not(self::ParameterBlock[@Name='Basic']) and not(self::ParameterBlock[@Name='Extended'])]" prefix="BASE" />
             </Channel>
-            <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/*" prefix="NET" />
+            <!-- Network channel rebuilt so the WiFi module (NETW) folds in: its "WiFi-Schnittstelle" Nein/Ja at the end of "Allgemein",
+                 its "WiFi" page below, shown only with "WiFi-Schnittstelle: Ja". One knxprod for LAN and WiFi devices. -->
+            <Channel Id="%AID%_CH-NET" Number="NET" Name="Main" Text="Netzwerk" Icon="ethernet" HelpContext="NET-Dokumentation">
+              <ParameterBlock Id="%AID%_PB-nnn" Name="Basic" Text="Allgemein" Icon="cog-outline" HelpContext="NET-Dokumentation">
+                <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/Channel/ParameterBlock[@Name='Basic']/*" IsInner="true" prefix="NET" />
+                <op:include href="../lib/OFM-Network/src/NetworkWifi.share.xml" xpath="//Dynamic/Channel/ParameterBlock[@Name='NetworkInject']/*" IsInner="true" prefix="NETW" />
+              </ParameterBlock>
+              <op:include href="../lib/OFM-Network/src/Network.share.xml" xpath="//Dynamic/Channel/*[not(self::ParameterBlock[@Name='Basic'])]" prefix="NET" />
+              <op:include href="../lib/OFM-Network/src/NetworkWifi.share.xml" xpath="//Dynamic/Channel/choose" prefix="NETW" />
+            </Channel>
             <op:include href="IP-Router.share.xml" xpath="//Dynamic/*" prefix="ROUTE" />
             <!--
             <ChannelIndependentBlock>

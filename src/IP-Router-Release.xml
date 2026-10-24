@@ -29,7 +29,7 @@
        PID_HARDWARE_TYPE. -->
   <op:ETS OpenKnxId="0xA1" 
           ApplicationNumber="31" 
-          ApplicationVersion="0.9" 
+          ApplicationVersion="0.10" 
           ReplacesVersionsDownTo="0.1" 
           ApplicationRevision="0" 
           ProductName="IP-Router" 
@@ -52,6 +52,11 @@
   <!-- FTC access-control config. Pulled because this product builds with -D OPENKNX_FTC_SECURITY; the share
        carries 0 ComObjects, so the router stays KO-free. ModuleType 13 (10/11/99 taken). -->
   <op:define prefix="FTM" ModuleType="13" share="../lib/OFM-FileTransferModule/src/FileTransfer.share.xml" />
+  <!-- WiFi settings (operating mode, setup AP, own AP). ModuleType 14 (10/11/13/99 taken). The page shows its
+       parameters only with "WiFi-Schnittstelle: Ja", since all IP-Router variants share one knxprod. -->
+  <op:define prefix="NETW" ModuleType="14" share="../lib/OFM-Network/src/NetworkWifi.share.xml" >
+    <op:verify File="../lib/OFM-Network/library.json" ModuleVersion="0.9" />
+  </op:define>
   <op:define prefix="ROUTE" NumChannels="%Tunnelcount%" ModuleType="99" share="IP-Router.share.xml" template="IP-Router.templ.xml" />
 
   <generate base="TemplateRouter.xml"/>

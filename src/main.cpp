@@ -19,6 +19,9 @@
 #ifdef OPENKNX_FTC_CLIENT
 #include "FileTransferClient.h"
 #endif
+#ifdef OPENKNX_EXTFLASH
+#include "ExternalFlash.h"
+#endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(OPENKNX_DEBUG_HEAP_LOG)
 #include "esp_heap_caps.h" // only the optional periodic heap log (loop) uses heap_caps_*
@@ -57,6 +60,9 @@ void setup()
 #endif
 #ifdef OPENKNX_SDCARD
     openknx.addModule(30, sdCardModule);
+#endif
+#ifdef OPENKNX_EXTFLASH
+    openknx.addModule(12, extFlashModule);
 #endif
 
     openknx.setup();

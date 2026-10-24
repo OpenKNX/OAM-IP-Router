@@ -148,6 +148,9 @@ $standardTargets = @(
 $fullTargets = @(
     @{ Env = "release_REG1_ETH";             Name = "firmware-IP-Router-REG1-Eth";             Ext = "rp2040-ip" }
     @{ Env = "release_REG2_PICO_W_ETH_DD";   Name = "firmware-IP-Router-REG2-PicoW-Eth-DD";    Ext = "rp2040-ip" }
+    @{ Env = "release_REG2_PICO2_W_DD";      Name = "firmware-IP-Router-REG2-Pico2W-WiFi-DD";  Ext = "rp2040-ip" }
+    @{ Env = "release_REG2_PICO_ESP_W_DD";  Name = "firmware-IP-Router-REG2-Pico-Esp-WiFi-DD"; Ext = "esp32-ip"  }
+    @{ Env = "release_REG1_TP_BASE_WIFI";   Name = "firmware-IP-Router-REG1-TP-Base-WiFi";    Ext = "esp32-ip"  }
     @{ Env = "release_REG2_PICO2_ETH_DD";    Name = "firmware-IP-Router-REG2-Pico2-Eth-DD";    Ext = "rp2040-ip" }
     @{ Env = "release_REG2_PICO_ESP_ETH_DD"; Name = "firmware-IP-Router-REG2-Pico-Esp-Eth-DD"; Ext = "esp32-ip"  }
     

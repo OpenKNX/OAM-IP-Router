@@ -184,6 +184,9 @@ routing itself.
 | `release_REG2_PICO_ETH_DD` (default) | RP2040 | 2 MB | W5500 |
 | `release_REG2_PICO2_ETH_DD` | RP2350 (Pico 2) | 4 MB | W5500 |
 | `release_REG2_PICO_W_ETH_DD` | RP2040 (Pico W) | 2 MB | W5500, LAN only |
+| `release_REG2_PICO2_W_DD` | RP2350 (Pico 2 W) | 4 MB + external W25Q128 | none — WiFi |
+| `release_REG2_PICO_ESP_W_DD` | ESP32-S3 | 16 MB | none — WiFi |
+| `release_REG1_TP_BASE_WIFI` | ESP32 (classic) | 8 MB | none — WiFi |
 | `release_REG2_PICO_ESP_ETH_DD` | ESP32-S3 | 16 MB | W5500 |
 | `release_REG1_ETH` | RP2040 | 16 MB | W5500, no display/SD |
 | `release_REG1_LAN_TP_BASE` | ESP32 (classic) | 8 MB | native |

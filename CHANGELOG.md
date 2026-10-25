@@ -1,14 +1,15 @@
 # Changes
 
 
-## ec/ALPHA-DEV-v8.1.0: 2026-10-16
+## ec/ALPHA-DEV-v8.2.0: 2026-10-25
 
-ETS product **8.1** (`IP-Router-Dev-v8.1.knxprod`), release variant **0.9**. The ETS parameter block moved in
-the device memory, so a device that carries 8.0 or 0.8 needs an ETS download with the new knxprod after the
-firmware update. The larger part of this version arrives with the libraries: the routing flow control, the IP
-system broadcast and the basic restart of the knx stack, the transmitter and acknowledge work of TPUart and the
-W5500 driver of OFM-Network. Measured with the KNX IP validation tool and the conformance suite on RP2040 and
-ESP32.
+ETS product **8.2** (`IP-Router-Dev-v8.2.knxprod`), release variant **0.10**. The ETS parameter block moved in
+the device memory and the ETS application gains the WiFi module, so a device that carries 8.0 or 0.8 needs an ETS
+download with the new knxprod after the firmware update. This release contains the internal build 8.1.0, which was
+not published. The larger part of this version arrives with the libraries: the routing flow control, the IP system
+broadcast and the basic restart of the knx stack, the transmitter and acknowledge work of TPUart and the W5500
+driver of OFM-Network. 8.1.0 was measured with the KNX IP validation tool and the conformance suite on RP2040 and
+ESP32; the changes after it are built, not measured on hardware.
 
 ### Product
 * Feature: the filter table tab of `/ipro` is a tree, main group > middle group > ranges, with one occupancy strip per middle group. It opens fully up to 12 lines and shows only the main groups beyond that, so a large table stays short
@@ -28,10 +29,17 @@ ESP32.
 * Feature: the status page shows the telegrams to TP that were not confirmed (individual, group) in the overview, and under "Bus + Diagnose" the confirmed, unconfirmed and not-sent telegrams per cause
 * Fix: the help text of PE names both causes: a bit error on the bus, which the chip reports in the parity bit, and a corrupted octet from the chip
 * Change: every text on the display is English (see Libraries)
+* Feature: the display shows a coupler page (role from the own address, routing group, TTL, tunnel use; "Not programmed" without configuration) and a routing page (routed, filtered and lost telegrams per direction); the IP page title leaves the firmware version to the System-Info widget
+* Feature: WiFi firmwares for the REG2 Pico 2 W (RP2350 with display and the on-board W25Q128), the REG2 ESP32-S3 Waveshare Pico without the ETH board and the REG1 LAN TP Base on WiFi instead of its native ETH; they build with `KNX_IP_WIFI`, the own access point and `ping`, and the release builds them with `-Full`
+* Feature: the external flash module (OFM-ExternalFlash) is registered; the Pico 2 W build uses it for its on-board W25Q128
+* Change: unconfigured, or with the default LED functions, INFO1 shows the bus status, INFO2 the network status and INFO3 nothing (KNX-IP status in the Dev application); a configured device keeps its stored values
+* Change: the developer console (`OPENKNX_CONSOLE_DEV`) is built in all targets, the display console `ddc` with it except on the RP2040 2 MB boards, where it does not fit
+* Change: FastCRC uses its 1 KB checksum table instead of the 4 KB one, about 3 KB less flash with the same checksum
 
 ### ETS product
 * Fix: the parameter segment sits at 2200h with 0200h octets, above the filter table at 0200h-21FFh. It was declared at 0100h with 256 octets, shorter than the 295 parameter octets the firmware reads, and the metadata that every save writes from the start of the NVM ran into its first octets. A `static_assert` fails the build when the parameters outgrow the segment
-* Change: product 8.0.0 -> 8.1.0 (dev) and 0.8 -> 0.9 (release), because the moved segment needs a new knxprod
+* Change: product 8.0.0 -> 8.2.0 (dev) and 0.8 -> 0.10 (release): the moved segment (8.1) and the WiFi module (8.2) each need a new knxprod
+* Feature: the WiFi module (NETW) is part of the ETS application: "WiFi-Schnittstelle" Nein/Ja in Netzwerk > Allgemein, and with "Ja" the page WiFi below it with operating mode, setup access point and own access point. LAN and WiFi devices share one knxprod
 
 ### Device
 * Feature: `ipro` prints the received LOST and BUSY counts and the routing receive queue (waiting, peak, dropped, oversize), and labels PID 72/73 as counted since boot
@@ -77,23 +85,30 @@ list; this is what matters for this product.
 * The broadcast confirm of a frame with the router's own source address passes up only a `T_Data_Broadcast` and checks its length per service
 * A table unloaded while loading or in error frees its memory, and a cEMI `T_Data` request without APCI octet is dropped
 * The description of `PID_IO_LIST` reports 9 elements (was 8); the router's object list itself is unchanged
+* Stored image: the migration pushes the tables up in place when no free block is large enough
+* WiFi: with only the own access point running, the KNXnet/IP properties report the access point address, and the KNX multicast groups are joined on the access point once it starts
 
-**TPUart** `ec/1.3.0-beta.1` -> `ec/1.4.0-beta.1`
+**TPUart** `ec/1.3.0-beta.1` -> `ec/1.4.0-beta.2`
 * The wait for the confirmation of an own frame survives a probe answer and a repetition; before, 0 to 4 frames of a burst of 1000 routing indications neither reached the bus nor were reported as lost
 * On RP2040 the UART interrupt sends from a 256-octet ring, and a parked acknowledge stays inside the time the shortest frame leaves
 * `busOperational()` reports the bus down about 2 to 3 s after a bus-powered chip stops answering
 * A repetition of a frame answered BUSY is acknowledged, which the `ROUTING_BUSY` pause of the router relies on
 * The build knobs are collected in `src/TPUart/Config.h`
+* Busmonitor: a CRC octet of the frame in flight at busmonitor entry no longer switches the receiver to CRC frames, which swept most frames of the session
 
-**OFM-Network** `b7d3fdd` (after `v0.8.1`) -> `ec/v0.9.0-beta.1`
+**OFM-Network** `b7d3fdd` (after `v0.8.1`) -> `ec/v0.9.0-beta.2`
 * RP2040 with W5500: the module runs its own copy of the driver with block SPI and bounded waits, so a chip that stops answering no longer hangs the main loop; a `ROUTING_INDICATION` is held while a `ROUTING_BUSY` waits in the chip
 * ESP32: KNX-IP is switched only from the main loop, and the network event handler is registered once
 * ESP32 with wired LAN and a display: the LAN speed widget, the overview page and `net` show packet counters, counted at the lwIP netif; the widget showed "n/a" there
 * `net` shows the W5500 socket reopens and timeouts
 * The network widgets are named Network and NETWORK
 * RP2040 with W5500: a chip that does not answer at boot no longer leads to a watchdog loop that ends with the programming erased; the device starts without network and keeps retrying
+* WiFi module NETW: setup access point, own access point as operating mode, network scan, client rejoin, the page `/wifi`, a display widget, the LED function WiFi-Status and `net wifi`; the ETS checks the password length while typing, and the own access point lists its connected devices
+* RP2040: the NTP sync no longer blocks the main loop, and after a network update the staged image is released at the next start
+* The browser tab shows the hostname; the LAN mode parameter opens its help page; the network speed widget keeps its values inside the display and starts a new rate base after a pause
+* WiFi: the WiFi routes are registered once; before the web server started, the setup access point added them on every loop pass and drained the heap (ESP32-S3: boot loop)
 
-**OFM-FileTransferModule** `ec/v0.2.0-beta.1` -> `ec/v0.3.0-beta.1`
+**OFM-FileTransferModule** `ec/v0.2.0-beta.1` -> `ec/v0.3.0-beta.2`
 * The device info reads the bus voltage of every device over a transport connection of its own, and the info of a device with a router object completes instead of leaving the client busy
 * The scan reads every device by default, and the parallel range scan is gone
 * `oknx -i <ip> con` finds the console on the shared web socket
@@ -105,6 +120,8 @@ list; this is what matters for this product.
 * A telegram the interface reports as not confirmed names both causes: nobody on the TP line acknowledged it, or it was not sent
 * `oknx` takes a command's long options also before the command; `scan -q` starts every line with its record type and gives each a fixed field count (the device and tunnel lines used to start with the address)
 * The device info closes its scan session with one T_Disconnect, and a lost table reference is asked once more before System 7 falls back to the fixed table base
+* A firmware update over FTC releases the staged image, so the next upload finds the space (RP2040 at the next start, ESP32 at once); the ESP32 images shrink by parsing the commands with `siscanf`
+* `oknx setpa` waits for the button and assigns by serial number; `oknx -i <ip> reset` restarts the interface with `M_Reset`; `oknx serve` owns the KNXnet/IP connections for API, MCP and pages
 
 **OGM-Common** `ec/v2.0.0-beta.1` -> `ec/v2.0.0-beta.2`
 * The build compares the knxprod it built with the header the firmware uses, and says why when it cannot
@@ -112,13 +129,27 @@ list; this is what matters for this product.
 * ESP-IDF builds carry the OpenKNX identity
 * The KNX and system info widgets label Address and Number in English
 * RP2040: the watchdog fires 16 to 17 s after the last loop pass (configured 16 s) instead of after about 8.4 s (erratum RP2040-E1); with interrupts off it fires at most 8 s after the last feed
+* RP2040: an applied picoOTA image is removed at the next start, so it no longer blocks the next upload on a 2 MB RP2040
+* REG2 front panel: the I2C scheduler writes the expander LEDs at fixed times on the bus shared with the display, and on RP2040/RP2350 reads the front buttons in its gaps; a short register read no longer reports UP, DOWN, OK and RIGHT pressed at once; an LED is no longer added twice to its function group
+* Console: without `OPENKNX_CONSOLE_DEV` only `leds status`; the version text has room for a long git hash
+* Build: `versions.h` takes the git hash from the folder PlatformIO resolved, the ESP32 partition table is named `partitions_openknx.csv`, the release build detects an IDF build and adds a firmware to `content.xml` only once
 
 **OFM-DeviceDisplay** `4fab100` -> `v0.1.1`
 * Every text on the display is English: menu, options, confirmations, toasts, the gesture and programming overlays and the clock; Dim after, Saver after and Sleep after fit one row with their value
-* The other changes of this version are listed in the changelog of the module
+* The stored display settings take effect after a restart and are written two seconds after the last edit; visibility, duration and order of the rotation widgets are stored
+* The front buttons are read with one expander port read; on RP2040/RP2350 the page chunks go through the I2C scheduler queue, and after a rotation the whole frame is sent again
+* The QR code is drawn with filled modules and a fixed mask; the `ddc` console is built with `OPENKNX_CONSOLE_DEV`; the root menu is ordered without `std::stable_sort`, 14466 bytes less
 
 **OFM-SDCard** `v0.1.0` -> `v0.1.1`
 * The SD card menu, the file browser and the format messages are English
+* The `sdc` console is built only with `OPENKNX_CONSOLE_DEV`, and the SD card widget only with the SD card module
+
+**OFM-ExternalFlash** `0.0.2` (new)
+* A LittleFS volume on an SPI flash chip, offered to the file transfer as the `efc/` store; the `efc` console is built only with `OPENKNX_CONSOLE_DEV`
+
+**OGM-HardwareConfig** `0f59ba5` -> `0c5a94d` (no tag)
+* REG2: the display and expander I2C bus goes to the I2C scheduler, the display front LEDs are INFO1 and INFO2, the prog LED of the ESP32-S3 with display is on GPIO13
+* REG2 Pico: the SPI1 pins of the on-board W25Q128; the Pico W onboard LED shows the WiFi state
 
 
 ## ec/ALPHA-DEV-v8.0.0: 2026-09-15

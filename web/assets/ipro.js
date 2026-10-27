@@ -1063,9 +1063,11 @@
             $('ii-bar').className = 'ii-bar bad';
             return;
         }
+        const ready = window.OpenKNX.need('iproState', load);
         receiveJsonStream('iproState', function (d) {
             $('ii-ov').classList.remove('gray');
             renderState(d);
+            ready();
         });
         receiveJsonStream('iproHistory', renderHist);
         receiveJsonStream('iproBus', renderBus);

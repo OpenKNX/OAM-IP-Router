@@ -1,5 +1,7 @@
 #include "IPRouterModule.h"
 #include <time.h>
+#include <atomic>
+#include <cstring>
 
 // Tunnel status page. Same double guard as every module-contributed page: NetworkModule.h wraps its
 // whole content in KNX_IP_*, so __has_include alone would resolve to an empty header.
@@ -898,9 +900,9 @@ static const std::string &buildIproJson()
     char buf[224], role[96];
     formatCouplerRole(pa, role, sizeof(role), true); // web: German, arrow as raw UTF-8 (see the note above)
 
-    // One buffer for all three endpoints: a request is answered and copied out before the next one
-    // starts, so they are never live at the same time. clear() keeps the capacity, so after the first
-    // requests the polls stop allocating. An active entry is ~95 B, a history entry up to 155 B.
+    // One high-water-mark buffer for all views: the WebSocket sender finishes streaming it before
+    // building the next view, so the response does not need a second large allocation.
+    // An active entry is ~95 B, a history entry up to 155 B.
     std::string &json = reportBuffer();
     json.clear();
     // Measured on a real device: an active entry is ~85 B, header plus load block ~450 B.
@@ -1361,6 +1363,129 @@ static const std::string &buildIproRouteJson(bool withFilter)
 }
 #endif // OPENKNX_ROUTE_TRACE
 
+enum IproWebRequest : uint8_t
+{
+    IPRO_WEB_STATE = 1,
+    IPRO_WEB_HISTORY = 2,
+    IPRO_WEB_BUS = 4,
+    IPRO_WEB_ROUTE = 8,
+};
+
+static std::atomic<uint8_t> iproWebRequests{0};
+#ifdef OPENKNX_ROUTE_TRACE
+static std::atomic<bool> iproWebRouteFilter{false};
+#endif
+
+class IproWebJsonStream
+{
+    const std::string *_body = nullptr;
+    const char *_key = nullptr;
+    size_t _offset = 0;
+    uint32_t _sequence = 0;
+    uint16_t _chunk = 0;
+
+public:
+    bool active() const { return _body != nullptr; }
+
+    void begin(const char *key, const std::string &body)
+    {
+        _key = key;
+        _body = &body;
+        _offset = 0;
+        _chunk = 0;
+        ++_sequence;
+    }
+
+    void abort()
+    {
+        _body = nullptr;
+        _key = nullptr;
+        _offset = 0;
+        _chunk = 0;
+    }
+
+    void sendNext()
+    {
+        char frame[940];
+        char header[32];
+        const int headerLen = snprintf(header, sizeof(header), "%lu,%u,0:",
+                                       (unsigned long)_sequence, (unsigned)_chunk);
+        const size_t keyCost = strlen(_key) + 1;
+        const size_t maxMessage = openknxNetwork.webserver.ui.maxMessage();
+        if (headerLen <= 0 || (size_t)headerLen >= sizeof(header) ||
+            maxMessage <= keyCost + (size_t)headerLen)
+        {
+            logError("IP-Router", "UI WebSocket message size is too small for JSON streaming");
+            abort();
+            return;
+        }
+
+        size_t chunkLen = _body->size() - _offset;
+        const size_t maxChunk = maxMessage - keyCost - (size_t)headerLen;
+        if (chunkLen > maxChunk) chunkLen = maxChunk;
+        if (chunkLen > 900) chunkLen = 900;
+        if (_offset + chunkLen < _body->size())
+            while (chunkLen > 0 &&
+                   (static_cast<uint8_t>(_body->data()[_offset + chunkLen]) & 0xC0) == 0x80)
+                --chunkLen;
+        if (chunkLen == 0 && _offset < _body->size())
+        {
+            logError("IP-Router", "UI WebSocket JSON chunk cannot end on a UTF-8 boundary");
+            abort();
+            return;
+        }
+
+        const bool last = _offset + chunkLen >= _body->size();
+        header[headerLen - 2] = last ? '1' : '0';
+        if ((size_t)headerLen + chunkLen > sizeof(frame))
+        {
+            logError("IP-Router", "UI WebSocket JSON chunk exceeds its fixed buffer");
+            abort();
+            return;
+        }
+        memcpy(frame, header, (size_t)headerLen);
+        if (chunkLen) memcpy(frame + headerLen, _body->data() + _offset, chunkLen);
+        const size_t frameLen = (size_t)headerLen + chunkLen;
+        if (!openknxNetwork.webserver.txFits(_key, frameLen)) return;
+
+        openknxNetwork.webserver.ui.sendMessage(_key, frame, frameLen);
+        _offset += chunkLen;
+        ++_chunk;
+        if (_offset >= _body->size()) abort();
+    }
+};
+
+static IproWebJsonStream iproWebJsonStream;
+
+static void processIproWebRequests()
+{
+    auto &webserver = openknxNetwork.webserver;
+    if (!webserver.ui.hasClients())
+    {
+        iproWebRequests.store(0, std::memory_order_relaxed);
+        iproWebJsonStream.abort();
+        return;
+    }
+    if (!openknx.common.freeLoopTime()) return;
+    if (iproWebJsonStream.active())
+    {
+        iproWebJsonStream.sendNext();
+        return;
+    }
+
+    const uint8_t requests = iproWebRequests.exchange(0, std::memory_order_acquire);
+    if (requests & IPRO_WEB_STATE)
+        iproWebJsonStream.begin("iproState", buildIproJson());
+    else if (requests & IPRO_WEB_HISTORY)
+        iproWebJsonStream.begin("iproHistory", buildIproHistJson());
+    else if (requests & IPRO_WEB_BUS)
+        iproWebJsonStream.begin("iproBus", buildIproBusJson());
+#ifdef OPENKNX_ROUTE_TRACE
+    else if (requests & IPRO_WEB_ROUTE)
+        iproWebJsonStream.begin("iproRoute", buildIproRouteJson(iproWebRouteFilter.exchange(false)));
+#endif
+}
+
 // Page shell only: the markup lives in the gzipped asset, where the same bytes cost about a third
 // of what they take as an uncompressed C string in flash. The script fills it before its first poll.
 static const char iproPage[] = "<div id='ii-root'></div>";
@@ -1434,6 +1559,9 @@ void IPRouterModule::loop(bool configured)
     }
     if (_filtWanted && !_filtValid && ft != nullptr && openknx.common.freeLoopTime()) filterTableLoop();
 #endif
+#ifdef IPRO_HAS_WEBPAGE
+    processIproWebRequests();
+#endif
 }
 
 void IPRouterModule::setup(bool configured)
@@ -1451,6 +1579,27 @@ void IPRouterModule::setup(bool configured)
         Webserver::Asset(WebAssets::ipro_js_mime, WebAssets::ipro_js_gz, sizeof(WebAssets::ipro_js_gz)));
     openknxNetwork.webserver.addStylesheet("/assets/ipro.css");
     openknxNetwork.webserver.addJavaScript("/assets/ipro.js");
+    openknxNetwork.webserver.ui.receiveMessage([](const char *key, const char *data, size_t len) {
+        if (!key || !data || strcmp(key, "iproGet") != 0) return;
+        if (len == 5 && memcmp(data, "state", 5) == 0)
+            iproWebRequests.fetch_or(IPRO_WEB_STATE, std::memory_order_relaxed);
+        else if (len == 4 && memcmp(data, "hist", 4) == 0)
+            iproWebRequests.fetch_or(IPRO_WEB_HISTORY, std::memory_order_relaxed);
+        else if (len == 3 && memcmp(data, "bus", 3) == 0)
+            iproWebRequests.fetch_or(IPRO_WEB_BUS, std::memory_order_relaxed);
+#ifdef OPENKNX_ROUTE_TRACE
+        else if (len == 5 && memcmp(data, "route", 5) == 0)
+        {
+            iproWebRouteFilter.store(false, std::memory_order_relaxed);
+            iproWebRequests.fetch_or(IPRO_WEB_ROUTE, std::memory_order_relaxed);
+        }
+        else if (len == 10 && memcmp(data, "route:filt", 10) == 0)
+        {
+            iproWebRouteFilter.store(true, std::memory_order_relaxed);
+            iproWebRequests.fetch_or(IPRO_WEB_ROUTE, std::memory_order_relaxed);
+        }
+#endif
+    });
 
     openknxNetwork.webserver.addRoute(WEB_GET, "/ipro", [](WebRequest &, WebResponse &res) {
         res.setContentType("text/html");

@@ -13,7 +13,6 @@
 
 
     const POLL_MS = 2000;
-    let busy = false, busBusy = false, rtBusy = false;
 
     // --- Formats, ported from OGM-Common/src/OpenKNX/Helper.cpp ---
 
@@ -901,7 +900,7 @@
 
     // The routing document is the largest one this page fetches. It is only worth building while the
     // section is actually on screen - the bus block does the same via its <details>.
-    let rtVisible = true, rtAgain = false;
+    let rtVisible = true;
     if (window.IntersectionObserver && $('ii-rtabs')) {
         rtVisible = false;
         new IntersectionObserver(function (es) {
@@ -909,43 +908,27 @@
             if (now && !rtVisible) { rtVisible = true; loadRoute(); } else { rtVisible = now; }
         }, { rootMargin: '120px' }).observe($('ii-rtabs'));
     }
-    async function loadRoute() {
+    function loadRoute() {
         if (!$('ii-rp-rt') || document.hidden || !rtVisible) return;
-        // a tab click during a poll must not be swallowed
-        if (rtBusy) { rtAgain = true; return; }
-        rtBusy = true;
-        try {
-            // The filter table is an 8 kB scan on the device - only ask for it while its tab is open.
-            const wantFilter = !$('ii-rp-filt').hidden;
-            const r = await fetch('/ipro/route' + (wantFilter ? '?filt=1' : ''), { cache: 'no-store' });
-            if (!r.ok) throw 0;
-            renderRoute(await r.json());
-        } catch (e) {
-            $('ii-rp-rt').innerHTML = '<p class="meta">nicht verfügbar</p>';
-        } finally {
-            rtBusy = false;
-            if (rtAgain) { rtAgain = false; loadRoute(); }
-        }
+        // The filter table is an 8 kB scan on the device - only ask for it while its tab is open.
+        const wantFilter = !$('ii-rp-filt').hidden;
+        if (window.OpenKNX) window.OpenKNX.send('iproGet', wantFilter ? 'route:filt' : 'route');
     }
 
     // The finished connections change only on connect/disconnect and sit behind a tab that is not the
     // default - so they travel on their own endpoint instead of in every 2-second poll.
-    let histN = 0, histBusy = false;
-    async function loadHist() {
-        if (histBusy || document.hidden || $('ii-tp-h').hidden) return;
-        histBusy = true;
-        try {
-            const r = await fetch('/ipro/hist', { cache: 'no-store' });
-            if (!r.ok) throw 0;
-            const d = await r.json();
-            const COLS_A = [['t', 'Typ'], ['pa', 'Adresse'], ['ip', 'Client'], ['start', 'Start'], ['dur', 'Dauer']];
-            $('ii-tp-h').innerHTML = tbl(d.hist || [], COLS_A.concat([['reason', 'Ende', tunEnde], ['det', 'Code'],
-                    ['tg', 'Telegramme', tunTraffic], ['zst', 'Zustand', tunState]]),
-                                         'Noch keine beendeten Verbindungen.', tunDetail, openH);
-            wireWhy($('ii-tp-h'));
-        } catch (e) {
-            $('ii-tp-h').innerHTML = '<p class="meta">nicht verf\u00fcgbar</p>';
-        } finally { histBusy = false; }
+    let histN = 0;
+    function renderHist(d) {
+        const COLS_A = [['t', 'Typ'], ['pa', 'Adresse'], ['ip', 'Client'], ['start', 'Start'], ['dur', 'Dauer']];
+        $('ii-tp-h').innerHTML = tbl(d.hist || [], COLS_A.concat([['reason', 'Ende', tunEnde], ['det', 'Code'],
+                ['tg', 'Telegramme', tunTraffic], ['zst', 'Zustand', tunState]]),
+                                     'Noch keine beendeten Verbindungen.', tunDetail, openH);
+        wireWhy($('ii-tp-h'));
+    }
+
+    function loadHist() {
+        if (document.hidden || $('ii-tp-h').hidden) return;
+        if (window.OpenKNX) window.OpenKNX.send('iproGet', 'hist');
     }
 
     // Refresh control at the right end of the status bar. It lives outside the part that is rewritten
@@ -956,8 +939,7 @@
     const POLL_STEPS = [1000, 2000, 5000, 10000, 30000, 60000, 0];
     let pollMs = POLL_MS, pollTimer = 0;
 
-    // The status endpoint follows the chosen interval; the heavier panels do not -- that throttle is
-    // what keeps the device from building three JSON documents per tick at the fastest setting.
+    // The status stream follows the chosen interval; the heavier panels remain throttled.
     const heavyAt = {};
     function heavyDue(k, force) {
         const t = new Date().getTime();
@@ -992,32 +974,14 @@
         applyPoll(ms);
     }
 
-    async function load() {
-        if (busy || document.hidden) return;
-        busy = true;
-        try {
-            const r = await fetch('/ipro/state', { cache: 'no-store' });
-            if (!r.ok) throw 0;
-            $('ii-ov').classList.remove('gray');
-            renderState(await r.json());
-        } catch (e) {
-            // Do not leave the last good values standing as if they were current.
-            $('ii-head').textContent = 'nicht verfügbar';
-            $('ii-bar').className = 'ii-bar bad';
-            $('ii-ov').classList.add('gray');
-        } finally { busy = false; }
+    function load() {
+        if (document.hidden) return;
+        if (window.OpenKNX) window.OpenKNX.send('iproGet', 'state');
     }
 
-    async function loadBus() {
-        if (busBusy || document.hidden || !$('ii-sec-bus').open) return;
-        busBusy = true;
-        try {
-            const r = await fetch('/ipro/bus', { cache: 'no-store' });
-            if (!r.ok) throw 0;
-            renderBus(await r.json());
-        } catch (e) {
-            $('ii-bus').innerHTML = '<p class="meta">nicht verfügbar</p>';
-        } finally { busBusy = false; }
+    function loadBus() {
+        if (document.hidden || !$('ii-sec-bus').open) return;
+        if (window.OpenKNX) window.OpenKNX.send('iproGet', 'bus');
     }
 
     $('ii-sec-bus').addEventListener('toggle', function () { if (this.open) loadBus(); });
@@ -1048,12 +1012,57 @@
     wireTabs('ii-rtabs', 'ii-rp-', loadRoute);
 
     // A tab restored as open by the browser must fill immediately, not only on the next toggle.
-    document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) { load(); loadBus(); loadRoute(); }
-    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) pollTick(true); });
 
-    load();
-    loadBus();
-    loadRoute();
+    const streamHeader = /^(\d+),(\d+),([01]):/;
+    function receiveJsonStream(key, render) {
+        let sequence = null, nextChunk = 0, chunks = [];
+        function reset() { sequence = null; nextChunk = 0; chunks = []; }
+        window.OpenKNX.on(key, function (message) {
+            const meta = streamHeader.exec(message);
+            if (!meta) return;
+            const seq = +meta[1], chunk = +meta[2], last = meta[3] === '1';
+            if (chunk === 0) { sequence = seq; nextChunk = 0; chunks = []; }
+            if (sequence !== seq || chunk !== nextChunk) { reset(); return; }
+            if (chunk >= 64) {
+                reset();
+                console.warn('Too many WebSocket chunks.');
+                return;
+            }
+            chunks.push(message.slice(meta[0].length));
+            nextChunk++;
+            if (!last) return;
+            const body = chunks.join('');
+            reset();
+            let parsed;
+            try { parsed = JSON.parse(body); }
+            catch (e) { console.warn('Invalid WebSocket JSON.', e); return; }
+            render(parsed);
+        });
+        window.OpenKNX.onState(function (state) { if (state !== 'open') reset(); });
+    }
+
     buildPoll();
+
+    function registerSocketHandlers() {
+        if (!window.OpenKNX) {
+            $('ii-head').textContent = 'WebSocket nicht verfügbar';
+            $('ii-bar').className = 'ii-bar bad';
+            return;
+        }
+        receiveJsonStream('iproState', function (d) {
+            $('ii-ov').classList.remove('gray');
+            renderState(d);
+        });
+        receiveJsonStream('iproHistory', renderHist);
+        receiveJsonStream('iproBus', renderBus);
+        receiveJsonStream('iproRoute', renderRoute);
+        window.OpenKNX.onState(function (state) { if (state === 'open') pollTick(true); });
+    }
+
+    if (window.OpenKNX) registerSocketHandlers();
+    else if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', registerSocketHandlers, { once: true });
+    else
+        window.addEventListener('load', registerSocketHandlers, { once: true });
 })();

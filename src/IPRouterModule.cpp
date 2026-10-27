@@ -1474,14 +1474,29 @@ static void processIproWebRequests()
     }
 
     const uint8_t requests = iproWebRequests.exchange(0, std::memory_order_acquire);
+    uint8_t request = 0;
     if (requests & IPRO_WEB_STATE)
-        iproWebJsonStream.begin("iproState", buildIproJson());
+        request = IPRO_WEB_STATE;
     else if (requests & IPRO_WEB_HISTORY)
-        iproWebJsonStream.begin("iproHistory", buildIproHistJson());
+        request = IPRO_WEB_HISTORY;
     else if (requests & IPRO_WEB_BUS)
-        iproWebJsonStream.begin("iproBus", buildIproBusJson());
+        request = IPRO_WEB_BUS;
 #ifdef OPENKNX_ROUTE_TRACE
     else if (requests & IPRO_WEB_ROUTE)
+        request = IPRO_WEB_ROUTE;
+#endif
+    if (!request) return;
+    if (requests != request)
+        iproWebRequests.fetch_or(requests ^ request, std::memory_order_relaxed);
+
+    if (request == IPRO_WEB_STATE)
+        iproWebJsonStream.begin("iproState", buildIproJson());
+    else if (request == IPRO_WEB_HISTORY)
+        iproWebJsonStream.begin("iproHistory", buildIproHistJson());
+    else if (request == IPRO_WEB_BUS)
+        iproWebJsonStream.begin("iproBus", buildIproBusJson());
+#ifdef OPENKNX_ROUTE_TRACE
+    else if (request == IPRO_WEB_ROUTE)
         iproWebJsonStream.begin("iproRoute", buildIproRouteJson(iproWebRouteFilter.exchange(false)));
 #endif
 }
@@ -1570,7 +1585,8 @@ void IPRouterModule::setup(bool configured)
     // Route/menu/asset lists are read at request time and never cleared, so registering here - long
     // before the webserver starts - is fine (see OFM-Network/README.Webserver.md).
     // The tunnel list is section 3 of /ipro; the separate /tunnels page and its script are gone.
-    openknxNetwork.webserver.addMenuItem("IP-Router", "/ipro", 104);
+    openknxNetwork.webserver.addMenuItem("IP-Router", "/ipro", 10);
+    openknxNetwork.webserver.setDefaultPage("/ipro");
     openknxNetwork.webserver.addRoute(
         WEB_GET, "/assets/ipro.css",
         Webserver::Asset(WebAssets::ipro_css_mime, WebAssets::ipro_css_gz, sizeof(WebAssets::ipro_css_gz)));

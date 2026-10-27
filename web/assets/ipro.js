@@ -555,7 +555,7 @@
     const FT_AUTO_OPEN = 12;
     const FT_MODE = { 1: 'pass', 2: 'lock', 3: 'route' };
     const FT_MODE_TXT = { pass: 'alle durchlassen', lock: 'alle sperren', route: 'nach Filtertabelle', unk: 'unbekannt' };
-    let ftSig = '', ftOpen = null, ftData = null;
+    let ftSig = '', ftOpen = null, ftData = null, ftPoll = 0;
 
     function escA(s) { return esc(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
     function gaRaw(t) {
@@ -619,6 +619,15 @@
         if (!inp || !out || !ftData) return;
         const v = inp.value.trim(), raw = gaRaw(v);
         out.innerHTML = !v ? '' : raw < 0 ? '<span class="ft-v unk">keine g&uuml;ltige Gruppenadresse (a/b/c)</span>' : ftVerdict(ftData, raw);
+    }
+
+    function pollFilter(f) {
+        if ($('ii-rp-filt').hidden || (f.loaded && f.building === undefined)) {
+            if (ftPoll) clearTimeout(ftPoll);
+            ftPoll = 0;
+        } else if (!ftPoll) {
+            ftPoll = setTimeout(function () { ftPoll = 0; loadRoute(); }, f.loaded ? 500 : 2000);
+        }
     }
 
     function ftNotes(f) {
@@ -724,6 +733,7 @@
             }, true);
         }
         ftData = f;
+        pollFilter(f);
         const sig = JSON.stringify([f, (topF || []).map(function (e) { return [e.ga, e.n, e.toIp]; })]);
         if (sig === ftSig) return;
         ftSig = sig;
@@ -1009,7 +1019,10 @@
     // and fetches the same document a second time, back to back.
     wireTabs('ii-tabs', 'ii-tp-', function () { heavyDue('hist'); loadHist(); });
     // opening the filter tab must fetch it at once
-    wireTabs('ii-rtabs', 'ii-rp-', loadRoute);
+    wireTabs('ii-rtabs', 'ii-rp-', function () {
+        if ($('ii-rp-filt').hidden && ftPoll) { clearTimeout(ftPoll); ftPoll = 0; }
+        loadRoute();
+    });
 
     // A tab restored as open by the browser must fill immediately, not only on the next toggle.
     document.addEventListener('visibilitychange', function () { if (!document.hidden) pollTick(true); });
